@@ -66,9 +66,12 @@ SCRIPT
    virtualenv venv
    (
       source venv/bin/activate
-      #git clone --depth 3 -b portranges https://github.com/cejkato2/flowspy
-      #cd flowspy
       cd ~vagrant/sync
+      (
+         cd flowspy
+         cp settings.py.dist settings.py
+         patch settings.py < settings.py.patch
+      )
       pip install -r requirements.txt
       sed -i 's/from django.forms.util import smart_unicode/from django.utils.encoding import smart_unicode/' ~vagrant/venv/lib/python2.7/site-packages/tinymce/widgets.py
       ./manage.py syncdb --noinput
