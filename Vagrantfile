@@ -52,8 +52,8 @@ Vagrant.configure(2) do |config|
   # end
   #
    config.vm.provision "shell", inline: <<-SHELL
-   yum install -y python-virtualenv vim git gcc libevent-devel libxml2-devel libxslt-devel mariadb-server mysql-devel
-   rpm -Uvh https://dl.fedoraproject.org/pub/epel/7/x86_64/e/epel-release-7-8.noarch.rpm
+   yum install -y python-virtualenv vim git gcc libevent-devel libxml2-devel libxslt-devel mariadb-server mysql-devel patch
+   rpm -Uh https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
    yum install -y beanstalkd
    systemctl enable beanstalkd.service
    service beanstalkd start
@@ -69,7 +69,7 @@ SCRIPT
       cd ~vagrant/sync
       (
          cd flowspy
-         cp settings.py.dist settings.py
+         cp -f settings.py.dist settings.py
          patch settings.py < settings.py.patch
       )
       pip install -r requirements.txt
@@ -81,9 +81,9 @@ SCRIPT
 
 
    echo To activate virualenv: source ~vagrant/venv/bin/activate
-   echo TO create a user run: cd sync; ./manage.py createsuperuser
-   echo To start flowspy server: cd ~sync; ./manage.py runserver 0.0.0.0:8000
-   echo To start celeryd: cd ~sync; ./manage.py celeryd
+   echo TO create a user run: cd ~vagrant/sync; ./manage.py createsuperuser
+   echo To start flowspy server: cd ~vagrant/sync; ./manage.py runserver 0.0.0.0:8000
+   echo To start celeryd: cd ~vagrant/sync; ./manage.py celeryd
 
    SHELL
 end
