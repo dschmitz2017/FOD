@@ -92,18 +92,6 @@
 		$("#id_fragmenttype").select2();
 		$("#id_then").select2();
 
-		reArrangeSelect("id_sourceport");
-		$("#id_sourceport").select2({
-			placeholder: "Source Port(s)"
-		});
-		reArrangeSelect("id_destinationport");
-		$("#id_destinationport").select2({
-			placeholder: "Destination Port(s)"
-		});
-		reArrangeSelect("id_port");
-		$("#id_port").select2({
-			placeholder: "Port(s)"
-		});
 		$('#id_expires').datepicker({
 			startDate: '+1d',
 			endDate: '+10d'
@@ -169,19 +157,6 @@
 			});
 
 			{% endcomment %}
-			$(".new_port").click(function(){
-				$(".new_port").hide();
-				$("#addnewport").show()
-				$.ajax({
-					url: "{% url add-port %}",
-					cache: false,
-					success: function(data){
-						$("#port_diag").html(data);
-					}
-				});
-				// $('#port_diag').dialog('open');
-				return false;
-			});
 
 			function reArrangeSelect(elementId) {
  			   $("#"+elementId).html($("#"+elementId+" option").sort(function(a, b) {
@@ -316,19 +291,7 @@
 		            {% endif %}
 		        </div>
 		        </div>
-				<div class="form-group ">
-		        	<label class="col-md-2" style="font-weight: normal;"></label>
-		        	<div class="col-md-8">
-		        		<button class="new_port btn-info btn btn-md btn-outline" type="button">{% trans "Add Port" %}</button>
-		        	</div>
-		        </div>
-		        <div class="form-group " id="addnewport" style="display:none">
-		        	<label class="col-md-2  control-label" style="font-weight: normal;">{% trans "Add New Port" %}</label>
-		        	<div class="col-md-8">
-		        		<div id="port_diag" title="{% trans "Add new port" %}">
-		        	</div>
-		        </div>
-				</fieldset>
+			</fieldset>
 
 		        <!--  END OF PORTS -->
 

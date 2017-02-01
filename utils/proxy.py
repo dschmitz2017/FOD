@@ -131,10 +131,9 @@ class Applier(object):
             try:
                 ports = []
                 if route_obj.port:
-                    for port in route_obj.port.all():
-                        portrange = parse_portrange(str(port))
-                        for oneport in portrange:
-                            ports.append(oneport)
+                    portrange = parse_portrange(str(route_obj.port))
+                    for oneport in portrange:
+                        ports.append(oneport)
                 if ports:
                     if len(ports) > settings.PORTRANGE_LIMIT:
                         # We do not allow more than PORTRANGE_LIMIT ports
@@ -146,10 +145,9 @@ class Applier(object):
             try:
                 ports = []
                 if route_obj.destinationport:
-                    for port in route_obj.destinationport.all():
-                        portrange = parse_portrange(str(port))
-                        for oneport in portrange:
-                            ports.append(oneport)
+                    portrange = parse_portrange(str(route_obj.destinationport))
+                    for oneport in portrange:
+                        ports.append(oneport)
                 if ports:
                     if len(ports) > settings.PORTRANGE_LIMIT:
                         # We do not allow more than PORTRANGE_LIMIT ports
@@ -161,10 +159,9 @@ class Applier(object):
             try:
                 ports = []
                 if route_obj.sourceport:
-                    for port in route_obj.sourceport.all():
-                        portrange = parse_portrange(str(port))
-                        for oneport in portrange:
-                            ports.append(oneport)
+                    portrange = parse_portrange(str(route_obj.sourceport))
+                    for oneport in portrange:
+                        ports.append(oneport)
                 if ports:
                     if len(ports) > settings.PORTRANGE_LIMIT:
                         # We do not allow more than PORTRANGE_LIMIT ports

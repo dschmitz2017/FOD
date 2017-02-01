@@ -211,14 +211,14 @@ def build_routes_json(groutes):
     for r in groutes.prefetch_related(
             'applier',
             'fragmenttype',
-            'port',
             'protocol',
-            'destinationport',
-            'sourceport',
             'dscp',
     ):
         rd = {}
         rd['id'] = r.pk
+        rd['port'] = r.port
+        rd['sourceport'] = r.sourceport
+        rd['destinationport'] = r.destinationport
         # name with link to rule details
         rd['name'] = r.name
         rd['details'] = '<a href="%s">%s</a>' % (r.get_absolute_url(), r.name)

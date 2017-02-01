@@ -29,6 +29,8 @@ Returns:
     list of str(int) or None on error
 """
 
+    if not s:
+        return []
     regexp = re.compile(r"^[1-9][0-9]*([-,][1-9][0-9]*)*$")
     r = re.match(regexp, s)
     if r:

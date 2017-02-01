@@ -139,10 +139,10 @@ class Route(models.Model):
     name = models.SlugField(max_length=128, verbose_name=_("Name"))
     applier = models.ForeignKey(User, blank=True, null=True)
     source = models.CharField(max_length=32, help_text=_("Network address. Use address/CIDR notation"), verbose_name=_("Source Address"))
-    sourceport = models.ManyToManyField(MatchPort, blank=True, null=True, related_name="matchSourcePort", verbose_name=_("Source Port"))
+    sourceport = models.CharField(max_length=50, blank=True, null=True, verbose_name=_("Source Port"))
     destination = models.CharField(max_length=32, help_text=_("Network address. Use address/CIDR notation"), verbose_name=_("Destination Address"))
-    destinationport = models.ManyToManyField(MatchPort, blank=True, null=True, related_name="matchDestinationPort", verbose_name=_("Destination Port"))
-    port = models.ManyToManyField(MatchPort, blank=True, null=True, related_name="matchPort", verbose_name=_("Port"))
+    destinationport = models.CharField(max_length=50, blank=True, null=True, verbose_name=_("Destination Port"))
+    port = models.CharField(max_length=50, blank=True, null=True, verbose_name=_("Port"))
     dscp = models.ManyToManyField(MatchDscp, blank=True, null=True, verbose_name="DSCP")
     fragmenttype = models.ManyToManyField(FragmentType, blank=True, null=True, verbose_name="Fragment Type")
     icmpcode = models.CharField(max_length=32, blank=True, null=True, verbose_name="ICMP Code")
@@ -561,20 +561,20 @@ class Route(models.Model):
             ret = "%s <dt>Src Addr</dt><dd>%s</dd>" %(ret, self.source)
         if self.tcpflag:
             ret = "%s <dt>TCP flag</dt><dd>%s</dd>" %(ret, self.tcpflag)
-        if self.port.all():
-            ret = ret + "<dt>Ports</dt><dd>%s</dd>" %(', '.join(["%s"%i for i in self.port.all()]))
+        if self.port:
+            ret = ret + "<dt>Ports</dt><dd>%s</dd>" %(self.port)
 #            for port in self.port.all():
 #                    ret = ret + "Port:<strong>%s</dd>" %(port)
         if self.protocol.all():
             ret = ret + "<dt>Protocols</dt><dd>%s</dd>" %(', '.join(["%s"%i for i in self.protocol.all()]))
 #            for protocol in self.protocol.all():
 #                    ret = ret + "Protocol:<strong>%s</dd>" %(protocol)
-        if self.destinationport.all():
-            ret = ret + "<dt>DstPorts</dt><dd>%s</dd>" %(', '.join(["%s"%i for i in self.destinationport.all()]))
+        if self.destinationport:
+            ret = ret + "<dt>DstPorts</dt><dd>%s</dd>" %(self.destinationport)
 #            for port in self.destinationport.all():
 #                    ret = ret + "Dst Port:<strong>%s</dd>" %(port)
-        if self.sourceport.all():
-            ret = ret + "<dt>SrcPorts</dt><dd>%s</dd>" %(', '.join(["%s"%i for i in self.sourceport.all()]))
+        if self.sourceport:
+            ret = ret + "<dt>SrcPorts</dt><dd>%s</dd>" %(self.sourceport)
 #            for port in self.sourceport.all():
 #                    ret = ret +"Src Port:<strong>%s</dd>" %(port)
         if self.dscp:

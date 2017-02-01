@@ -38,6 +38,7 @@ from django.conf import settings
 import datetime
 import re
 from django.core.mail import send_mail
+from utils.portrange import parse_portrange
 
 
 class UserProfileForm(forms.ModelForm):
@@ -246,9 +247,12 @@ def value_list_to_list(valuelist):
 
 def get_matchingport_route_pks(portlist, routes):
     route_pk_list = []
-    ports_value_list = value_list_to_list(portlist.values_list('port').order_by('port'))
+    ports_value_list = parse_portrange(portlist)
+    if not ports_value_list:
+        raise ValidationError(_('Invalid value in port range'))
+
     for route in routes:
-        rsp = value_list_to_list(route.destinationport.all().values_list('port').order_by('port'))
+        rsp = parse_portrange(route.destinationport)
         if rsp and rsp == ports_value_list:
             route_pk_list.append(route.pk)
     return route_pk_list
