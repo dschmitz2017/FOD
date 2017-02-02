@@ -40,6 +40,45 @@ import re
 from django.core.mail import send_mail
 from utils.portrange import parse_portrange
 
+class PortRangeForm(forms.CharField):
+    def clean(self, value):
+        """Validation of Port Range value.
+
+Supported format is the list of ports or port ranges separated by ','.
+A port range is a tuple of ports separated by '-'.
+
+Example: 80,1000-1100,8088
+This method validates input:
+* input must not be empty
+* all ports must be integer 0 >= p >= 65535
+* value is matched with regular expression: "^[1-9][0-9]*([-,][1-9][0-9]*)*$"
+* ports in a port range A-B must ordered: A < B
+"""
+        if value:
+            regexp = re.compile(r"^[1-9][0-9]*([-,][1-9][0-9]*)*$")
+            r = re.match(regexp, value)
+            if r:
+                res = []
+                pranges = value.split(",")
+                for prange in pranges:
+                    ports = prange.split("-")
+                    prev = -1
+                    for port in ports:
+                        p = int(port)
+                        if p < 0 or p > 65535:
+                            raise forms.ValidationError(_('Port should be < 65535 and >= 0'))
+                        if p <= prev:
+                            raise forms.ValidationError(_('First port must be < the second port in a port range (e.g. A < B for A-B).'))
+                        prev = p
+
+                ports = parse_portrange(value)
+                if len(ports) > settings.PORTRANGE_LIMIT:
+                    # We do not allow more than PORTRANGE_LIMIT ports
+                    raise forms.ValidationError(_('Maximal number of ports is {0}.').format(settings.PORTRANGE_LIMIT))
+            else:
+                raise forms.ValidationError(_('Malformed port range format, example: 80,1000-1100,6000-6010'))
+        return value
+
 
 class UserProfileForm(forms.ModelForm):
 
@@ -48,6 +87,9 @@ class UserProfileForm(forms.ModelForm):
 
 
 class RouteForm(forms.ModelForm):
+    sourceport = PortRangeForm()
+    destinationport = PortRangeForm()
+    port = PortRangeForm()
     class Meta:
         model = Route
 
@@ -107,7 +149,7 @@ class RouteForm(forms.ModelForm):
         protocols = self.cleaned_data.get('protocol', None)
         source = self.cleaned_data.get('source', None)
         sourceports = self.cleaned_data.get('sourceport', None)
-        ports = self.cleaned_data.get('port', None)
+        port = self.cleaned_data.get('port', None)
         destination = self.cleaned_data.get('destination', None)
         destinationports = self.cleaned_data.get('destinationport', None)
         user = self.cleaned_data.get('applier', None)
@@ -137,8 +179,8 @@ class RouteForm(forms.ModelForm):
                 existing_routes = existing_routes.filter(pk__in=route_pk_list)
         else:
             existing_routes = existing_routes.filter(destinationport=None)
-        if ports:
-            route_pk_list=get_matchingport_route_pks(ports, existing_routes)
+        if port:
+            route_pk_list=get_matchingport_route_pks(port, existing_routes)
             if route_pk_list:
                 existing_routes = existing_routes.filter(pk__in=route_pk_list)
         else:
@@ -177,47 +219,6 @@ class ThenPlainForm(forms.ModelForm):
             return self.cleaned_data["action"]
 
 
-class PortRangeForm(forms.ModelForm):
-    class Meta:
-        model = MatchPort
-
-    def clean_port(self):
-        """Validation of Port Range value.
-
-Supported format is the list of ports or port ranges separated by ','.
-A port range is a tuple of ports separated by '-'.
-
-Example: 80,1000-1100,8088
-This method validates input:
-* input must not be empty
-* all ports must be integer 0 >= p >= 65535
-* value is matched with regular expression: "^[1-9][0-9]*([-,][1-9][0-9]*)*$"
-* ports in a port range A-B must ordered: A < B
-"""
-        value = self.cleaned_data['port']
-        if value:
-            regexp = re.compile(r"^[1-9][0-9]*([-,][1-9][0-9]*)*$")
-            r = re.match(regexp, value)
-            if r:
-                res = []
-                pranges = value.split(",")
-                for prange in pranges:
-                    ports = prange.split("-")
-                    prev = -1
-                    for port in ports:
-                        p = int(port)
-                        if p < 0 or p > 65535:
-                            raise forms.ValidationError(_('Port should be < 65535 and >= 0'))
-                        if p <= prev:
-                            print(prev, p, len(ports))
-                            raise forms.ValidationError(_('First port must be < the second port in a port range (e.g. A < B for A-B).'))
-                        prev = p
-                return value
-            else:
-                raise forms.ValidationError(_('Malformed port range format, example: 80,1000-1100,6000-6010'))
-        else:
-            raise forms.ValidationError(_('Cannot be empty'))
-
 class PortPlainForm(forms.ModelForm):
 #    action = forms.CharField(initial='rate-limit')
     class Meta:
@@ -249,7 +250,7 @@ def get_matchingport_route_pks(portlist, routes):
     route_pk_list = []
     ports_value_list = parse_portrange(portlist)
     if not ports_value_list:
-        raise ValidationError(_('Invalid value in port range'))
+        return None
 
     for route in routes:
         rsp = parse_portrange(route.destinationport)

@@ -160,6 +160,8 @@ INSTALLED_APPS = (
     'accounts',
     'tinymce',
     'widget_tweaks',
+    'rest_framework',
+    'rest_framework.authtoken',
 )
 
 # A sample logging configuration. The only tangible logging

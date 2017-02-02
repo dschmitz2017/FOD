@@ -9,9 +9,9 @@ Match Statements:
 * Source Address: {{route.source}}
 * Destination Address: {{route.destination}}
 * Protocol: {% if route.protocol.all %}{% for protocol in route.protocol.all %}{{ protocol }}{% if not forloop.last %}, {% endif %}{% endfor %}{% else %}any{% endif %}
-* Ports: {% if route.sourceport.all or route.destinationport.all %}Defined by source/destination ports{% else %}{% if route.port.all %}{% for port in route.port.all %}{{ port }}{% if not forloop.last %}, {% endif %}{% endfor %}{% else %}any{% endif %}{% endif %}
-* Source Ports: {% if route.port.all %}same as ports{% else %}{% if route.sourceport.all %}{% for port in route.sourceport.all %}{{ port }}{% if not forloop.last %}, {% endif %}{% endfor %}{% else %}any{% endif %}{% endif %}
-* Destination Ports: {% if route.port.all %}same as ports{% else %}{% if route.destinationport.all %}{% for port in route.destinationport.all %}{{ port }}{% if not forloop.last %}, {% endif %}{% endfor %}{% else %}any{% endif %}{% endif %}
+* Ports: {% if route.sourceport or route.destinationport %}Defined by source/destination ports{% else %}{% if route.port %}{{ route.port }}{% else %}any{% endif %}{% endif %}
+* Source Ports: {% if route.port %}same as ports{% else %}{% if route.sourceport %}{{ route.sourceport }}{% else %}any{% endif %}{% endif %}
+* Destination Ports: {% if route.port %}same as ports{% else %}{% if route.destinationport %}{{ route.destinationport }}{% else %}any{% endif %}{% endif %}
 * Fragment Types: {% if route.fragmenttype.all %}{% for fragment in route.fragmenttype.all %}{{ fragment }}{% if not forloop.last %}, {% endif %}{% endfor %}{% else %}-{% endif %}
 
 
