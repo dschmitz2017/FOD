@@ -131,43 +131,21 @@ class Applier(object):
             try:
                 ports = []
                 if route_obj.port:
-                    portrange = parse_portrange(str(route_obj.port))
-                    for oneport in portrange:
-                        ports.append(oneport)
-                if ports:
-                    if len(ports) > settings.PORTRANGE_LIMIT:
-                        # We do not allow more than PORTRANGE_LIMIT ports
-                        return False
-                    else:
-                        route.match['port'] = ports
+                    portrange = str(route_obj.port)
+                    route.match['port'] = [portrange]
             except:
                 pass
             try:
                 ports = []
                 if route_obj.destinationport:
-                    portrange = parse_portrange(str(route_obj.destinationport))
-                    for oneport in portrange:
-                        ports.append(oneport)
-                if ports:
-                    if len(ports) > settings.PORTRANGE_LIMIT:
-                        # We do not allow more than PORTRANGE_LIMIT ports
-                        return False
-                    else:
-                        route.match['destination-port'] = ports
+                    portrange = str(route_obj.destinationport)
+                    route.match['destination-port'] = [portrange]
             except:
                 pass
             try:
-                ports = []
                 if route_obj.sourceport:
-                    portrange = parse_portrange(str(route_obj.sourceport))
-                    for oneport in portrange:
-                        ports.append(oneport)
-                if ports:
-                    if len(ports) > settings.PORTRANGE_LIMIT:
-                        # We do not allow more than PORTRANGE_LIMIT ports
-                        return False
-                    else:
-                        route.match['source-port'] = ports
+                    portrange = str(route_obj.sourceport)
+                    route.match['source-port'] = [portrange]
             except:
                 pass
             if route_obj.icmpcode:
@@ -199,6 +177,7 @@ class Applier(object):
                 logger.info("Requesting a replace operation")
                 route.operation = operation
             device = device.export(netconf_config=True)
+            logger.debug(ET.tostring(device))
             return ET.tostring(device)
         else:
             return False
