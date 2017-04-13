@@ -132,20 +132,23 @@ class Applier(object):
                 ports = []
                 if route_obj.port:
                     portrange = str(route_obj.port)
-                    route.match['port'] = [portrange]
+                    for port in portrange.split(","):
+                        route.match['port'].append(port)
             except:
                 pass
             try:
                 ports = []
                 if route_obj.destinationport:
                     portrange = str(route_obj.destinationport)
-                    route.match['destination-port'] = [portrange]
+                    for port in portrange.split(","):
+                        route.match['destination-port'].append(port)
             except:
                 pass
             try:
                 if route_obj.sourceport:
                     portrange = str(route_obj.sourceport)
-                    route.match['source-port'] = [portrange]
+                    for port in portrange.split(","):
+                        route.match['source-port'].append(port)
             except:
                 pass
             if route_obj.icmpcode:
