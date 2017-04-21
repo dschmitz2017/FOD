@@ -165,6 +165,9 @@ class RouteForm(forms.ModelForm):
                 existing_routes = existing_routes.filter(pk__in=route_pk_list)
             else:
                 existing_routes = existing_routes.filter(protocol=None)
+            if "icmp" in [str(i) for i in protocols] and (destinationports or sourceports or port):
+                raise forms.ValidationError(_('It is not allowed to specify ICMP protocol and source/destination ports at the same time.'))
+
         else:
             existing_routes = existing_routes.filter(protocol=None)
         if sourceports:
