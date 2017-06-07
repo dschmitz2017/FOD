@@ -3,8 +3,9 @@ flowspy/settings.py
 celerybeat-schedule
 *.log
 celery_var/
-urls.py
 *~
 celeryd@*
 doc_rst/
 static/rest_framework/
+
+*.swp
