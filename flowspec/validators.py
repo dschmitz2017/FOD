@@ -18,7 +18,7 @@ def get_network(ip):
 
 
 def clean_ip(address):
-    if address.is_private:
+    if False and address.is_private:
             return _('Private addresses not allowed')
 
     if address.version == 4 and int(address.prefixlen) == 32:
