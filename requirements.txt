@@ -28,3 +28,4 @@ PyYAML==3.10
 South==0.7.5
 wsgiref==0.1.2
 django-form-utils
+https://github.com/grnet/flowspy-graphs

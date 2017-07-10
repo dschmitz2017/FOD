@@ -101,10 +101,7 @@ STATICFILES_FINDERS = (
     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
 )
 
-# Templates
-TEMPLATE_DIRS = (
-    os.path.join(BASE_DIR, 'templates'),
-)
+## Templates
 
 TEMPLATE_LOADERS = (
     'django.template.loaders.filesystem.Loader',
