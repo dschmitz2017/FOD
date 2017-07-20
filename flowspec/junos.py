@@ -140,13 +140,18 @@ PROTOCOL_NUMBERS = {
     'ROHC': '142'
 }
 
-
 def get_protocols_numbers(protocols_set):
-    protocols = 'proto'
-    for protocol in protocols_set:
-        protocols += '=%s,' % PROTOCOL_NUMBERS.get(protocol.protocol.upper())
-    return protocols
-
+    if protocols_set:
+        protocols = 'proto'
+        for protocol in protocols_set:
+            protoNo = PROTOCOL_NUMBERS.get(protocol.protocol.upper())
+            if protoNo:
+                protocols += '=%s,' % PROTOCOL_NUMBERS.get(protocol.protocol.upper())
+            else:
+                protocols += '=%s,' % protocol.protocol
+        return protocols
+    else:
+        return ''
 
 def get_range(addr_range):
     if '/32' in addr_range:

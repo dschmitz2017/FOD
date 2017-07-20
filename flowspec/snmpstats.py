@@ -23,12 +23,12 @@ from pysnmp.entity.rfc3413.oneliner import cmdgen
 from django.conf import settings
 
 
-def getSNMPData(ip, comm, obj):
+def getSNMPData(ip, port, comm, obj):
     cmdGen = cmdgen.CommandGenerator()
     cmd = cmdGen.bulkCmd
     errorIndication, errorStatus, errorIndex, varBindTable = cmd(
         cmdgen.CommunityData(comm),
-        cmdgen.UdpTransportTarget((ip, 161)), 1, 10,
+        cmdgen.UdpTransportTarget((ip, port)), 1, 10,
         obj
     )
     if errorIndication:
@@ -61,7 +61,24 @@ def get_snmp_stats():
 
     for ip in settings.SNMP_IP:
         # get values of counters using SNMP
-        data = getSNMPData(ip, settings.SNMP_COMMUNITY, settings.SNMP_CNTPACKETS)
+        if isinstance(ip, dict):
+            if "port" in ip:
+                port = ip["port"]
+            else:
+                port = 161
+
+            if "community" in ip:
+                community = ip["community"]
+            else:
+                community = settings.SNMP_COMMUNITY
+            ip = ip["ip"]
+        elif isinstance(ip, str):
+            port = 161
+            community = settings.SNMP_COMMUNITY
+        else:
+            raise Exception("Bad configuration of SNMP, SNMP_IP should be a list of dict or a list of str.")
+
+        data = getSNMPData(ip, port, community, settings.SNMP_CNTPACKETS)
         for name, val in data:
             # each oid contains encoded identifier of table and route
             ident = str(name)[identoffset:]

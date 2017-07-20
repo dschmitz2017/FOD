@@ -821,21 +821,15 @@ def routestats(request, route_slug):
     route = get_object_or_404(Route, name=route_slug)
     import junos
     import time
-    import os
-    from flowspec import snmpstats
     res = {}
-    now = time.time()
-    if not os.path.isfile(settings.SNMP_TEMP_FILE) or (now - os.stat(settings.SNMP_TEMP_FILE).st_mtime) >= settings.SNMP_POLL_INTERVAL:
-        res = snmpstats.get_snmp_stats()
-        tf = settings.SNMP_TEMP_FILE + "." + str(now)
-        with open(tf, "w") as f:
-            json.dump(res, f)
-        f.close()
-        os.rename(tf, settings.SNMP_TEMP_FILE)
-    else:
-        with open(settings.SNMP_TEMP_FILE, "r") as f:
-            res = json.load(f)
-        f.close()
+	with open(settings.SNMP_TEMP_FILE, "r") as f:
+		res = json.load(f)
+	f.close()
     routename = create_junos_name(route)
-    return HttpResponse(json.dumps({"name": routename, "value": res[routename]}), mimetype="application/json")
+	if not res:
+        return HttpResponse(json.dumps({"error": "No data available."}), mimetype="application/json", status=404)
+    elif routename in res:
+        return HttpResponse(json.dumps({"name": routename, "value": res[routename]}), mimetype="application/json")
+    else:
+        return HttpResponse(json.dumps({"error": "Route '{}' was not found in statistics.".format(routename)}), mimetype="application/json", status=404)
 

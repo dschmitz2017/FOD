@@ -258,6 +258,11 @@ CELERYBEAT_SCHEDULE = {
         "schedule": crontab(minute=01, hour=02),
         "args": (),
     },
+    "snmp-stats-poll": {
+        "task": "flowspec.tasks.poll_snmp_statistics",
+        "schedule": crontab(minute="*/5"),
+        "args": (),
+    },
 }
 
 # List of modules to import when celery starts.
@@ -345,10 +350,21 @@ REST_FRAMEWORK = {
 PORTRANGE_LIMIT = 100
 
 # Statistics polled via SNMP:
-# community string
+# Default community string
 SNMP_COMMUNITY = "abcd"
-# list of IP addresses
-SNMP_IP = ["10.0.0.1", "10.0.0.2"]
+
+# list of IP addresses, each IP is a dict with "ip", "port" (optional, default
+# is 161), "community" (optional, default is SNMP_COMMUNITY) keys
+SNMP_IP = [
+    {"ip": "192.168.0.1", "port": 1000},
+    {"ip": "192.168.0.2", "port": 1001, "community": "abcdef"},
+    {"ip": "192.168.0.3", "port": 1002},
+    {"ip": "192.168.0.4", "port": 1002}
+]
+
+# or simpler way of IP list:
+# SNMP_IP = ["10.0.0.1", "10.0.0.2"]
+
 # OID of bytes counter (currently unused)
 SNMP_CNTBYTES =     "1.3.6.1.4.1.2636.3.5.2.1.5"
 # OID of packet counter

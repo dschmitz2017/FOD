@@ -242,3 +242,19 @@ def notify_expired():
                     logger.info("Exception: %s"%e)
                     pass
     logger.info('Expiration notification process finished')
+
+@task(ignore_result=True)
+def poll_snmp_statistics():
+	import json
+	import os
+    from flowspec import snmpstats
+	logging.info("Polling SNMP statistics.")
+    res = {}
+    now = time.time()
+    res = snmpstats.get_snmp_stats()
+	tf = settings.SNMP_TEMP_FILE + "." + str(now)
+	with open(tf, "w") as f:
+		json.dump(res, f)
+	f.close()
+	os.rename(tf, settings.SNMP_TEMP_FILE)
+
