@@ -245,16 +245,44 @@ def notify_expired():
 
 @task(ignore_result=True)
 def poll_snmp_statistics():
-	import json
-	import os
+    import json
+    import os
+    from datetime import datetime
     from flowspec import snmpstats
-	logging.info("Polling SNMP statistics.")
-    res = {}
-    now = time.time()
-    res = snmpstats.get_snmp_stats()
-	tf = settings.SNMP_TEMP_FILE + "." + str(now)
-	with open(tf, "w") as f:
-		json.dump(res, f)
-	f.close()
-	os.rename(tf, settings.SNMP_TEMP_FILE)
+    logging.info("Polling SNMP statistics.")
+
+    # load history
+    history = {}
+    with open(settings.SNMP_TEMP_FILE, "r") as f:
+        history = json.load(f)
+
+    # get new data
+    now = datetime.now()
+    nowstr = now.isoformat()
+    newdata = snmpstats.get_snmp_stats()
+    
+    # update history
+    samplecount = settings.SNMP_MAX_SAMPLECOUNT
+    for rule in newdata:
+        counter = {"ts": nowstr, "value": newdata[rule]}
+        if rule in history:
+            history[rule].insert(0, counter)
+            history[rule] = history[rule][:samplecount]
+        else:
+            history[rule] = [counter]
+
+    # check for old rules and remove them
+    toremove = []
+    for rule in history:
+        ts = datetime.strptime(history[rule][0]["ts"], '%Y-%m-%dT%H:%M:%S.%f')
+        if (new - ts).total_seconds() >= settings.SNMP_REMOVE_RULES_AFTER:
+            toremove.append(rule)
+    for rule in toremove:
+        history.pop(rule, None)
+
+    # store updated history
+    tf = settings.SNMP_TEMP_FILE + "." + nowstr
+    with open(tf, "w") as f:
+        json.dump(history, f)
+    os.rename(tf, settings.SNMP_TEMP_FILE)
 

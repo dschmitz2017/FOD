@@ -822,14 +822,14 @@ def routestats(request, route_slug):
     import junos
     import time
     res = {}
-	with open(settings.SNMP_TEMP_FILE, "r") as f:
-		res = json.load(f)
-	f.close()
+    with open(settings.SNMP_TEMP_FILE, "r") as f:
+        res = json.load(f)
+    f.close()
     routename = create_junos_name(route)
-	if not res:
+    if not res:
         return HttpResponse(json.dumps({"error": "No data available."}), mimetype="application/json", status=404)
     elif routename in res:
-        return HttpResponse(json.dumps({"name": routename, "value": res[routename]}), mimetype="application/json")
+        return HttpResponse(json.dumps({"name": routename, "data": res[routename]}), mimetype="application/json")
     else:
         return HttpResponse(json.dumps({"error": "Route '{}' was not found in statistics.".format(routename)}), mimetype="application/json", status=404)
 

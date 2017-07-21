@@ -377,6 +377,16 @@ SNMP_POLL_INTERVAL = 8 #seconds
 # cache file for data
 SNMP_TEMP_FILE = "/tmp/snmp_temp_data"
 
+# Number of historical values to store for a route.
+# Polling interval must be set for "snmp-stats-poll" celery task in CELERYBEAT_SCHEDULE.
+# By default, it is 5 min interval, so SNMP_MAX_SAMPLECOUNT=12 means we have about
+# one hour history.
+SNMP_MAX_SAMPLECOUNT = 12
+
+# Age of inactive routes that can be already removed (in seconds)
+SNMP_REMOVE_RULES_AFTER = 3600
+
+
 SENTRY = {
     'activate': False,
     'sentry_dsn': ''
