@@ -253,8 +253,12 @@ def poll_snmp_statistics():
 
     # load history
     history = {}
-    with open(settings.SNMP_TEMP_FILE, "r") as f:
-        history = json.load(f)
+    try:
+        with open(settings.SNMP_TEMP_FILE, "r") as f:
+            history = json.load(f)
+    except:
+        logging.info("There is no file with SNMP historical data.")
+        pass
 
     # get new data
     now = datetime.now()
@@ -275,7 +279,7 @@ def poll_snmp_statistics():
     toremove = []
     for rule in history:
         ts = datetime.strptime(history[rule][0]["ts"], '%Y-%m-%dT%H:%M:%S.%f')
-        if (new - ts).total_seconds() >= settings.SNMP_REMOVE_RULES_AFTER:
+        if (now - ts).total_seconds() >= settings.SNMP_REMOVE_RULES_AFTER:
             toremove.append(rule)
     for rule in toremove:
         history.pop(rule, None)
