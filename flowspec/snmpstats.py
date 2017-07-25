@@ -17,48 +17,74 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from pysnmp.hlapi import *
-import json
-from pysnmp.entity.rfc3413.oneliner import cmdgen
+from pysnmp.hlapi.asyncore import *
 from django.conf import settings
+import json
 
 
-def getSNMPData(ip, port, comm, obj):
-    cmdGen = cmdgen.CommandGenerator()
-    cmd = cmdGen.bulkCmd
-    errorIndication, errorStatus, errorIndex, varBindTable = cmd(
-        cmdgen.CommunityData(comm),
-        cmdgen.UdpTransportTarget((ip, port)), 1, 10,
-        obj
-    )
+# Wait for responses or errors, submit GETNEXT requests for further OIDs
+# noinspection PyUnusedLocal,PyUnusedLocal
+def snmpCallback(snmpEngine, sendRequestHandle, errorIndication,
+          errorStatus, errorIndex, varBindTable, cbCtx):
+    (authData, transportTarget, results) = cbCtx
+
+    # debug - which router replies:
+    #print('%s via %s' % (authData, transportTarget))
+
+    # CNTPACKETS and CNTBYTES are of the same length
+    identoffset = len(settings.SNMP_CNTPACKETS) + 1
     if errorIndication:
-        print("error", str(errorIndication))
-    else:
-        if errorStatus:
-            print('%s at %s' % (
-                errorStatus.prettyPrint(),
-                errorIndex and varBindTable[-1][int(errorIndex)-1] or '?'
-                )
-            )
-        else:
-            vars = []
-            for varBindTableRow in varBindTable:
-                for name, val in varBindTableRow:
-                    vars.append((name, val))
-            return vars
-    return []
+        return 0
+    elif errorStatus:
+        return 0
+    for varBindRow in varBindTable:
+        for name, val in varBindRow:
+            name = str(name)
+            if name.startswith(settings.SNMP_CNTPACKETS):
+                counter = "packets"
+            elif name.startswith(settings.SNMP_CNTBYTES):
+                counter = "bytes"
+            else:
+                return 0
+
+            ident = name[identoffset:]
+            ordvals = [int(i) for i in ident.split(".")]
+            # the first byte is length of table name string
+            len1 = ordvals[0] + 1
+            tablename = "".join([chr(i) for i in ordvals[1:len1]])
+            if tablename in settings.SNMP_RULESFILTER:
+                # if the current route belongs to specified table from SNMP_RULESFILTER list,
+                # take the route identifier
+                len2 = ordvals[len1] + 1
+                routename = "".join([chr(i) for i in ordvals[len1 + 1:len1 + len2]])
+
+                # add value into dict
+                if routename in results:
+                    if counter in results[routename]:
+                        results[routename][counter] = results[routename][counter] + int(val)
+                    else:
+                        results[routename][counter] = int(val)
+                else:
+                    results[routename] = {counter: int(val)}
+
+    return 1  # continue table retrieval
+
 
 def get_snmp_stats():
-    """Return dict() of the sum of counters per each selected routes, where
+    """Return dict() of the sum of counters (bytes, packets) from all selected routes, where
     route identifier is the key in dict.  The sum is counted over all routers.
+
+    Example output with one rule: {'77.72.72.1,0/0,proto=1': {'bytes': 13892216, 'packets': 165387}}
 
     This function uses SNMP_IP list, SNMP_COMMUNITY, SNMP_CNTPACKETS and
     SNMP_RULESFILTER list, all defined in settings."""
-    results = {}
-    identoffset = len(settings.SNMP_CNTPACKETS) + 1
+
     if not isinstance(settings.SNMP_IP, list):
         settings.SNMP_IP = [settings.SNMP_IP]
 
+    results = {}
+    targets = []
+    # prepare cmdlist
     for ip in settings.SNMP_IP:
         # get values of counters using SNMP
         if isinstance(ip, dict):
@@ -78,24 +104,18 @@ def get_snmp_stats():
         else:
             raise Exception("Bad configuration of SNMP, SNMP_IP should be a list of dict or a list of str.")
 
-        data = getSNMPData(ip, port, community, settings.SNMP_CNTPACKETS)
-        for name, val in data:
-            # each oid contains encoded identifier of table and route
-            ident = str(name)[identoffset:]
-            ordvals = [int(i) for i in ident.split(".")]
-            # the first byte is length of table name string
-            len1 = ordvals[0] + 1
-            tablename = "".join([chr(i) for i in ordvals[1:len1]])
-            if tablename in settings.SNMP_RULESFILTER:
-                # if the current route belongs to specified table from SNMP_RULESFILTER list,
-                # take the route identifier
-                len2 = ordvals[len1] + 1
-                routename = "".join([chr(i) for i in ordvals[len1 + 1:len1 + len2]])
+        targets.append((CommunityData(community), UdpTransportTarget((ip, port), timeout=15, retries=1),
+                        (ObjectType(ObjectIdentity(settings.SNMP_CNTPACKETS)),
+                         ObjectType(ObjectIdentity(settings.SNMP_CNTBYTES)))))
 
-                # add value into dict
-                if routename in results:
-                    results[routename] = results[routename] + int(val)
-                else:
-                    results[routename] = int(val)
+        snmpEngine = SnmpEngine()
+
+        # Submit initial GETNEXT requests and wait for responses
+        for authData, transportTarget, varBinds in targets:
+            nextCmd(snmpEngine, authData, transportTarget, ContextData(),
+                    *varBinds, **dict(cbFun=snmpCallback, cbCtx=(authData, transportTarget, results)))
+
+        snmpEngine.transportDispatcher.runDispatcher()
+
     return results
 
