@@ -17,10 +17,15 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import logging
 from pysnmp.hlapi.asyncore import *
 from django.conf import settings
+from datetime import datetime
 import json
+import os
 
+logger = logging.getLogger(__name__)
+identoffset = len(settings.SNMP_CNTPACKETS) + 1
 
 # Wait for responses or errors, submit GETNEXT requests for further OIDs
 # noinspection PyUnusedLocal,PyUnusedLocal
@@ -32,10 +37,11 @@ def snmpCallback(snmpEngine, sendRequestHandle, errorIndication,
     #print('%s via %s' % (authData, transportTarget))
 
     # CNTPACKETS and CNTBYTES are of the same length
-    identoffset = len(settings.SNMP_CNTPACKETS) + 1
     if errorIndication:
+        logger.error('Bad errorIndication.')
         return 0
     elif errorStatus:
+        logger.error('Bad errorStatus.')
         return 0
     for varBindRow in varBindTable:
         for name, val in varBindRow:
@@ -45,6 +51,7 @@ def snmpCallback(snmpEngine, sendRequestHandle, errorIndication,
             elif name.startswith(settings.SNMP_CNTBYTES):
                 counter = "bytes"
             else:
+                logger.info('Finished {}.'.format(transportTarget))
                 return 0
 
             ident = name[identoffset:]
@@ -66,6 +73,7 @@ def snmpCallback(snmpEngine, sendRequestHandle, errorIndication,
                         results[routename][counter] = int(val)
                 else:
                     results[routename] = {counter: int(val)}
+                logger.debug("%s %s %s %s = %s" %(transportTarget, counter, tablename, routename, int(val)))
 
     return 1  # continue table retrieval
 
@@ -106,16 +114,64 @@ def get_snmp_stats():
 
         targets.append((CommunityData(community), UdpTransportTarget((ip, port), timeout=15, retries=1),
                         (ObjectType(ObjectIdentity(settings.SNMP_CNTPACKETS)),
-                         ObjectType(ObjectIdentity(settings.SNMP_CNTBYTES)))))
+                         #ObjectType(ObjectIdentity(settings.SNMP_CNTBYTES))
+                         )))
 
-        snmpEngine = SnmpEngine()
+    snmpEngine = SnmpEngine()
 
-        # Submit initial GETNEXT requests and wait for responses
-        for authData, transportTarget, varBinds in targets:
-            nextCmd(snmpEngine, authData, transportTarget, ContextData(),
-                    *varBinds, **dict(cbFun=snmpCallback, cbCtx=(authData, transportTarget, results)))
+    # Submit initial GETNEXT requests and wait for responses
+    for authData, transportTarget, varBinds in targets:
+        bulkCmd(snmpEngine, authData, transportTarget, ContextData(), 0, 50,
+                *varBinds, **dict(cbFun=snmpCallback, cbCtx=(authData, transportTarget.transportAddr, results)))
 
-        snmpEngine.transportDispatcher.runDispatcher()
+    snmpEngine.transportDispatcher.runDispatcher()
 
     return results
+
+def poll_snmp_statistics():
+    logger.info("Polling SNMP statistics.")
+
+    # load history
+    history = {}
+    try:
+        with open(settings.SNMP_TEMP_FILE, "r") as f:
+            history = json.load(f)
+    except:
+        logger.info("There is no file with SNMP historical data.")
+        pass
+
+    # get new data
+    now = datetime.now()
+    nowstr = now.isoformat()
+    try:
+        newdata = get_snmp_stats()
+
+        # update history
+        samplecount = settings.SNMP_MAX_SAMPLECOUNT
+        for rule in newdata:
+            counter = {"ts": nowstr, "value": newdata[rule]}
+            if rule in history:
+                history[rule].insert(0, counter)
+                history[rule] = history[rule][:samplecount]
+            else:
+                history[rule] = [counter]
+
+        # check for old rules and remove them
+        toremove = []
+        for rule in history:
+            ts = datetime.strptime(history[rule][0]["ts"], '%Y-%m-%dT%H:%M:%S.%f')
+            if (now - ts).total_seconds() >= settings.SNMP_REMOVE_RULES_AFTER:
+                toremove.append(rule)
+        for rule in toremove:
+            history.pop(rule, None)
+
+        # store updated history
+        tf = settings.SNMP_TEMP_FILE + "." + nowstr
+        with open(tf, "w") as f:
+            json.dump(history, f)
+        os.rename(tf, settings.SNMP_TEMP_FILE)
+        logger.info("Polling finished.")
+    except Exception as e:
+        logger.error(e)
+        logger.error("Polling failed.")
 
