@@ -24,14 +24,14 @@ MANAGERS = ADMINS
 ALLOWED_HOSTS = ['*']
 SITE_ID = 1
 
-SECRET_KEY = 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
+SECRET_KEY = '@@5234#$%345345^@#$%*()123^@12!&!()$JMNDF#$@(@#8FRNJWX_'
 
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql', # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
         'NAME': 'fod',                      # Or path to database file if using sqlite3.
         'USER': 'fod',                      # Not used with sqlite3.
-        'PASSWORD':  'XXXXXXXXXXXXXXXX',                  # Not used with sqlite3.
+        'PASSWORD':  'asdfghjkl',                  # Not used with sqlite3.
         'HOST': '',                      # Set to empty string for localhost. Not used with sqlite3.
         'PORT': '',                      # Set to empty string for default. Not used with sqlite3.
     }
@@ -65,10 +65,10 @@ WSGI_APPLICATION = 'flowspy.wsgi.application'
 # The following variables should contain the address of the device with
 # flowspec, the username and password of the appliers account and the netconf
 # port.
-NETCONF_DEVICE = "10.10.10.10"
+NETCONF_DEVICE = "172.16.113.10"
 
 NETCONF_USER = "fod"
-NETCONF_PASS = "XXXXXXXXXXXXXXXXXXXXX"
+NETCONF_PASS = "1v5CkNzfdEUG0mLTfbLABRfW5yiJTRTD"
 NETCONF_PORT = 22
 
 # Notifications
@@ -119,8 +119,8 @@ BRANDING = {
 # Limit of ports in 'ports' / 'SrcPorts' / 'DstPorts' of a rule:
 PORTRANGE_LIMIT = 100
 
-SNMP_COMMUNITY = "XXXXXXXXXXXXXXXXXXXXX"
-SNMP_IP = [#"172.16.113.10",
+SNMP_COMMUNITY = "0pBiFbD"
+SNMP_IP = ["172.16.113.10",
             #"172.16.113.12",
             "172.16.113.14",
             "172.16.113.16"]
@@ -135,6 +135,17 @@ SNMP_RULESFILTER = ["__flowspec_default_inet__", "__flowspec_IAS_inet__"]
 SNMP_POLL_INTERVAL = 8 #seconds
 # cache file for data
 SNMP_TEMP_FILE = "/tmp/snmp_temp_data"
+
+# Number of historical values to store for a route.
+# Polling interval must be set for "snmp-stats-poll" celery task in CELERYBEAT_SCHEDULE.
+# By default, it is 5 min interval, so SNMP_MAX_SAMPLECOUNT=12 means we have about
+# one hour history.
+SNMP_MAX_SAMPLECOUNT = 12
+
+# Age of inactive routes that can be already removed (in seconds)
+SNMP_REMOVE_RULES_AFTER = 3600
+
+
 
 ##############################################################################
 ##############################################################################
