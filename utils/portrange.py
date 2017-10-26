@@ -31,7 +31,7 @@ Returns:
 
     if not s:
         return []
-    regexp = re.compile(r"^[1-9][0-9]*([-,][1-9][0-9]*)*$")
+    regexp = re.compile(r"^[0-9]+([-,][0-9]+)*$")
     r = re.match(regexp, s)
     if r:
         res = []
@@ -48,7 +48,7 @@ Returns:
 
 if __name__ == "__main__":
     for i in ["1", "10-200", "1,10-20,150-200",
-        "1,10-200,5080"]:
+        "1,10-200,5080", "389,0"]:
         print(i, parse_portrange(i))
     for i in ["i", "1,1o-s00,5080", "011-123-", "-123", "10-"]:
         print(i, parse_portrange(i))
