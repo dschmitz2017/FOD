@@ -244,7 +244,7 @@ def notify_expired():
     logger.info('Expiration notification process finished')
 
 #@task(ignore_result=True, time_limit=580, soft_time_limit=550)
-@task(ignore_result=True)
+@task(ignore_result=True, max_retries=0)
 def poll_snmp_statistics():
     from flowspec import snmpstats
 
