@@ -567,7 +567,7 @@ def user_login(request):
                 login(request, user)
                 return HttpResponseRedirect(reverse("dashboard"))
             else:
-                error = _("User account <strong>%s</strong> is pending activation. Administrators have been notified and will activate this account within the next days. <br>If this account has remained inactive for a long time contact your technical coordinator or GRNET Helpdesk") %user.username
+                error = _("User account <strong>%s</strong> is pending activation. Administrators have been notified and will activate this account within the next days. <br>If this account has remained inactive for a long time contact your technical coordinator or GEANT Helpdesk") %user.username
                 return render(
                     request,
                     'error.html',
@@ -747,7 +747,7 @@ def selectinst(request):
         if form.is_valid():
             userprofile = form.save()
             user_activation_notify(userprofile.user)
-            error = _("User account <strong>%s</strong> is pending activation. Administrators have been notified and will activate this account within the next days. <br>If this account has remained inactive for a long time contact your technical coordinator or GRNET Helpdesk") %userprofile.user.username
+            error = _("User account <strong>%s</strong> is pending activation. Administrators have been notified and will activate this account within the next days. <br>If this account has remained inactive for a long time contact your technical coordinator or GEANT Helpdesk") %userprofile.user.username
             return render(
                 request,
                 'error.html',
