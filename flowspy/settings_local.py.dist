@@ -30,14 +30,14 @@ MANAGERS = ADMINS
 ALLOWED_HOSTS = ['*']
 SITE_ID = 1
 
-SECRET_KEY = '@@5234#$%345345^@#$%*()123^@12!&!()$JMNDF#$@(@#8FRNJWX_'
+SECRET_KEY = 'XXXXXX'
 
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql', # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
         'NAME': 'fod',                      # Or path to database file if using sqlite3.
         'USER': 'fod',                      # Not used with sqlite3.
-        'PASSWORD':  'asdfghjkl',                  # Not used with sqlite3.
+        'PASSWORD':  'XXXXXXX',                  # Not used with sqlite3.
         'HOST': '',                      # Set to empty string for localhost. Not used with sqlite3.
         'PORT': '',                      # Set to empty string for default. Not used with sqlite3.
     }
@@ -74,7 +74,7 @@ WSGI_APPLICATION = 'flowspy.wsgi.application'
 NETCONF_DEVICE = "172.16.113.10"
 
 NETCONF_USER = "fod"
-NETCONF_PASS = "1v5CkNzfdEUG0mLTfbLABRfW5yiJTRTD"
+NETCONF_PASS = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 NETCONF_PORT = 22
 
 # Notifications
@@ -100,7 +100,8 @@ ACCOUNT_ACTIVATION_DAYS = 7
 # Define subnets that should not have any rules applied whatsoever
 #PROTECTED_SUBNETS = ['10.10.0.0/16']
 PROTECTED_SUBNETS = []
-MAX_RULE_EXPIRE_DAYS = 10
+#MAX_RULE_EXPIRE_DAYS = 10
+MAX_RULE_EXPIRE_DAYS = 30
 
 # Add two whois servers in order to be able to get all the subnets for an AS.
 PRIMARY_WHOIS = 'whois.ripe.net'
@@ -123,14 +124,14 @@ BRANDING = {
 }
 
 # Limit of ports in 'ports' / 'SrcPorts' / 'DstPorts' of a rule:
-PORTRANGE_LIMIT = 100
+#PORTRANGE_LIMIT = 100
+PORTRANGE_LIMIT = 65535
 
-SNMP_COMMUNITY = "0pBiFbD"
-SNMP_IP = [#"172.16.113.10",
+SNMP_COMMUNITY = "XXXXXXXXXXXXXX"
+SNMP_IP = ["172.16.113.10",
             #"172.16.113.12",
-            #"172.16.113.14",
-            #"172.16.113.16",
-            "62.40.96.11"]
+            "172.16.113.14",
+            "172.16.113.16"]
 
 # currently unused
 SNMP_CNTBYTES =     "1.3.6.1.4.1.2636.3.5.2.1.5"
@@ -142,7 +143,6 @@ SNMP_RULESFILTER = ["__flowspec_default_inet__", "__flowspec_IAS_inet__"]
 SNMP_POLL_INTERVAL = 8 #seconds
 # cache file for data
 SNMP_TEMP_FILE = "/tmp/snmp_temp_data"
-SNMP_POLL_LOCK = "/var/run/fod/snmppoll.lock"
 
 # Number of historical values to store for a route.
 # Polling interval must be set for "snmp-stats-poll" celery task in CELERYBEAT_SCHEDULE.
