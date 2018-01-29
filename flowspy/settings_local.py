@@ -100,7 +100,8 @@ ACCOUNT_ACTIVATION_DAYS = 7
 # Define subnets that should not have any rules applied whatsoever
 #PROTECTED_SUBNETS = ['10.10.0.0/16']
 PROTECTED_SUBNETS = []
-MAX_RULE_EXPIRE_DAYS = 10
+#MAX_RULE_EXPIRE_DAYS = 10
+MAX_RULE_EXPIRE_DAYS = 30
 
 # Add two whois servers in order to be able to get all the subnets for an AS.
 PRIMARY_WHOIS = 'whois.ripe.net'
@@ -123,7 +124,8 @@ BRANDING = {
 }
 
 # Limit of ports in 'ports' / 'SrcPorts' / 'DstPorts' of a rule:
-PORTRANGE_LIMIT = 100
+#PORTRANGE_LIMIT = 100
+PORTRANGE_LIMIT = 65535
 
 SNMP_COMMUNITY = "0pBiFbD"
 SNMP_IP = [#"172.16.113.10",
@@ -148,10 +150,12 @@ SNMP_POLL_LOCK = "/var/run/fod/snmppoll.lock"
 # Polling interval must be set for "snmp-stats-poll" celery task in CELERYBEAT_SCHEDULE.
 # By default, it is 5 min interval, so SNMP_MAX_SAMPLECOUNT=12 means we have about
 # one hour history.
-SNMP_MAX_SAMPLECOUNT = 12
+#SNMP_MAX_SAMPLECOUNT = 12
+SNMP_MAX_SAMPLECOUNT = 2016
 
 # Age of inactive routes that can be already removed (in seconds)
-SNMP_REMOVE_RULES_AFTER = 3600
+#SNMP_REMOVE_RULES_AFTER = 3600
+SNMP_REMOVE_RULES_AFTER = 604800
 
 
 
