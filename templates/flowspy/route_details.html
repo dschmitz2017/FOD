@@ -78,6 +78,7 @@
             <h3>Number of bytes (relative)</h3>
             <div><canvas id="traffic-plot-bytes-rel" width=200 height=200></canvas></div>
         </div>
+        <div><a href="{% url routestats route.name %}">Download raw data in JSON</a></div>
     </div>
     {% comment %}check if graphs plugin in installed apps{% endcomment %}
     {% if 'graphs' in INSTALLED_APPS %}
@@ -251,8 +252,12 @@ function plotGraph(data)
 $(document).ready(function() {
    var statsurl = "{% url routestats route.name %}";
    $.get(statsurl).done(function(data) {
-      $("#traffic-plot-loading").hide();
-      plotGraph(data);
+      if (data["error"]) {
+          $("#traffic-plot-loading").text("No data, try later");
+      } else {
+          $("#traffic-plot-loading").hide();
+          plotGraph(data);
+      }
    });
 });
 </script> 
