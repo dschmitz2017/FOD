@@ -58,4 +58,5 @@ urlpatterns = patterns(
     url(r'^overview/?$', 'flowspec.views.overview', name="overview"),
     url(r'^api/', include(router.urls)),
     url(r'^details/(?P<route_slug>[\w\-]+)/$', 'flowspec.views.routedetails', name="route-details"),
+    url(r'^routestats/(?P<route_slug>[\w\-]+)/$', 'flowspec.views.routestats', name="routestats"),
 )

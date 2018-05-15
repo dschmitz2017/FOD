@@ -127,10 +127,7 @@ def dashboard(request):
                 'applier',
                 'applier',
                 'fragmenttype',
-                'port',
                 'protocol',
-                'destinationport',
-                'sourceport',
                 'dscp',
             ),
             'message': message
@@ -280,8 +277,10 @@ def add_route(request):
         if not request.user.is_superuser:
             form.fields['then'] = forms.ModelMultipleChoiceField(queryset=ThenAction.objects.filter(action__in=settings.UI_USER_THEN_ACTIONS).order_by('action'), required=True)
             form.fields['protocol'] = forms.ModelMultipleChoiceField(queryset=MatchProtocol.objects.filter(protocol__in=settings.UI_USER_PROTOCOLS).order_by('protocol'), required=False)
-        return render_to_response('apply.html', {'form': form, 'applier': applier},
-                                  context_instance=RequestContext(request))
+        return render_to_response('apply.html', {'form': form,
+            'applier': applier,
+            'maxexpires': settings.MAX_RULE_EXPIRE_DAYS },
+            context_instance=RequestContext(request))
 
     else:
         request_data = request.POST.copy()
@@ -322,8 +321,8 @@ def add_route(request):
                 'apply.html',
                 {
                     'form': form,
-                    'applier': applier
-
+                    'applier': applier,
+                    'maxexpires': settings.MAX_RULE_EXPIRE_DAYS
                 }
             )
 
@@ -404,7 +403,8 @@ def edit_route(request, route_slug):
                 {
                     'form': form,
                     'edit': True,
-                    'applier': applier
+                    'applier': applier,
+                    'maxexpires': settings.MAX_RULE_EXPIRE_DAYS
                 },
                 context_instance=RequestContext(request)
             )
@@ -428,7 +428,8 @@ def edit_route(request, route_slug):
             {
                 'form': form,
                 'edit': True,
-                'applier': applier
+                'applier': applier,
+                'maxexpires': settings.MAX_RULE_EXPIRE_DAYS
             },
             context_instance=RequestContext(request)
         )
@@ -821,3 +822,25 @@ def lookupShibAttr(attrmap, requestMeta):
 def routedetails(request, route_slug):
     route = get_object_or_404(Route, name=route_slug)
     return render(request, 'flowspy/route_details.html', {'route': route})
+
+@login_required
+def routestats(request, route_slug):
+    route = get_object_or_404(Route, name=route_slug)
+    import junos
+    import time
+    res = {}
+    try:
+        with open(settings.SNMP_TEMP_FILE, "r") as f:
+            res = json.load(f)
+        f.close()
+        routename = create_junos_name(route)
+        if not res:
+            raise Exception("No data stored in the existing file.")
+        elif routename in res:
+            return HttpResponse(json.dumps({"name": routename, "data": res[routename]}), mimetype="application/json")
+        else:
+            return HttpResponse(json.dumps({"error": "Route '{}' was not found in statistics.".format(routename)}), mimetype="application/json", status=404)
+    except Exception as e:
+        logger.error('routestats failed: %s' % e)
+        return HttpResponse(json.dumps({"error": "No data available."}), mimetype="application/json", status=404)
+

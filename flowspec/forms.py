@@ -51,11 +51,11 @@ Example: 80,1000-1100,8088
 This method validates input:
 * input must not be empty
 * all ports must be integer 0 >= p >= 65535
-* value is matched with regular expression: "^[1-9][0-9]*([-,][1-9][0-9]*)*$"
+* value is matched with regular expression: "^[0-9]+([-,][0-9]+)*$"
 * ports in a port range A-B must ordered: A < B
 """
         if value:
-            regexp = re.compile(r"^[1-9][0-9]*([-,][1-9][0-9]*)*$")
+            regexp = re.compile(r"^[0-9]+([-,][0-9]+)*$")
             r = re.match(regexp, value)
             if r:
                 res = []

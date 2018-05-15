@@ -242,3 +242,19 @@ def notify_expired():
                     logger.info("Exception: %s"%e)
                     pass
     logger.info('Expiration notification process finished')
+
+#@task(ignore_result=True, time_limit=580, soft_time_limit=550)
+@task(ignore_result=True, max_retries=0)
+def poll_snmp_statistics():
+    from flowspec import snmpstats
+
+    try:
+        os.mkdir(settings.SNMP_POLL_LOCK)
+    except:
+        logger.error("Lock already exists, exiting.\n")
+        return
+
+    snmpstats.poll_snmp_statistics()
+
+    os.rmdir(settings.SNMP_POLL_LOCK)
+
