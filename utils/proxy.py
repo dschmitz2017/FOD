@@ -180,9 +180,8 @@ class Applier(object):
                 logger.info("Requesting a replace operation")
                 route.operation = operation
             device = device.export(netconf_config=True)
-            result = ET.tostring(device)
-            logger.error(result)
-            return result
+            logger.debug(ET.tostring(device))
+            return ET.tostring(device)
         else:
             return False
 

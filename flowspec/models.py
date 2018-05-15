@@ -178,9 +178,9 @@ class Route(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.pk:
-            suff = id_gen()
-            self.name = "%s_%s" % (self.name, suff)
-        super(Route, self).save(*args, **kwargs)
+            hash = id_gen()
+            self.name = "%s_%s" % (self.name, hash)
+        super(Route, self).save(*args, **kwargs) # Call the "real" save() method.
 
     def clean(self, *args, **kwargs):
         from django.core.exceptions import ValidationError

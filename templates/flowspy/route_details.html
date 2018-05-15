@@ -68,8 +68,15 @@
         </div>
         <div>
             <h2>Statistics</h2>
-            <div><canvas id="traffic-plot" width=550 height=150></canvas></div>
-            <div>Number of packets <span id="traffic-plot-loading">(Loading)</span>
+            <div><span id="traffic-plot-loading">(Loading data...)</span>
+            <h3>Number of packets (absolute)</h3>
+	    <div><canvas id="traffic-plot-pkts-abs" width=200 height=200></canvas></div>
+            <h3>Number of packets (relative)</h3>
+            <div><canvas id="traffic-plot-pkts-rel" width=200 height=200></canvas></div>
+            <h3>Number of bytes (absolute)</h3>
+	    <div><canvas id="traffic-plot-bytes-abs" width=200 height=200></canvas></div>
+            <h3>Number of bytes (relative)</h3>
+            <div><canvas id="traffic-plot-bytes-rel" width=200 height=200></canvas></div>
         </div>
         <div><a href="{% url routestats route.name %}">Download raw data in JSON</a></div>
     </div>

@@ -10,4 +10,3 @@ pages:
         - 'Debian': 'installation/debian_wheezy.md'
         - 'Red Hat': 'installation/redhat.md'
     - 'Configuration': 'configuration.md'
-    - 'API': 'api.md'

@@ -157,8 +157,6 @@ INSTALLED_APPS = (
     'djcelery',
     'peers',
     'registration',
-    'rest_framework',
-    'rest_framework.authtoken',
     'accounts',
     'tinymce',
     'widget_tweaks',
@@ -303,7 +301,6 @@ ACCOUNT_ACTIVATION_DAYS = 7
 
 # Define subnets that should not have any rules applied whatsoever
 PROTECTED_SUBNETS = ['10.10.0.0/16']
-MAX_RULE_EXPIRE_DAYS = 10
 
 # Add two whois servers in order to be able to get all the subnets for an AS.
 PRIMARY_WHOIS = 'whois.example.com'
@@ -351,25 +348,43 @@ REST_FRAMEWORK = {
     ]
 }
 
-SENTRY = {
-    'activate': False,
-    'sentry_dsn': ''
-}
+# Limit of ports in 'ports' / 'SrcPorts' / 'DstPorts' of a rule:
+PORTRANGE_LIMIT = 100
 
-# check local settings for sentry activation & dsn setup
-if SENTRY.get('activate'):
-    import raven
-    sentry_dsn = os.getenv("SENTRY_DSN") or SENTRY['sentry_dsn']
-    if not sentry_dsn:
-        raise RuntimeError("Sentry dsn not configured neither as environmental"
-                           " variable nor in the settings.py file")
+# Statistics polled via SNMP:
+# Default community string
+SNMP_COMMUNITY = "abcd"
 
-    RAVEN_CONFIG = {
-        'dsn': sentry_dsn,
-        'release': raven.fetch_git_sha(BASE_DIR)
-    }
-    INSTALLED_APPS += ('raven.contrib.django.raven_compat',)
-    LOGGING['handlers']['sentry'] = {
-        'class': 'raven.contrib.django.handlers.SentryHandler'
-    }
-    LOGGING['loggers']['django.request']['handlers'] = ['sentry']
+# list of IP addresses, each IP is a dict with "ip", "port" (optional, default
+# is 161), "community" (optional, default is SNMP_COMMUNITY) keys
+SNMP_IP = [
+    {"ip": "192.168.0.1", "port": 1000},
+    {"ip": "192.168.0.2", "port": 1001, "community": "abcdef"},
+    {"ip": "192.168.0.3", "port": 1002},
+    {"ip": "192.168.0.4", "port": 1002}
+]
+
+# or simpler way of IP list:
+# SNMP_IP = ["10.0.0.1", "10.0.0.2"]
+
+# OID of bytes counter (currently unused)
+SNMP_CNTBYTES =     "1.3.6.1.4.1.2636.3.5.2.1.5"
+# OID of packet counter
+SNMP_CNTPACKETS =   "1.3.6.1.4.1.2636.3.5.2.1.4"
+
+# get only statistics of specified tables
+SNMP_RULESFILTER = ["__flowspec_default_inet__", "__flowspec_IAS_inet__"]
+# load new data into cache if it is older that a specified number of seconds
+SNMP_POLL_INTERVAL = 8 #seconds
+# cache file for data
+SNMP_TEMP_FILE = "/tmp/snmp_temp_data"
+
+# Number of historical values to store for a route.
+# Polling interval must be set for "snmp-stats-poll" celery task in CELERYBEAT_SCHEDULE.
+# By default, it is 5 min interval, so SNMP_MAX_SAMPLECOUNT=12 means we have about
+# one hour history.
+SNMP_MAX_SAMPLECOUNT = 12
+
+# Age of inactive routes that can be already removed (in seconds)
+SNMP_REMOVE_RULES_AFTER = 3600
+
