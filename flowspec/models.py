@@ -91,7 +91,8 @@ ROUTE_STATES = (
 )
 
 
-def days_offset(): return datetime.date.today() + datetime.timedelta(days = settings.EXPIRATION_DAYS_OFFSET)
+#def days_offset(): return datetime.date.today() + datetime.timedelta(days = settings.EXPIRATION_DAYS_OFFSET)
+def days_offset(): return datetime.date.today() + datetime.timedelta(days = settings.EXPIRATION_DAYS_OFFSET-1)
 
 class MatchPort(models.Model):
     port = models.CharField(max_length=24, unique=True)
@@ -156,6 +157,7 @@ class Route(models.Model):
     status = models.CharField(max_length=20, choices=ROUTE_STATES, blank=True, null=True, verbose_name=_("Status"), default="PENDING")
 #    is_online = models.BooleanField(default=False)
 #    is_active = models.BooleanField(default=False)
+    #expires = models.DateField(default=days_offset, verbose_name=_("Expires"))
     expires = models.DateField(default=days_offset, verbose_name=_("Expires"))
     response = models.CharField(max_length=512, blank=True, null=True, verbose_name=_("Response"))
     comments = models.TextField(null=True, blank=True, verbose_name=_("Comments"))
