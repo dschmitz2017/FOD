@@ -52,16 +52,23 @@ logger.addHandler(handler)
 @task(ignore_result=True)
 def add(route, callback=None):
     try:
-        applier = PR.Applier(route_object=route)
-        commit, response = applier.apply()
-        if commit:
-            status = "ACTIVE"
+        status_initial = route.status
+        logger.info("tasks::add(): route="+str(route)+", status_initial="+str(status_initial))
+        if False and status_initial == "INACTIVE":
+          route.response = "None yet"
+          route.save()
+          announce("[%s] Rule add inactive: %s - Result: %s" % (route.applier, route.name, response), route.applier, route)
         else:
-            status = "ERROR"
-        route.status = status
-        route.response = response
-        route.save()
-        announce("[%s] Rule add: %s - Result: %s" % (route.applier, route.name, response), route.applier, route)
+          applier = PR.Applier(route_object=route)
+          commit, response = applier.apply()
+          if commit:
+              status = "ACTIVE"
+          else:
+              status = "ERROR"
+          route.status = status
+          route.response = response
+          route.save()
+          announce("[%s] Rule add: %s - Result: %s" % (route.applier, route.name, response), route.applier, route)
     except TimeLimitExceeded:
         route.status = "ERROR"
         route.response = "Task timeout"
@@ -95,23 +102,30 @@ def edit(route, callback=None):
         route.status = status
         route.response = response
         route.save()
-        announce("[%s] Rule edit: %s - Result: %s" % (route.applier, route.name, response), route.applier, route)
+        msg = "[%s] Rule edit: %s - Result: %s" % (route.applier, route.name, response)
+        logger.info("tasks::edit(): msg="+msg)
+        announce(msg, route.applier, route)
     except TimeLimitExceeded:
         route.status = "ERROR"
         route.response = "Task timeout"
         route.save()
-        announce("[%s] Rule edit: %s - Result: %s" % (route.applier, route.name, route.response), route.applier, route)
+        msg = "[%s] Rule edit: %s - Result: %s" % (route.applier, route.name, route.response)
+        logger.info("tasks::edit(): TimeLimitExceeded msg="+msg)
+        announce(msg, route.applier, route)
     except SoftTimeLimitExceeded:
         route.status = "ERROR"
         route.response = "Task timeout"
         route.save()
-        announce("[%s] Rule edit: %s - Result: %s" % (route.applier, route.name, route.response), route.applier, route)
-    except Exception:
+        msg = "[%s] Rule edit: %s - Result: %s" % (route.applier, route.name, route.response)
+        logger.info("tasks::edit(): SoftTimeLimitExceeded msg="+msg)
+        announce(msg, route.applier, route)
+    except Exception, e:
         route.status = "ERROR"
         route.response = "Error"
         route.save()
-        announce("[%s] Rule edit: %s - Result: %s" % (route.applier, route.name, route.response), route.applier, route)
-
+        msg = "[%s] Rule edit: %s - Result: %s" % (route.applier, route.name, route.response)
+        logger.info("tasks::edit(): Exception msg="+msg+", except="+str(e))
+        announce(msg, route.applier, route)
 
 @task(ignore_result=True)
 def delete(route, **kwargs):

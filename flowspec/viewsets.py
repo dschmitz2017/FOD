@@ -80,6 +80,7 @@ class RouteViewSet(viewsets.ModelViewSet):
     def create(self, request):
         logger.info("viewsets::route::create(): self="+str(self)+", request="+str(request))
         logger.info("viewsets::route::create(): self="+str(self)+", request.data="+str(request.DATA))
+        # request.DATA['status'] may be set and we should honor it somehow ?
         serializer = RouteSerializer(
             context={'request': request}, data=request.DATA, partial=True)
         if serializer.is_valid():

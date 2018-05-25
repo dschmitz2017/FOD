@@ -101,13 +101,13 @@ class Applier(object):
         self.port = port
 
     def to_xml(self, operation=None):
-        logger.info("Operation: %s"%operation)
+        logger.info("proxy::to_xml(): Operation: %s"%operation)
         if self.route_object:
             try:
                 settings.PORTRANGE_LIMIT
             except:
                 settings.PORTRANGE_LIMIT = 100
-            logger.info("Generating XML config")
+            logger.info("proxy::to_xml(): Generating XML config")
             route_obj = self.route_object
             device = np.Device()
             flow = np.Flow()
@@ -116,7 +116,7 @@ class Applier(object):
             device.routing_options.append(flow)
             route.name = route_obj.name
             if operation == "delete":
-                logger.info("Requesting a delete operation")
+                logger.info("proxy::to_xml(): Requesting a delete operation")
                 route.operation = operation
                 device = device.export(netconf_config=True)
                 return ET.tostring(device)
@@ -179,13 +179,14 @@ class Applier(object):
                 else:
                     route.then[thenaction.action] = True
             if operation == "replace":
-                logger.info("Requesting a replace operation")
+                logger.info("proxy::to_xml(): Requesting a replace operation")
                 route.operation = operation
             device = device.export(netconf_config=True)
             result = ET.tostring(device)
-            logger.error(result)
+            logger.info("proxy::to_xml(): result="+str(result))
             return result
         else:
+            logger.info("proxy::to_xml(): returning False")
             return False
 
     def delete_routes(self):

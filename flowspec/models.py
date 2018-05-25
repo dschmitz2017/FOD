@@ -203,6 +203,8 @@ class Route(models.Model):
 
     def commit_add(self, *args, **kwargs):
         logger.info("model::commit_add(): route="+str(self)+", kwargs="+str(kwargs))
+        status_initial = self.status
+        logger.info("model::commit_add(): route="+str(self)+", status_initial="+str(status_initial))
         peers = self.applier.get_profile().peers.all()
         username = None
         for peer in peers:
