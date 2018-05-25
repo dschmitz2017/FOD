@@ -103,6 +103,12 @@
 {% block pagejsbottom %}
 
 <script src="{{STATIC_URL}}js/Chart.min.js" type="text/javascript"></script>
+
+
+<script src="{{STATIC_URL}}js/moment.min.js"></script>
+<!--<script src="{{STATIC_URL}}js/hammer.min.js"></script>-->
+<script src="{{STATIC_URL}}js/chartjs-plugin-zoom.min.js"></script>
+
 <script type="text/javascript">
 function plotGraph(data)
 {
@@ -162,7 +168,16 @@ function plotGraph(data)
                beginAtZero:true
            }
            }]
-       }
+       }, zoom: {
+        enabled: true,
+                 drag: true,
+                 mode: 'x',
+                 //limits: {
+                 //      max: 10,
+                 //      min: 0.5
+                 //}
+              }
+
        }
    }
    var graphrelsetting = {
