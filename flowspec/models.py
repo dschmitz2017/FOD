@@ -38,6 +38,8 @@ from utils.randomizer import id_generator as id_gen
 
 from tasks import *
 
+import sys, traceback
+from peers.models import PeerRange, Peer
 
 FORMAT = '%(asctime)s %(levelname)s: %(message)s'
 logging.basicConfig(format=FORMAT)
@@ -596,6 +598,29 @@ class Route(models.Model):
         except:
             applier_peers = None
         return applier_peers
+
+    # perf has to be checked:
+    @property 
+    def containing_peer_ranges(self):
+        try:
+            destination_network = IPNetwork(self.destination)
+            os.write(4, "containing_peer_ranges(): destination_network"+str(destination_network)+"\n")
+            #containing_peer_ranges = PeerRange.objects.filter(network__contains(destination_network))
+            containing_peer_ranges = [obj for obj in PeerRange.objects.all() if IPNetwork(obj.network).__contains__(destination_network)]
+            os.write(4, "containing_peer_ranges(): containing_peer_ranges"+str(containing_peer_ranges)+"\n")
+        except:
+            os.write(4, "containing_peer_ranges(): exception occured\n")
+            traceback.print_exc(file=sys.stdout)
+            #containing_peer_ranges = None
+            containing_peer_ranges = []
+        return containing_peer_ranges
+
+    # perf has to be checked:
+    def containing_peers(self):
+        containing_peer_ranges2 = set(self.containing_peer_ranges)
+        os.write(4, "containing_peers(): containing_peer_ranges"+str(containing_peer_ranges2)+"\n")
+        #return [obj.peer for obj in containing_peer_ranges2]
+        return [obj for obj in Peer.objects.all() if len(set(obj.networks.all()).intersection(containing_peer_ranges2))>0]
 
     @property
     def days_to_expire(self):

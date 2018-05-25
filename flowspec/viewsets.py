@@ -42,7 +42,27 @@ class RouteViewSet(viewsets.ModelViewSet):
             if self.request.user.is_anonymous():
                 return Route.objects.all()
             elif self.request.user.is_authenticated():
+
+                os.write(4, "debug requesta test\n")
+
+                #temp1 = Route.objects.filter(containing_peer_ranges__peer__in=self.request.user.userprofile.peers.all())
+                #[obj for obj in Order.objects.all() if obj.expire in days]
+                users_peers_set = set(self.request.user.userprofile.peers.all())
+                routes_all = list(Route.objects.all())
+                #temp1 = [obj for obj in routes_all]
+                temp1 = [obj for obj in routes_all if len(set(obj.containing_peers()).intersection(users_peers_set))>0]
+                #temp1 = [obj for obj in routes_all if len(set(obj.containing_peers()))>0]
+                os.write(4, "debug requesta test"+str(temp1)+"\n")
+
                 return Route.objects.filter(applier=self.request.user)
+
+                #return Route.objects.filter(containing_peer_ranges__peer__in=self.request.user.userprofile.peers.all())
+  
+                #if not user.is_superuser:
+                #  networks = PeerRange.objects.filter(peer__in=self.request.user.userprofile.peers.all())
+                #else:
+                #  networks = PeerRange.objects.filter(peer__in=Peer.objects.all()).distinct()
+
             else:
                 raise PermissionDenied('User is not Authenticated')
 
