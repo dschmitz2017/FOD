@@ -32,6 +32,7 @@ import os
 from celery.exceptions import TimeLimitExceeded, SoftTimeLimitExceeded
 from ipaddr import *
 from os import fork
+from sys import exit
 
 LOG_FILENAME = os.path.join(settings.LOG_FILE_LOCATION, 'celery_jobs.log')
 
@@ -265,4 +266,6 @@ def poll_snmp_statistics():
     else:
       snmpstats.poll_snmp_statistics()
       os.rmdir(settings.SNMP_POLL_LOCK)
+      sys.exit()
+
 
