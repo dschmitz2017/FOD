@@ -44,6 +44,7 @@ class TechcEmail(models.Model):
     class Meta:
         db_table = "techc_email"
         managed = settings.PEER_TECHC_MANAGED_TABLE
+    # perf has to be checked:
 
 
 class Peer(models.Model):
