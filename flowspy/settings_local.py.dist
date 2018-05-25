@@ -100,7 +100,7 @@ ACCOUNT_ACTIVATION_DAYS = 7
 # Define subnets that should not have any rules applied whatsoever
 #PROTECTED_SUBNETS = ['10.10.0.0/16']
 PROTECTED_SUBNETS = []
-#MAX_RULE_EXPIRE_DAYS = 10
+# max number of days into the future that is allowed to pick in rule expiration datepicker
 MAX_RULE_EXPIRE_DAYS = 30
 
 # Add two whois servers in order to be able to get all the subnets for an AS.
@@ -153,7 +153,7 @@ SNMP_MAX_SAMPLECOUNT = 12
 # Age of inactive routes that can be already removed (in seconds)
 SNMP_REMOVE_RULES_AFTER = 3600
 
-
+DISABLE_RULE_OVERLAP_CHECK = True
 
 ##############################################################################
 ##############################################################################
