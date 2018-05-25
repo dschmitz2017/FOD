@@ -9,3 +9,13 @@ doc_rst/
 static/rest_framework/
 
 *.swp
+
+##
+
+*.orig
+*.new
+
+*.patch
+
+tags
+
