@@ -94,7 +94,7 @@
 
 		$('#id_expires').datepicker({
 			startDate: '+1d',
-			endDate: '+{{maxexpires}}d'
+			endDate: '+{{maxexpires|add:-1}}d'
 		});
 		$('#setFromAll').click(function(){
 			$("#id_source").val('0.0.0.0/0');
