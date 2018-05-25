@@ -3,9 +3,10 @@
 	<footer class="footer">
       <div id="footcontainer" class="container">
         {% if user.is_authenticated %}
-	<p>{% trans "If you have any questions or need help, contact GÉANT OC at <a href='mailto:ncc@noc.geant.net'>ncc@noc.geant.net</a> or +44 1223 733033." %}</p>
+	<p>{% trans "If you have any questions or need help, contact GÉANT OC at <a href='mailto:support@oc.geant.net'>support@oc.geant.net</a> or +44 1223 733033." %}</p>
 	{% endif %}
-	<div style="padding-top: 10px;"><a href="https://code.grnet.gr/projects/flowspy">Version: <strong>{{VERSION}}</strong></a> - 
+	<!--<div style="padding-top: 10px;"><a href="https://code.grnet.gr/projects/flowspy">Version: <strong>{{VERSION}}</strong></a>  -->
+	<div style="padding-top: 10px;"><a href="https://github.com/GEANT/FOD">Version: <strong>{{VERSION}}</strong></a> - 
         {% trans "Designed and developed in GÉANT4-SGA2 JRA2-T6; Originally designed and developed by GRNET NOC" %}
 </a>
 	</div>
