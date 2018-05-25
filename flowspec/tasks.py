@@ -250,8 +250,12 @@ def poll_snmp_statistics():
 
     try:
         os.mkdir(settings.SNMP_POLL_LOCK)
+    except OSError, e:
+        logger.error("creating Lock dir failed: "+str(e)+", exiting.\n")
+        return;
     except:
         logger.error("Lock already exists, exiting.\n")
+        logger.error("creating lock dir failed (unknown exception), exiting.\n")
         return
 
     snmpstats.poll_snmp_statistics()
