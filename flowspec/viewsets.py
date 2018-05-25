@@ -78,6 +78,8 @@ class RouteViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
     def create(self, request):
+        logger.info("viewsets::route::create(): self="+str(self)+", request="+str(request))
+        logger.info("viewsets::route::create(): self="+str(self)+", request.data="+str(request.DATA))
         serializer = RouteSerializer(
             context={'request': request}, data=request.DATA, partial=True)
         if serializer.is_valid():

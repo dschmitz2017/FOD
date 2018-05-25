@@ -115,6 +115,8 @@ def edit(route, callback=None):
 
 @task(ignore_result=True)
 def delete(route, **kwargs):
+    logger.info("tasks::delete(): called")
+    logger.info("tasks::delete(): called kwargs="+str(kwargs))
     try:
         applier = PR.Applier(route_object=route)
         commit, response = applier.apply(operation="delete")
@@ -124,16 +126,26 @@ def delete(route, **kwargs):
             if "reason" in kwargs and kwargs['reason'] == 'EXPIRED':
                 status = 'EXPIRED'
                 reason_text = " Reason: %s " % status
+            else:
+                status = 'DELETED'
+            route.status = status
+            route.response = response
+            if route.status == "DELETED":
+              route.delete()
+              announce("[%s] Fully deleted rule : %s%s- Result %s" % (route.applier, route.name, reason_text, response), route.applier, route)
+            else:
+              route.save()
+              announce("[%s] Suspending rule : %s%s- Result %s" % (route.applier, route.name, reason_text, response), route.applier, route)
             try:
               snmp_add_initial_zero_value.delay(str(route.id), False)
             except Exception as e:
-              logger.error("edit(): route="+str(route)+", INACTIVE, add_null_value failed: "+str(e))
+              logger.error("tasks::delete(): route="+str(route)+", INACTIVE, add_null_value failed: "+str(e))
         else:
             status = "ERROR"
-        route.status = status
-        route.response = response
-        route.save()
-        announce("[%s] Suspending rule : %s%s- Result %s" % (route.applier, route.name, reason_text, response), route.applier, route)
+            route.status = status
+            route.response = response
+            route.save()
+            announce("[%s] Suspending rule : %s%s- Result %s" % (route.applier, route.name, reason_text, response), route.applier, route)
     except TimeLimitExceeded:
         route.status = "ERROR"
         route.response = "Task timeout"
@@ -149,6 +161,7 @@ def delete(route, **kwargs):
         route.response = "Error"
         route.save()
         announce("[%s] Suspending rule : %s - Result: %s" % (route.applier, route.name, route.response), route.applier, route)
+    logger.info("tasks::delete(): before returning; route.status="+str(route.status))
 
 
 # May not work in the first place... proxy is not aware of Route models
@@ -302,6 +315,7 @@ def exit_process():
       logger.info("exit_process(): before exit in child process (pid="+str(pid)+", npid="+str(npid)+"), after os._exit")
 
 #@task(ignore_result=True, time_limit=580, soft_time_limit=550)
+#@task(ignore_result=True, max_retries=0, soft_time_limit=1)
 @task(ignore_result=True, max_retries=0)
 def poll_snmp_statistics():
     from flowspec import snmpstats
