@@ -1,4 +1,7 @@
+
 flowspy/settings.py
+flowspy/settings_local.py
+
 *.pyc
 celerybeat-schedule
 *.log
