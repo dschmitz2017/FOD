@@ -31,7 +31,7 @@ from django.template.loader import render_to_string
 import os
 from celery.exceptions import TimeLimitExceeded, SoftTimeLimitExceeded
 from ipaddr import *
-from os import fork
+from os import fork,_exit
 from sys import exit
 
 LOG_FILENAME = os.path.join(settings.LOG_FILE_LOCATION, 'celery_jobs.log')
@@ -245,6 +245,14 @@ def notify_expired():
                     pass
     logger.info('Expiration notification process finished')
 
+
+import os
+import signal
+
+def handleSIGCHLD(signal, frame):
+  logger.info("handleSIGCHLD(): reaping childs")
+  os.waitpid(-1, os.WNOHANG)
+
 #@task(ignore_result=True, time_limit=580, soft_time_limit=550)
 @task(ignore_result=True, max_retries=0)
 def poll_snmp_statistics():
@@ -260,12 +268,28 @@ def poll_snmp_statistics():
         logger.error("creating lock dir failed (unknown exception), exiting.\n")
         return
 
+    signal.signal(signal.SIGCHLD, handleSIGCHLD)
+
+    pid = os.getpid()
+    logger.info("poll_snmp_statistics(): before fork (pid="+str(pid)+")")
     npid = os.fork()
-    if npid == 0:
-      logger.info("poll_snmp_statistics(): returning in parent process")
+    if npid == -1:
+      pass
+    elif npid > 0:
+      logger.info("poll_snmp_statistics(): returning in parent process (pid="+str(pid)+", npid="+str(npid)+")")
     else:
-      snmpstats.poll_snmp_statistics()
-      os.rmdir(settings.SNMP_POLL_LOCK)
+      logger.info("poll_snmp_statistics(): in child process (pid="+str(pid)+", npid="+str(npid)+")")
+      try:
+        snmpstats.poll_snmp_statistics()        
+        os.rmdir(settings.SNMP_POLL_LOCK)
+      except e:
+        logger.info("exception occured in snmp poll (pid="+str(pid)+", npid="+str(npid)+"): "+str(e))
+      logger.info("poll_snmp_statistics(): before exit in child process (pid="+str(pid)+", npid="+str(npid)+")")
+      exit()
+      logger.info("poll_snmp_statistics(): before exit in child process (pid="+str(pid)+", npid="+str(npid)+"), after exit")
       sys.exit()
+      logger.info("poll_snmp_statistics(): before exit in child process (pid="+str(pid)+", npid="+str(npid)+"), after sys.exit")
+      os._exit()
+      logger.info("poll_snmp_statistics(): before exit in child process (pid="+str(pid)+", npid="+str(npid)+"), after os._exit")
 
 
