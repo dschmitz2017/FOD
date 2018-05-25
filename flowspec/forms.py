@@ -188,8 +188,9 @@ class RouteForm(forms.ModelForm):
                 existing_routes = existing_routes.filter(pk__in=route_pk_list)
         else:
             existing_routes = existing_routes.filter(port=None)
-        for route in existing_routes:
-            if name != route.name:
+        if not settings.DISABLE_RULE_OVERLAP_CHECK:
+           for route in existing_routes:
+             if name != route.name:
                 existing_url = reverse('edit-route', args=[route.name])
                 if IPNetwork(destination) in IPNetwork(route.destination) or IPNetwork(route.destination) in IPNetwork(destination):
                     raise forms.ValidationError('Found an exact %s rule, %s with destination prefix %s<br>To avoid overlapping try editing rule <a href=\'%s\'>%s</a>' % (route.status, route.name, route.destination, existing_url, route.name))
