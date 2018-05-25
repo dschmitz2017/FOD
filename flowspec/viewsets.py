@@ -18,6 +18,20 @@ from flowspec.serializers import (
 from flowspec.validators import check_if_rule_exists
 from rest_framework.response import Response
 
+#from sys import stderr
+#import sys
+import os
+
+###
+
+import logging
+
+FORMAT = '%(asctime)s %(levelname)s: %(message)s'
+logging.basicConfig(format=FORMAT)
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
+###
 
 class RouteViewSet(viewsets.ModelViewSet):
     queryset = Route.objects.all()
@@ -150,11 +164,40 @@ class RouteViewSet(viewsets.ModelViewSet):
                 from django.contrib.auth.models import User
                 obj.applier = User.objects.all()[0]
             elif self.request.user.is_authenticated():
-                obj.applier = self.request.user
+                #obj.applier = self.request.user
+                self.helper_override_user(obj)
             else:
                 raise PermissionDenied('User is not Authenticated')
         else:
-            obj.applier = self.request.user
+            #obj.applier = self.request.user
+            self.helper_override_user(obj)
+
+    def helper_override_user(self, obj):
+        #if self.request.user.is_superuser and obj.applier!=None:
+        from django.contrib.auth.models import User
+        if self.request.user.is_superuser and self.request.POST["applier"]!=None:
+          os.write(4, "debug requesta1 "+str(self.request.POST["applier"])+"\n")
+          obj.applier = User.objects.get(username=self.request.POST["applier"])
+        elif self.request.user.is_superuser:
+          os.write(4, "debug requesta2 "+str(self.request.POST["applier"])+"\n")
+          #obj.applier = self.request.user
+          obj.applier = User.objects.get(username='tomas.jra2t6')
+          #raise PermissionDenied('Is superuser')
+          #obj.applier = User.objects.get(id='tomas.jra2t6')
+          #logger.info("debug request "+str(self.request))
+          #logger.info("debug requestt "+str(type(self.request)))
+          #logger.info("debug requestd "+str(dir(self.request)))
+          ##sys.stderr.write("debug request "+str(self.request)+"\n")
+          #os.write(4, "debug request "+str(self.request)+"\n")
+          #os.write(4, "debug requestt "+str(type(self.request))+"\n")
+          #os.write(4, "debug requestd "+str(dir(self.request))+"\n")
+          #os.write(4, "debug requestd "+str(type(self.request.POST))+"\n")
+          #os.write(4, "debug requestd "+str(dir(self.request.POST))+"\n")
+          #os.write(4, "debug requesta "+str(self.request.POST["applier"])+"\n")
+          #obj.comments = obj.comments+" "+str(os.getpid())
+        else:
+          #raise PermissionDenied('Is not superuser')
+          obj.applier = self.request.user
 
     def post_save(self, obj, created):
         if created:
