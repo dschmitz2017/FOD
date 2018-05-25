@@ -31,6 +31,7 @@ from django.template.loader import render_to_string
 import os
 from celery.exceptions import TimeLimitExceeded, SoftTimeLimitExceeded
 from ipaddr import *
+from os import fork
 
 LOG_FILENAME = os.path.join(settings.LOG_FILE_LOCATION, 'celery_jobs.log')
 
@@ -258,7 +259,10 @@ def poll_snmp_statistics():
         logger.error("creating lock dir failed (unknown exception), exiting.\n")
         return
 
-    snmpstats.poll_snmp_statistics()
-
-    os.rmdir(settings.SNMP_POLL_LOCK)
+    npid = os.fork()
+    if npid == 0:
+      logger.info("poll_snmp_statistics(): returning in parent process")
+    else:
+      snmpstats.poll_snmp_statistics()
+      os.rmdir(settings.SNMP_POLL_LOCK)
 
