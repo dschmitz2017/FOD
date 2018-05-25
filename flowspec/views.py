@@ -257,6 +257,7 @@ def build_routes_json(groutes):
 @login_required
 @never_cache
 def add_route(request):
+    logger.info("views::add_route(): request="+str(request))
     applier_peer_networks = []
     applier = request.user.pk
     if request.user.is_superuser:
@@ -293,10 +294,13 @@ def add_route(request):
             except:
                 pass
         form = RouteForm(request_data)
+        #route_status_speced = request_data['status']
         if form.is_valid():
             route = form.save(commit=False)
             if not request.user.is_superuser:
                 route.applier = request.user
+            route_status_speced = route.status
+            logger.info("views::add_route(): route_status_speced="+str(route_status_speced))
             route.status = "PENDING"
             route.response = "Applying"
             route.source = IPNetwork('%s/%s' % (IPNetwork(route.source).network.compressed, IPNetwork(route.source).prefixlen)).compressed
@@ -310,6 +314,7 @@ def add_route(request):
             form.save_m2m()
             # We have to make the commit after saving the form
             # in order to have all the m2m relations.
+            route.status = route_status_speced
             route.commit_add()
             return HttpResponseRedirect(reverse("group-routes"))
         else:
@@ -438,6 +443,10 @@ def edit_route(request, route_slug):
 @login_required
 @never_cache
 def delete_route(request, route_slug):
+    logger.info("views::delete_route(): route_slug="+str(route_slug)+ " request="+str(request))
+    logger.info("views::delete_route(): route_slug="+str(route_slug)+ " request.dir="+str(dir(request)))
+    logger.info("views::delete_route(): route_slug="+str(route_slug)+ " request.REQUEST="+str(dir(request.REQUEST)))
+    logger.info("views::delete_route(): route_slug="+str(route_slug)+ " request.REQUEST.keys="+str(dir(request.REQUEST.keys)))
     if request.is_ajax():
         route = get_object_or_404(Route, name=route_slug)
         peers = route.applier.get_profile().peers.all()

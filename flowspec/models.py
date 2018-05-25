@@ -202,6 +202,7 @@ class Route(models.Model):
                 raise ValidationError(_('Invalid network address format at Source Field'))
 
     def commit_add(self, *args, **kwargs):
+        logger.info("model::commit_add(): route="+str(self)+", kwargs="+str(kwargs))
         peers = self.applier.get_profile().peers.all()
         username = None
         for peer in peers:
@@ -304,6 +305,7 @@ class Route(models.Model):
         logger.info(mail_body, extra=d)
 
     def commit_delete(self, *args, **kwargs):
+        logger.info("model::commit_delete(): route="+str(self)+", kwargs="+str(kwargs))
         username = None
         reason_text = ''
         reason = ''
