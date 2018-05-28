@@ -41,7 +41,7 @@ def clean_status(status):
     :rtype: str
     """
 
-    allowed_states = ['ACTIVE', 'INACTIVE']
+    allowed_states = ['ACTIVE', 'INACTIVE', 'INACTIVE_TODELETE']
 
     if status not in allowed_states:
         return _('Invalid status value. You are allowed to use "{}".'.format(

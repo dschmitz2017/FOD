@@ -170,6 +170,16 @@ class RouteViewSet(viewsets.ModelViewSet):
         if serializer.is_valid():
             new_status = serializer.object.status
             super(RouteViewSet, self).update(request, pk, partial=partial)
+
+            logger.info("RouteViewSet::update(): called request="+str(request))
+            if request.META.has_key('HTTP_X_METHODOVERRIDE'):
+              method_overriden = request.META['HTTP_X_METHODOVERRIDE']
+              logger.info("RouteViewSet::update(): HTTP_X_METHODOVERRIDE="+str(method_overriden))
+              if method_overriden == "DELETE":
+                logger.info("RouteViewSet::update(): redirecting to delete with full delete on")
+                obj.status = "INACTIVE_TODELETE"
+                return self.delete(obj)
+
             if old_status == 'ACTIVE':
                 work_on_active_object(obj, new_status)
             elif old_status in ['INACTIVE', 'ERROR']:
@@ -198,13 +208,17 @@ class RouteViewSet(viewsets.ModelViewSet):
     def helper_override_user(self, obj):
         #if self.request.user.is_superuser and obj.applier!=None:
         from django.contrib.auth.models import User
-        if self.request.user.is_superuser and self.request.POST["applier"]!=None:
-          os.write(4, "debug requesta1 "+str(self.request.POST["applier"])+"\n")
-          obj.applier = User.objects.get(username=self.request.POST["applier"])
+        applier_speced = None
+        if "applier" in self.request.POST:
+          applier_speced = self.request.POST["applier"]
+        if self.request.user.is_superuser and applier_speced!=None:
+          os.write(4, "debug requesta1 "+str(applier_speced)+"\n")
+          obj.applier = User.objects.get(username=applier_speced)
         elif self.request.user.is_superuser:
-          os.write(4, "debug requesta2 "+str(self.request.POST["applier"])+"\n")
+          os.write(4, "debug requesta2 "+str(applier_speced)+"\n")
           #obj.applier = self.request.user
-          obj.applier = User.objects.get(username='tomas.jra2t6')
+          #obj.applier = User.objects.get(username='tomas.jra2t6')
+          obj.applier = User.objects.get(username='david.jra2t6')
           #raise PermissionDenied('Is superuser')
           #obj.applier = User.objects.get(id='tomas.jra2t6')
           #logger.info("debug request "+str(self.request))
@@ -216,7 +230,7 @@ class RouteViewSet(viewsets.ModelViewSet):
           #os.write(4, "debug requestd "+str(dir(self.request))+"\n")
           #os.write(4, "debug requestd "+str(type(self.request.POST))+"\n")
           #os.write(4, "debug requestd "+str(dir(self.request.POST))+"\n")
-          #os.write(4, "debug requesta "+str(self.request.POST["applier"])+"\n")
+          #os.write(4, "debug requesta "+str(applier_speced)+"\n")
           #obj.comments = obj.comments+" "+str(os.getpid())
         else:
           #raise PermissionDenied('Is not superuser')
@@ -227,8 +241,9 @@ class RouteViewSet(viewsets.ModelViewSet):
             obj.commit_add()
 
     def pre_delete(self, obj):
+        logger.info("RouteViewSet::pre_delete(): called "+str(self)+", obj="+str(obj))
         obj.commit_delete()
-
+        logger.info("RouteViewSet::pre_delete(): returning "+str(self)+", obj="+str(obj))
 
 class PortViewSet(viewsets.ModelViewSet):
     queryset = MatchPort.objects.all()
