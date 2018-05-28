@@ -90,6 +90,7 @@ ROUTE_STATES = (
     ("OUTOFSYNC", "OUTOFSYNC"),
     ("INACTIVE", "INACTIVE"),
     ("ADMININACTIVE", "ADMININACTIVE"),
+    ("INACTIVE_TODELETE", "INACTIVE_TODELETE"),
 )
 
 
@@ -310,6 +311,7 @@ class Route(models.Model):
 
     def commit_delete(self, *args, **kwargs):
         logger.info("model::commit_delete(): route="+str(self)+", kwargs="+str(kwargs))
+
         username = None
         reason_text = ''
         reason = ''
@@ -535,7 +537,7 @@ class Route(models.Model):
                     self.status = "ACTIVE"
                     self.save()
                     found = True
-            if self.status == "ADMININACTIVE" or self.status == "INACTIVE" or self.status == "EXPIRED":
+            if self.status == "ADMININACTIVE" or self.status == "INACTIVE" or self.status == "INACTIVE_TODELETE" or self.status == "EXPIRED":
                 found = True
         return found
 
@@ -630,7 +632,7 @@ class Route(models.Model):
 
     @property
     def days_to_expire(self):
-        if self.status not in ['EXPIRED', 'ADMININACTIVE', 'ERROR', 'INACTIVE']:
+        if self.status not in ['EXPIRED', 'ADMININACTIVE', 'ERROR', 'INACTIVE', 'INACTIVE_TODELETE']:
             expiration_days = (self.expires - datetime.date.today()).days
             if expiration_days < settings.EXPIRATION_NOTIFY_DAYS:
                 return "%s" %expiration_days

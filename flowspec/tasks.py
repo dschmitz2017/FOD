@@ -138,43 +138,49 @@ def edit(route, callback=None):
 
 @task(ignore_result=True)
 def delete(route, **kwargs):
-    logger.info("tasks::delete(): called")
+    logger.info("tasks::delete(): called route="+str(route))
+    logger.info("tasks::delete(): called route.dir="+str(dir(route)))
     logger.info("tasks::delete(): called kwargs="+str(kwargs))
+    initial_status = route.status
+    logger.info("tasks::delete(): called initial_status="+str(initial_status))
     try:
         applier = PR.Applier(route_object=route)
         commit, response = applier.apply(operation="delete")
         reason_text = ''
+        logger.info("tasks::delete(): called commit="+str(commit))
         if commit:
-            status = "INACTIVE"
-            if "reason" in kwargs and kwargs['reason'] == 'EXPIRED':
-                status = 'EXPIRED'
-                reason_text = " Reason: %s " % status
-            else:
-                status = 'DELETED'
-            route.status = status
-            route.response = response
-            if route.status == "DELETED": # special new case for fully deleting a rule via REST API
+              status = "INACTIVE"
+              if "reason" in kwargs and kwargs['reason'] == 'EXPIRED':
+                  status = 'EXPIRED'
+                  reason_text = " Reason: %s " % status
+        else:
+                  status = "ERROR"
+
+        if commit and initial_status == "INACTIVE_TODELETE": # special new case for fully deleting a rule via REST API
               route.delete()
               msg1 = "[%s] Fully deleted rule : %s%s- Result %s" % (route.applier, route.name, reason_text, response)
               logger.info("tasks::delete(): DELETED msg="+msg1)
               announce(msg1, route.applier, route)
-            else:
+        else:
+              route.status = status
+              route.response = response
+
               route.save()
               msg1 = "[%s] Suspending rule : %s%s- Result %s" % (route.applier, route.name, reason_text, response)
               logger.info("tasks::delete(): msg="+msg1)
               announce(msg1 , route.applier, route)
-            try:
+        try:
               snmp_add_initial_zero_value.delay(str(route.id), False)
-            except Exception as e:
+        except Exception as e:
               logger.error("tasks::delete(): route="+str(route)+", INACTIVE, add_null_value failed: "+str(e))
-        else:
-            status = "ERROR"
-            route.status = status
-            route.response = response
-            route.save()
-            msg1 = "[%s] Suspending rule : %s%s- Result %s" % (route.applier, route.name, reason_text, response)
-            logger.info("tasks::delete(): ERROR msg="+msg1)
-            announce(msg1, route.applier, route)
+#        else:
+#            status = "ERROR"
+#            route.status = status
+#            route.response = response
+#            route.save()
+#            msg1 = "[%s] Suspending rule : %s%s- Result %s" % (route.applier, route.name, reason_text, response)
+#            logger.info("tasks::delete(): ERROR msg="+msg1)
+#            announce(msg1, route.applier, route)
     except TimeLimitExceeded:
         route.status = "ERROR"
         route.response = "Task timeout"
