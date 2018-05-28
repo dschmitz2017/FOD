@@ -219,9 +219,11 @@ class Route(models.Model):
             peer = username.peer_tag
         else:
             peer = None
-        send_message("[%s] Adding rule %s. Please wait..." % (self.applier.username, self.name), peer)
+        msg1 = "[%s] Adding rule %s. Please wait..." % (self.applier.username, self.name)
+        send_message(msg1, peer)
+        logger.info("model::commit_add(): "+str(msg1))
         response = add.delay(self)
-        logger.info('Got add job id: %s' % response)
+        logger.info('model::commit_add(): Got add job id: %s' % response)
         fqdn = Site.objects.get_current().domain
         admin_url = 'https://%s%s' % (
             fqdn,

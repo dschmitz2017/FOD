@@ -54,10 +54,12 @@ def add(route, callback=None):
     try:
         status_initial = route.status
         logger.info("tasks::add(): route="+str(route)+", status_initial="+str(status_initial))
-        if False and status_initial == "INACTIVE":
+        if status_initial == "INACTIVE":
           route.response = "None yet"
           route.save()
-          announce("[%s] Rule add inactive: %s - Result: %s" % (route.applier, route.name, response), route.applier, route)
+          msg1 = "[%s] Rule add inactive: %s - Result: %s" % (route.applier, route.name, "No response yet")
+          logger.info("tasks::add(): return inactive msg="+str(msg1))
+          announce(msg1, route.applier, route)
         else:
           applier = PR.Applier(route_object=route)
           commit, response = applier.apply()
@@ -68,23 +70,30 @@ def add(route, callback=None):
           route.status = status
           route.response = response
           route.save()
-          announce("[%s] Rule add: %s - Result: %s" % (route.applier, route.name, response), route.applier, route)
+          msg1 = "[%s] Rule add: %s - Result: %s" % (route.applier, route.name, response)
+          logger.info("tasks::add(): return msg="+str(msg1))
+          announce(msg1, route.applier, route)
     except TimeLimitExceeded:
         route.status = "ERROR"
         route.response = "Task timeout"
         route.save()
-        announce("[%s] Rule add: %s - Result: %s" % (route.applier, route.name, route.response), route.applier, route)
+        msg1 = "[%s] Rule add: %s - Result: %s" % (route.applier, route.name, route.response)
+        logger.info("tasks::add(): TimeLimitExceeded msg="+str(msg1))
+        announce(msg1, route.applier, route)
     except SoftTimeLimitExceeded:
         route.status = "ERROR"
         route.response = "Task timeout"
         route.save()
-        announce("[%s] Rule add: %s - Result: %s" % (route.applier, route.name, route.response), route.applier, route)
-    except Exception:
+        msg1 = "[%s] Rule add: %s - Result: %s" % (route.applier, route.name, route.response)
+        logger.info("tasks::add(): SoftTimeLimitExceeded msg="+str(msg1))
+        announce(msg1, route.applier, route)
+    except Exception, e:
         route.status = "ERROR"
         route.response = "Error"
         route.save()
-        announce("[%s] Rule add: %s - Result: %s" % (route.applier, route.name, route.response), route.applier, route)
-
+        msg1 = "[%s] Rule add: %s - Result: %s" % (route.applier, route.name, route.response)
+        logger.info("tasks::add(): Exception msg="+str(msg1)+" exc="+str(e))
+        announce(msg1, route.applier, route)
 
 @task(ignore_result=True)
 def edit(route, callback=None):
@@ -144,12 +153,16 @@ def delete(route, **kwargs):
                 status = 'DELETED'
             route.status = status
             route.response = response
-            if route.status == "DELETED":
+            if route.status == "DELETED": # special new case for fully deleting a rule via REST API
               route.delete()
-              announce("[%s] Fully deleted rule : %s%s- Result %s" % (route.applier, route.name, reason_text, response), route.applier, route)
+              msg1 = "[%s] Fully deleted rule : %s%s- Result %s" % (route.applier, route.name, reason_text, response)
+              logger.info("tasks::delete(): DELETED msg="+msg1)
+              announce(msg1, route.applier, route)
             else:
               route.save()
-              announce("[%s] Suspending rule : %s%s- Result %s" % (route.applier, route.name, reason_text, response), route.applier, route)
+              msg1 = "[%s] Suspending rule : %s%s- Result %s" % (route.applier, route.name, reason_text, response)
+              logger.info("tasks::delete(): msg="+msg1)
+              announce(msg1 , route.applier, route)
             try:
               snmp_add_initial_zero_value.delay(str(route.id), False)
             except Exception as e:
@@ -159,22 +172,30 @@ def delete(route, **kwargs):
             route.status = status
             route.response = response
             route.save()
-            announce("[%s] Suspending rule : %s%s- Result %s" % (route.applier, route.name, reason_text, response), route.applier, route)
+            msg1 = "[%s] Suspending rule : %s%s- Result %s" % (route.applier, route.name, reason_text, response)
+            logger.info("tasks::delete(): ERROR msg="+msg1)
+            announce(msg1, route.applier, route)
     except TimeLimitExceeded:
         route.status = "ERROR"
         route.response = "Task timeout"
         route.save()
-        announce("[%s] Suspending rule : %s - Result: %s" % (route.applier, route.name, route.response), route.applier, route)
+        msg1= "[%s] Suspending rule : %s - Result: %s" % (route.applier, route.name, route.response)
+        logger.info("tasks::delete(): TimeLimitExceeded msg="+msg1)
+        announce(msg1, route.applier, route)
     except SoftTimeLimitExceeded:
         route.status = "ERROR"
         route.response = "Task timeout"
         route.save()
-        announce("[%s] Suspending rule : %s - Result: %s" % (route.applier, route.name, route.response), route.applier, route)
-    except Exception:
+        msg1 = "[%s] Suspending rule : %s - Result: %s" % (route.applier, route.name, route.response)
+        logger.info("tasks::delete(): SoftTimeLimitExceeded msg="+msg1)
+        announce(msg1, route.applier, route)
+    except Exception, e:
         route.status = "ERROR"
         route.response = "Error"
         route.save()
-        announce("[%s] Suspending rule : %s - Result: %s" % (route.applier, route.name, route.response), route.applier, route)
+        msg1 = "[%s] Suspending rule : %s - Result: %s" % (route.applier, route.name, route.response)
+        logger.info("tasks::delete(): Exception msg="+msg1+", exc="+str(exc))
+        announce(msg1, route.applier, route)
     logger.info("tasks::delete(): before returning; route.status="+str(route.status))
 
 
