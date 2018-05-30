@@ -201,6 +201,8 @@ def get_ports(rule):
         if rule.destinationport:
             result += 'dstport' + translate_ports(rule.destinationport)
         if rule.sourceport:
+            if result != '':
+              result += ','
             result += 'srcport' + translate_ports(rule.sourceport)
     return result
 
