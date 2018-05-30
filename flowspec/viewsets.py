@@ -38,23 +38,32 @@ class RouteViewSet(viewsets.ModelViewSet):
     serializer_class = RouteSerializer
 
     def get_queryset(self):
+        logger.info("RouteViewSet::get_queryset(): called, settings.DEBUG="+str(settings.DEBUG))
         if settings.DEBUG:
             if self.request.user.is_anonymous():
                 return Route.objects.all()
             elif self.request.user.is_authenticated():
 
-                os.write(4, "debug requesta test\n")
+                logger.info("RouteViewSet::get_queryset(): DEBUG=true, is_authenticated")
+                #os.write(4, "debug requesta test\n")
 
-                #temp1 = Route.objects.filter(containing_peer_ranges__peer__in=self.request.user.userprofile.peers.all())
-                #[obj for obj in Order.objects.all() if obj.expire in days]
-                users_peers_set = set(self.request.user.userprofile.peers.all())
-                routes_all = list(Route.objects.all())
-                #temp1 = [obj for obj in routes_all]
-                temp1 = [obj for obj in routes_all if len(set(obj.containing_peers()).intersection(users_peers_set))>0]
-                #temp1 = [obj for obj in routes_all if len(set(obj.containing_peers()))>0]
-                os.write(4, "debug requesta test"+str(temp1)+"\n")
+                ##temp1 = Route.objects.filter(containing_peer_ranges__peer__in=self.request.user.userprofile.peers.all())
+                ##[obj for obj in Order.objects.all() if obj.expire in days]
+                #users_peers_set = set(self.request.user.userprofile.peers.all())
+                #routes_all = list(Route.objects.all())
+                ##temp1 = [obj for obj in routes_all]
+                #temp1 = [obj for obj in routes_all if len(set(obj.containing_peers()).intersection(users_peers_set))>0]
+                ##temp1 = [obj for obj in routes_all if len(set(obj.containing_peers()))>0]
+                ##os.write(4, "debug requesta test"+str(temp1)+"\n")
+                temp1 = self.get_users_routes_by_its_peers()
+                logger.info("RouteViewSet::get_queryset(): DEBUG=true, is_authenticated => temp="+str(temp1))
+                #logger.info("RouteViewSet::get_queryset(): DEBUG=true, is_authenticated => temp.type="+str(type(temp1)))
+                return temp1
 
-                return Route.objects.filter(applier=self.request.user)
+                # old code which lists only routes with same applier:
+                #ret2 = Route.objects.filter(applier=self.request.user)
+                #logger.info("RouteViewSet::get_queryset(): DEBUG=true, is_authenticated => ret2="+str(ret2))
+                #logger.info("RouteViewSet::get_queryset(): DEBUG=true, is_authenticated => ret2.type="+str(type(ret2)))
 
                 #return Route.objects.filter(containing_peer_ranges__peer__in=self.request.user.userprofile.peers.all())
   
@@ -68,9 +77,23 @@ class RouteViewSet(viewsets.ModelViewSet):
 
         if self.request.user.is_superuser:
             return Route.objects.all()
-        elif (self.request.user.is_authenticated() and not
-              self.request.user.is_anonymous()):
-            return Route.objects.filter(applier=self.request.user)
+        elif (self.request.user.is_authenticated() and not self.request.user.is_anonymous()):
+            #return Route.objects.filter(applier=self.request.user)
+            return self.get_users_routes_by_its_peers()
+
+    def get_users_routes_by_its_peers(self):
+        users_peers_set = set(self.request.user.userprofile.peers.all())
+        routes_all = list(Route.objects.all())
+        #temp1 = [obj for obj in routes_all]
+        temp1 = [obj for obj in routes_all if len(set(obj.containing_peers()).intersection(users_peers_set))>0]
+        temp1_ids = [obj.id for obj in temp1]
+        temp2_ids = set(temp1_ids)
+        return Route.objects.filter(id__in=temp2_ids)
+
+    def get_users_routes_by_applier_only(self):
+        return Route.objects.filter(applier=self.request.user)
+
+    #####
 
     def list(self, request):
         serializer = RouteSerializer(
