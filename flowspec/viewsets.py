@@ -235,10 +235,10 @@ class RouteViewSet(viewsets.ModelViewSet):
         if "applier" in self.request.POST:
           applier_speced = self.request.POST["applier"]
         if self.request.user.is_superuser and applier_speced!=None:
-          os.write(4, "debug requesta1 "+str(applier_speced)+"\n")
+          #os.write(4, "debug requesta1 "+str(applier_speced)+"\n")
           obj.applier = User.objects.get(username=applier_speced)
         elif self.request.user.is_superuser:
-          os.write(4, "debug requesta2 "+str(applier_speced)+"\n")
+          #os.write(4, "debug requesta2 "+str(applier_speced)+"\n")
           #obj.applier = self.request.user
           #obj.applier = User.objects.get(username='tomas.jra2t6')
           obj.applier = User.objects.get(username='david.jra2t6')
