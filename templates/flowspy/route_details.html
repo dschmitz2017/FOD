@@ -75,6 +75,7 @@ function myreloadPage() {
         </div>
         <div>
             <h2>Statistics</h2>
+            <div>(current System time: {{ mytime|date:'Y-m-d H:i' }}, active rules will be updated every 5 minutes)</div>
             <div><span id="traffic-plot-loading">(Loading data...)</span>
             <h3>Number of packets (absolute)</h3>
 	    <div><canvas id="traffic-plot-pkts-abs" width=200 height=200></canvas></div>

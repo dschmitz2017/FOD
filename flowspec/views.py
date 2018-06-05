@@ -821,7 +821,9 @@ def lookupShibAttr(attrmap, requestMeta):
 @login_required
 def routedetails(request, route_slug):
     route = get_object_or_404(Route, name=route_slug)
-    return render(request, 'flowspy/route_details.html', {'route': route})
+    #return render(request, 'flowspy/route_details.html', {'route': route})
+    now = datetime.datetime.now()
+    return render(request, 'flowspy/route_details.html', {'route': route, 'mytime': now})
 
 @login_required
 def routestats(request, route_slug):
