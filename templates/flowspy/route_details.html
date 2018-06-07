@@ -35,17 +35,13 @@ function myreloadPage() {
             {% endif %}
             {% trans 'traffic from' %}
             {{ route.source }}
-            {% if route.port.count %}, {% trans 'port' %}
-                {% for port in route.port.all %}
-                    {{ port }} {% if not forloop.last %},{% endif %}
-                {% endfor %}
+            {% if route.sourceport %} {% trans 'port' %}
+                {{ route.sourceport }} 
             {% endif %}
             {% trans 'to' %}
             {{ route.destination }}
-            {% if route.destinationport.count %}, {% trans 'port' %}
-                {% for port in route.destinationport.all %}
-                    {{ port }} {% if not forloop.last %},{% endif %}
-                {% endfor %}
+            {% if route.destinationport %} {% trans 'port' %}
+                {{ route.destinationport }} 
             {% endif %}
             {% if route.fragmenttype.count %}
             ({% trans 'Fragmentypes' %}:
@@ -71,6 +67,16 @@ function myreloadPage() {
                  {% if route.status = 'ACTIVE' %}
                      <button class="del_button btn-warning btn btn-sm btn-outline" id="{{ route.name }}" data-routename="{{ route.name }}">{% trans "Deactivate" %}</button>
                  {% endif %}
+             {% endif %}
+
+             {% if route.comments %}
+             <p>
+             <div>
+               Comments: {{ route.comments|slice:"0:300" }}
+               {% if route_comments_len > 300 %}
+               ...
+               {% endif %}
+             </div>
              {% endif %}
         </div>
         <div>
@@ -105,6 +111,12 @@ function myreloadPage() {
         </div>
     </div>
     {% endif %}
+
+    {% if route.comments %}
+    <p>
+    <div><h2>Comments</h2><pre>{{ route.comments }}</pre></div>
+    {% endif %}
+
 </div>
 {% endblock %}
 
