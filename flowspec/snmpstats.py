@@ -20,7 +20,7 @@
 import logging
 from pysnmp.hlapi.asyncore import *
 from django.conf import settings
-from datetime import datetime
+from datetime import datetime, timedelta
 import json
 import os
 
@@ -144,6 +144,13 @@ def poll_snmp_statistics():
     now = datetime.now()
     nowstr = now.isoformat()
     try:
+      last_poll_no_time = history['_last_poll_no_time']
+    except Exception as e:
+      logger.info("got exception while trying to access history[_last_poll_time]: "+str(e))
+      last_poll_no_time=None
+      
+    try:
+        logger.info("snmpstats: nowstr="+str(nowstr)+", last_poll_no_time="+str(last_poll_no_time))
         newdata = get_snmp_stats()
 
         # update history
@@ -159,11 +166,23 @@ def poll_snmp_statistics():
         # check for old rules and remove them
         toremove = []
         for rule in history:
+          if rule!='_last_poll_no_time':
             ts = datetime.strptime(history[rule][0]["ts"], '%Y-%m-%dT%H:%M:%S.%f')
             if (now - ts).total_seconds() >= settings.SNMP_REMOVE_RULES_AFTER:
                 toremove.append(rule)
         for rule in toremove:
             history.pop(rule, None)
+
+        # for now workaround for low-level rules (by match params, not FoD rule id) no longer have data, typically because of haveing been deactivated
+        for rule in history:
+          if rule!='_last_poll_no_time':
+            ts = history[rule][0]["ts"]
+            if ts!=nowstr and ts==last_poll_no_time:
+              counter = {"ts": nowstr, "value": 0}
+              history[rule].insert(0, counter)
+              history[rule] = history[rule][:samplecount]
+
+        history['_last_poll_no_time']=nowstr
 
         # store updated history
         tf = settings.SNMP_TEMP_FILE + "." + nowstr
@@ -174,4 +193,5 @@ def poll_snmp_statistics():
     except Exception as e:
         logger.error(e)
         logger.error("Polling failed.")
+    logger.info("Polling end: last_poll_no_time="+str(last_poll_no_time))
 
