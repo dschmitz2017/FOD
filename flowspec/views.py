@@ -834,14 +834,22 @@ def routestats(request, route_slug):
             res = json.load(f)
         f.close()
         routename = create_junos_name(route)
+        route_id = str(route.id)
         if not res:
             raise Exception("No data stored in the existing file.")
-        elif routename in res:
-            return HttpResponse(json.dumps({"name": routename, "data": res[routename]}), mimetype="application/json")
+        if settings.STATISTICS_PER_RULE==False:
+            if routename in res:
+              return HttpResponse(json.dumps({"name": routename, "data": res[routename]}), mimetype="application/json")
+            else:
+              return HttpResponse(json.dumps({"error": "Route '{}' was not found in statistics.".format(routename)}), mimetype="application/json", status=404)
         else:
-            return HttpResponse(json.dumps({"error": "Route '{}' was not found in statistics.".format(routename)}), mimetype="application/json", status=404)
+            if route_id in res['_per_rule']:
+              return HttpResponse(json.dumps({"name": routename, "data": res['_per_rule'][route_id]}), mimetype="application/json")
+            else:
+              return HttpResponse(json.dumps({"error": "Route '{}' was not found in statistics.".format(route_id)}), mimetype="application/json", status=404)
+
     except Exception as e:
         logger.error('routestats failed: %s' % e)
-        return HttpResponse(json.dumps({"error": "No data available."}), mimetype="application/json", status=404)
+        return HttpResponse(json.dumps({"error": "No data available. %s" % e}), mimetype="application/json", status=404)
 
 

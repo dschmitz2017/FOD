@@ -24,6 +24,9 @@ from datetime import datetime, timedelta
 import json
 import os
 
+from flowspec.models import Route
+from flowspec.junos import create_junos_name
+
 logger = logging.getLogger(__name__)
 identoffset = len(settings.SNMP_CNTPACKETS) + 1
 
@@ -143,11 +146,21 @@ def poll_snmp_statistics():
     # get new data
     now = datetime.now()
     nowstr = now.isoformat()
+
+    #null_measurement = 0
+    #null_measurement = { "bytes" : 0, "packets" : 0 }
+    null_measurement = 0 #{ "bytes" : "", "packets" : "" }
+
     try:
       last_poll_no_time = history['_last_poll_no_time']
     except Exception as e:
       logger.info("got exception while trying to access history[_last_poll_time]: "+str(e))
       last_poll_no_time=None
+
+    try:
+      history_per_rule = history['_per_rule']
+    except Exception as e:
+      history_per_rule = {}
       
     try:
         logger.info("snmpstats: nowstr="+str(nowstr)+", last_poll_no_time="+str(last_poll_no_time))
@@ -166,23 +179,54 @@ def poll_snmp_statistics():
         # check for old rules and remove them
         toremove = []
         for rule in history:
-          if rule!='_last_poll_no_time':
+          if rule!='_last_poll_no_time' and rule!="_per_rule":
             ts = datetime.strptime(history[rule][0]["ts"], '%Y-%m-%dT%H:%M:%S.%f')
             if (now - ts).total_seconds() >= settings.SNMP_REMOVE_RULES_AFTER:
                 toremove.append(rule)
         for rule in toremove:
             history.pop(rule, None)
 
-        # for now workaround for low-level rules (by match params, not FoD rule id) no longer have data, typically because of haveing been deactivated
-        for rule in history:
-          if rule!='_last_poll_no_time':
-            ts = history[rule][0]["ts"]
-            if ts!=nowstr and ts==last_poll_no_time:
-              counter = {"ts": nowstr, "value": 0}
-              history[rule].insert(0, counter)
-              history[rule] = history[rule][:samplecount]
+        if settings.STATISTICS_PER_MATCHACTION_ADD_FINAL_ZERO == True:
+          # for now workaround for low-level rules (by match params, not FoD rule id) no longer have data, typically because of haveing been deactivated
+          for rule in history:
+            if rule!='_last_poll_no_time' and rule!="_per_rule":
+              ts = history[rule][0]["ts"]
+              if ts!=nowstr and ts==last_poll_no_time:
+                counter = {"ts": nowstr, "value": null_measurement }
+                history[rule].insert(0, counter)
+                history[rule] = history[rule][:samplecount]
+          history['_last_poll_no_time']=nowstr
+    
+        if settings.STATISTICS_PER_RULE == True:
+          queryset = Route.objects.all()
+          for ruleobj in queryset:
+            logger.info("snmpstats: STATISTICS_PER_RULE ruleobj="+str(ruleobj))
+            logger.info("snmpstats: STATISTICS_PER_RULE ruleobj.type="+str(type(ruleobj)))
+            rule_id = str(ruleobj.id)
+            logger.info("snmpstats: STATISTICS_PER_RULE ruleobj.id="+str(rule_id))
+            logger.info("snmpstats: STATISTICS_PER_RULE ruleobj.status="+str(ruleobj.status))
+            flowspec_params_str=create_junos_name(ruleobj)
+            logger.info("snmpstats: STATISTICS_PER_RULE flowspec_params_str="+str(flowspec_params_str))
 
-        history['_last_poll_no_time']=nowstr
+            if ruleobj.status=="ACTIVE":
+              try:
+                counter = {"ts": nowstr, "value": newdata[flowspec_params_str]}
+              except Exception as e:
+                logger.info("snmpstats: STATISTICS_PER_RULE: exception: rule_id="+str(rule_id)+" : "+str(e))
+                counter = {"ts": nowstr, "value": null_measurement }
+            else:
+              counter = {"ts": nowstr, "value": null_measurement }
+
+            try:
+                if rule_id in history_per_rule:
+                  history_per_rule[rule_id].insert(0, counter)
+                  history_per_rule[rule_id] = history_per_rule[rule_id][:samplecount]
+                else:
+                  history_per_rule[rule_id] = [counter]
+            except Exception as e:
+                logger.info("snmpstats: 2 STATISTICS_PER_RULE: exception: "+str(e))
+
+          history['_per_rule'] = history_per_rule
 
         # store updated history
         tf = settings.SNMP_TEMP_FILE + "." + nowstr

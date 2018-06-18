@@ -134,8 +134,11 @@ function plotGraph(data)
            ydatarel[i] = 0;
            ybytesdatarel[i] = 0;
        } else {
-           ydatarel[i] = ydata[i] - ydata[i-1];
-           ybytesdatarel[i] = ybytesdata[i] - ybytesdata[i-1];
+           delta = (ydata[i]===undefined || ydata[i-1]===undefined) ? undefined : (ydata[i] - ydata[i-1]);
+           ydatarel[i] = (delta===undefined || delta>=0) ? delta : 0;
+
+           bytesdelta = (ybytesdata[i]===undefined || ybytesdata[i-1]===undefined) ? undefined : ybytesdata[i] - ybytesdata[i-1];
+           ybytesdatarel[i] = (bytesdelta===undefined || bytesdelta>=0) ? bytesdelta : 0;
        }
    }
 
