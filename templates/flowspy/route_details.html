@@ -66,7 +66,7 @@ function myreloadPage() {
 
                  <a href="{% url edit-route route.name  %}" class="btn-info btn btn-sm btn-outline">{% trans "Edit" %}</a>
                  {% if route.status = 'ACTIVE' %}
-                     <button class="del_button btn-warning btn btn-sm btn-outline" id="{{ route.name }}" data-routename="{{ route.name }}">{% trans "Deactivate" %}</button>
+                 <button class="del_button btn-warning btn btn-sm btn-outline" id="{{ route.name }}" data-routename="{{ route.name }}">{% trans "Deactivate" %}</button>
                  {% endif %}
              {% endif %}
 
@@ -341,8 +341,15 @@ $(document).ready(function() {
 {% endif %}
 
 <script type="text/javascript">
+  
+    var delete_triggerd = false;
+
     $(document).ready(function () {
         $('body').on('click', ".del_button", function(){
+            if (delete_triggerd)
+              return;
+            delete_triggerd = true;
+
             last_element = false;
             var my = $(this);
             my.html('Deactivating...')
