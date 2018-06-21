@@ -819,6 +819,7 @@ def lookupShibAttr(attrmap, requestMeta):
 
 # show the details of specific route
 @login_required
+@never_cache
 def routedetails(request, route_slug):
     route = get_object_or_404(Route, name=route_slug)
     #return render(request, 'flowspy/route_details.html', {'route': route})
