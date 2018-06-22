@@ -86,10 +86,10 @@ def edit(route, callback=None):
         commit, response = applier.apply(operation="replace")
         if commit:
             status = "ACTIVE"
-            #try:
-            #  snmp_add_initial_zero_value.delay(str(route.id), True)
-            #except Exception as e:
-            #  logger.error("edit(): route="+str(route)+", ACTIVE, add_initial_zero_value failed: "+str(e))
+            try:
+              snmp_add_initial_zero_value.delay(str(route.id), True)
+            except Exception as e:
+              logger.error("edit(): route="+str(route)+", ACTIVE, add_initial_zero_value failed: "+str(e))
         else:
             status = "ERROR"
         route.status = status
@@ -124,10 +124,10 @@ def delete(route, **kwargs):
             if "reason" in kwargs and kwargs['reason'] == 'EXPIRED':
                 status = 'EXPIRED'
                 reason_text = " Reason: %s " % status
-            #try:
-            #  snmp_add_initial_zero_value.delay(str(route.id), False)
-            #except Exception as e:
-            #  logger.error("edit(): route="+str(route)+", INACTIVE, add_null_value failed: "+str(e))
+            try:
+              snmp_add_initial_zero_value.delay(str(route.id), False)
+            except Exception as e:
+              logger.error("edit(): route="+str(route)+", INACTIVE, add_null_value failed: "+str(e))
         else:
             status = "ERROR"
         route.status = status
@@ -350,13 +350,11 @@ def snmp_add_initial_zero_value(rule_id, zero_or_null=True):
     else:
       logger.info("snmp_add_initial_zero_value(): in child process (pid="+str(pid)+", npid="+str(npid)+")")
 
-      if snmp_lock_create(1):
-        try:
-          snmpstats.add_initial_zero_value(rule_id, zero_or_null)
-          logger.info("snmp_add_initial_zero_value(): rule_id="+str(rule_id)+" sucesss")
-        except Exception as e:
-          logger.error("snmp_add_initial_zero_value(): rule_id="+str(rule_id)+" failed: "+str(e))
-        snmp_lock_remove()
+      try:
+        snmpstats.add_initial_zero_value(rule_id, zero_or_null)
+        logger.info("snmp_add_initial_zero_value(): rule_id="+str(rule_id)+" sucesss")
+      except Exception as e:
+        logger.error("snmp_add_initial_zero_value(): rule_id="+str(rule_id)+" failed: "+str(e))
 
       #exit_process()
       logger.info("exit_process(): before exit in child process (pid="+str(pid)+", npid="+str(npid)+")")
