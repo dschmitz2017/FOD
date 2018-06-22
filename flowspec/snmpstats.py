@@ -148,6 +148,22 @@ def save_history(history, nowstr):
       json.dump(history, f)
     os.rename(tf, settings.SNMP_TEMP_FILE)
 
+def helper_stats_store_parse_ts(ts_string):
+  try:
+    ts = datetime.strptime(ts_string, '%Y-%m-%dT%H:%M:%S.%f')
+  except Exception as e:
+    logger.info("helper_stats_store_parse_ts(): ts_string="+str(ts_string)+": got exception "+str(e))
+    ts = None
+  return ts
+
+def helper_rule_ts_parse(ts_string):
+  try:
+    ts = datetime.strptime(ts_string, '%Y-%m-%d %H:%M:%S+00:00') # TODO TZ offset assumed to be 00:00
+  except Exception as e:
+    logger.info("helper_rule_ts_parse(): ts_string="+str(ts_string)+": got exception "+str(e))
+    ts = None
+  return ts
+
 def poll_snmp_statistics():
     logger.info("Polling SNMP statistics.")
 
@@ -167,6 +183,7 @@ def poll_snmp_statistics():
     except Exception as e:
       logger.info("got exception while trying to access history[_last_poll_time]: "+str(e))
       last_poll_no_time=None
+    history['_last_poll_no_time']=nowstr
 
     try:
       history_per_rule = history['_per_rule']
@@ -190,10 +207,14 @@ def poll_snmp_statistics():
         # check for old rules and remove them
         toremove = []
         for rule in history:
-          if rule!='_last_poll_no_time' and rule!="_per_rule":
-            ts = datetime.strptime(history[rule][0]["ts"], '%Y-%m-%dT%H:%M:%S.%f')
-            if (now - ts).total_seconds() >= settings.SNMP_REMOVE_RULES_AFTER:
-                toremove.append(rule)
+          try:
+            if rule!='_last_poll_no_time' and rule!="_per_rule":
+              #ts = datetime.strptime(history[rule][0]["ts"], '%Y-%m-%dT%H:%M:%S.%f')
+              ts = helper_stats_store_parse_ts(history[rule][0]["ts"])
+              if ts!=None and (now - ts).total_seconds() >= settings.SNMP_REMOVE_RULES_AFTER:
+                  toremove.append(rule)
+          except Exception as e:
+            logger.info("snmpstats: old rules remove loop: rule="+str(rule)+" got exception "+str(e))
         for rule in toremove:
             history.pop(rule, None)
 
@@ -206,7 +227,6 @@ def poll_snmp_statistics():
                 counter = {"ts": nowstr, "value": null_measurement }
                 history[rule].insert(0, counter)
                 history[rule] = history[rule][:samplecount]
-          history['_last_poll_no_time']=nowstr
     
         if settings.STATISTICS_PER_RULE == True:
           queryset = Route.objects.all()
@@ -214,7 +234,8 @@ def poll_snmp_statistics():
             rule_id = str(ruleobj.id)
             rule_status = str(ruleobj.status)
             #rule_last_updated = str(ruleobj.last_updated) # e.g. 2018-06-21 08:03:21+00:00
-            rule_last_updated = datetime.strptime(str(ruleobj.last_updated), '%Y-%m-%d %H:%M:%S+00:00') # TODO TZ offset assumed to be 00:00
+            #rule_last_updated = datetime.strptime(str(ruleobj.last_updated), '%Y-%m-%d %H:%M:%S+00:00') # TODO TZ offset assumed to be 00:00
+            rule_last_updated = helper_rule_ts_parse(str(ruleobj.last_updated))
             counter_null = {"ts": rule_last_updated.isoformat(), "value": null_measurement }
             counter_zero = {"ts": rule_last_updated.isoformat(), "value": zero_measurement }
 
@@ -241,7 +262,7 @@ def poll_snmp_statistics():
                 if not rule_id in history_per_rule:
                   if rule_status!="ACTIVE":
                     logger.info("snmpstats: STATISTICS_PER_RULE: rule_id="+str(rule_id)+" case notexisting inactive")
-                    history_per_rule[rule_id] = [counter]
+                    #history_per_rule[rule_id] = [counter]
                   else:
                     logger.info("snmpstats: STATISTICS_PER_RULE: rule_id="+str(rule_id)+" case notexisting active")
                     if counter_is_null:
@@ -259,7 +280,8 @@ def poll_snmp_statistics():
                     if last_value==None:
                       rule_newer_than_last = true
                     else:
-                      rule_newer_than_last = rule_last_updated > datetime.strptime(last_value['ts'], '%Y-%m-%dT%H:%M:%S.%f')
+                      last_ts = helper_stats_store_parse_ts(last_value['ts'])
+                      rule_newer_than_last = last_ts==None or rule_last_updated > last_ts
                     logger.info("snmpstats: STATISTICS_PER_RULE: rule_id="+str(rule_id)+" rule_last_updated="+str(rule_last_updated)+", last_value="+str(last_value))
                     if last_is_null and rule_newer_than_last:
                       logger.info("snmpstats: STATISTICS_PER_RULE: rule_id="+str(rule_id)+" case existing active 11")
