@@ -167,10 +167,21 @@ def load_history():
     try:
         with open(settings.SNMP_TEMP_FILE, "r") as f:
             history = json.load(f)
+        f.close()
     except:
         logger.info("There is no file with SNMP historical data.")
         pass
     return history
+
+# TODO: need locking for ro access?
+def get_last_msrm_delay_time():
+  last_msrm_delay_time = ""
+  try:
+    history = load_history()
+    last_msrm_delay_time = history['_last_msrm_delay_time']
+  except Exception as e:
+    logger.info("get_last_msrm_delay_time(): got exception: "+str(e))
+  return last_msrm_delay_time
 
 def save_history(history, nowstr):
     # store updated history
@@ -218,6 +229,9 @@ def poll_snmp_statistics():
 
     # load history
     history = load_history()
+    
+    now2 = datetime.now()
+    msrm_delay_time = now2 - now
 
     zero_measurement = { "bytes" : 0, "packets" : 0 }
     null_measurement = 0 
@@ -228,8 +242,10 @@ def poll_snmp_statistics():
     except Exception as e:
       logger.info("poll_snmp_statistics(): got exception while trying to access history[_last_poll_time]: "+str(e))
       last_poll_no_time=None
+    logger.info("poll_snmp_statistics(): snmpstats: msrm_delay_time="+str(msrm_delay_time))
     logger.info("poll_snmp_statistics(): snmpstats: last_poll_no_time="+str(last_poll_no_time))
     history['_last_poll_no_time']=nowstr
+    history['_last_msrm_delay_time']=str(msrm_delay_time)
 
     try:
       history_per_rule = history['_per_rule']
@@ -255,7 +271,7 @@ def poll_snmp_statistics():
         toremove = []
         for rule in history:
           try:
-            if rule!='_last_poll_no_time' and rule!="_per_rule":
+            if len(rule)>0 and rule[0]!='_':
               #ts = datetime.strptime(history[rule][0]["ts"], '%Y-%m-%dT%H:%M:%S.%f')
               ts = helper_stats_store_parse_ts(history[rule][0]["ts"])
               if ts!=None and (now - ts).total_seconds() >= settings.SNMP_REMOVE_RULES_AFTER:
@@ -268,7 +284,7 @@ def poll_snmp_statistics():
         if settings.STATISTICS_PER_MATCHACTION_ADD_FINAL_ZERO == True:
           # for now workaround for low-level rules (by match params, not FoD rule id) no longer have data, typically because of haveing been deactivated
           for rule in history:
-            if rule!='_last_poll_no_time' and rule!="_per_rule":
+            if len(rule)>0 and rule[0]!='_':
               ts = history[rule][0]["ts"]
               if ts!=nowstr and ts==last_poll_no_time:
                 counter = {"ts": nowstr, "value": null_measurement }
