@@ -52,6 +52,8 @@ from flowspec.helpers import send_new_mail, get_peer_techc_mails
 import datetime
 import os
 
+from flowspec.snmpstats import load_history, get_last_msrm_delay_time
+
 LOG_FILENAME = os.path.join(settings.LOG_FILE_LOCATION, 'celery_jobs.log')
 # FORMAT = '%(asctime)s %(levelname)s: %(message)s'
 # logging.basicConfig(format=FORMAT)
@@ -833,9 +835,11 @@ def routedetails(request, route_slug):
     route = get_object_or_404(Route, name=route_slug)
     #return render(request, 'flowspy/route_details.html', {'route': route})
     now = datetime.datetime.now()
+    last_msrm_delay_time = get_last_msrm_delay_time()
     return render(request, 'flowspy/route_details.html', {
       'route': route, 
       'mytime': now, 
+      'last_msrm_delay_time': last_msrm_delay_time,
       'tz' : settings.TIME_ZONE,
       'route_comments_len' : len(str(route.comments))
       })
@@ -847,9 +851,10 @@ def routestats(request, route_slug):
     import time
     res = {}
     try:
-        with open(settings.SNMP_TEMP_FILE, "r") as f:
-            res = json.load(f)
-        f.close()
+        #with open(settings.SNMP_TEMP_FILE, "r") as f:
+        #    res = json.load(f)
+        #f.close()
+        res = load_history()
         routename = create_junos_name(route)
         route_id = str(route.id)
         if not res:
