@@ -24,7 +24,7 @@ from django.contrib.sites.models import Site
 from django.utils.translation import ugettext_lazy as _
 from django.core.urlresolvers import reverse
 
-from flowspec.helpers import send_new_mail, get_peer_techc_mails
+from flowspec.helpers import send_new_mail, get_peer_techc_mails, get_peer_techc_mails__multiple
 from utils import proxy as PR
 from ipaddr import *
 import datetime
@@ -202,10 +202,8 @@ class Route(models.Model):
             except Exception:
                 raise ValidationError(_('Invalid network address format at Source Field'))
 
-    def commit_add(self, *args, **kwargs):
-        logger.info("model::commit_add(): route="+str(self)+", kwargs="+str(kwargs))
-        status_initial = self.status
-        logger.info("model::commit_add(): route="+str(self)+", status_initial="+str(status_initial))
+    def helper_get_matching_peers(self):
+      if not settings.MAIL_NOTIFICATION_TO_ALL_MATCHING_PEERS:
         peers = self.applier.get_profile().peers.all()
         username = None
         for peer in peers:
@@ -220,8 +218,27 @@ class Route(models.Model):
             peer = username.peer_tag
         else:
             peer = None
+        return ([username], [peer]) # username is a peer, and peer = username.peer_tag
+      else:
+        all_peers = Peer.objects.all()
+        matched_peers = []
+        matched_peer_tags = []
+        for peer in all_peers:
+            for network in peer.networks.all():
+                net = IPNetwork(network)
+                if IPNetwork(self.destination) in net:
+                    matched_peers.append(peer)
+                    matched_peer_tags.append(peer.peer_tag)
+        return (matched_peers, matched_peer_tags)
+
+
+    def commit_add(self, *args, **kwargs):
+        logger.info("model::commit_add(): route="+str(self)+", kwargs="+str(kwargs))
+        status_initial = self.status
+        logger.info("model::commit_add(): route="+str(self)+", status_initial="+str(status_initial))
+        peer2 = self.helper_get_matching_peers()
         msg1 = "[%s] Adding rule %s. Please wait..." % (self.applier.username, self.name)
-        send_message(msg1, peer)
+        send_message_multiple(msg1, peer2[1])
         logger.info("model::commit_add(): "+str(msg1))
         response = add.delay(self)
         logger.info('model::commit_add(): Got add job id: %s' % response)
@@ -231,13 +248,15 @@ class Route(models.Model):
             reverse('edit-route', kwargs={'route_slug': self.name})
         )
         mail_body = render_to_string(
+            # ../templates/rule_action.txt
             'rule_action.txt',
             {
                 'route': self,
                 'address': self.requesters_address,
                 'action': 'creation',
                 'url': admin_url,
-                'peer': username
+                'peer_list': peer2[0],
+                'peer_list_length_greater_one': len(peer2[0])>1
             }
         )
         user_mail = '%s' % self.applier.email
@@ -246,7 +265,7 @@ class Route(models.Model):
             settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier.username),
             mail_body,
             settings.SERVER_EMAIL, user_mail,
-            get_peer_techc_mails(self.applier, username)
+            get_peer_techc_mails__multiple(self.applier, peer2[0])
         )
         d = {
             'clientip': '%s' % self.requesters_address,
@@ -255,27 +274,10 @@ class Route(models.Model):
         logger.info(mail_body, extra=d)
 
     def commit_edit(self, *args, **kwargs):
-        peers = self.applier.get_profile().peers.all()
-        username = None
-        for peer in peers:
-            if username:
-                break
-            for network in peer.networks.all():
-                net = IPNetwork(network)
-                if IPNetwork(self.destination) in net:
-                    username = peer
-                    break
-        if username:
-            peer = username.peer_tag
-        else:
-            peer = None
-        send_message(
-            '[%s] Editing rule %s. Please wait...' %
-            (
-                self.applier.username,
-                self.name
-            ), peer
-        )
+        peer2 = self.helper_get_matching_peers()
+        msg1 = "[%s] Editing rule %s. Please wait..." % (self.applier.username, self.name)
+        send_message_multiple(msg1, peer2[1])
+        logger.info("model::commit_edit(): "+str(msg1))
         response = edit.delay(self)
         logger.info('Got edit job id: %s' % response)
         fqdn = Site.objects.get_current().domain
@@ -293,7 +295,8 @@ class Route(models.Model):
                 'address': self.requesters_address,
                 'action': 'edit',
                 'url': admin_url,
-                'peer': username
+                'peer_list': peer2[0],
+                'peer_list_length_greater_one': len(peer2[0])>1
             }
         )
         user_mail = '%s' % self.applier.email
@@ -301,7 +304,7 @@ class Route(models.Model):
         send_new_mail(
             settings.EMAIL_SUBJECT_PREFIX + 'Rule %s edit request submitted by %s' % (self.name, self.applier.username),
             mail_body, settings.SERVER_EMAIL, user_mail,
-            get_peer_techc_mails(self.applier, username)
+            get_peer_techc_mails__multiple(self.applier, peer2[0])
         )
         d = {
             'clientip': self.requesters_address,
@@ -312,32 +315,15 @@ class Route(models.Model):
     def commit_delete(self, *args, **kwargs):
         logger.info("model::commit_delete(): route="+str(self)+", kwargs="+str(kwargs))
 
-        username = None
         reason_text = ''
         reason = ''
         if "reason" in kwargs:
             reason = kwargs['reason']
             reason_text = 'Reason: %s.' % reason
-        peers = self.applier.get_profile().peers.all()
-        for peer in peers:
-            if username:
-                break
-            for network in peer.networks.all():
-                net = IPNetwork(network)
-                if IPNetwork(self.destination) in net:
-                    username = peer
-                    break
-        if username:
-            peer = username.peer_tag
-        else:
-            peer = None
-        send_message(
-            '[%s] Suspending rule %s. %sPlease wait...' % (
-                self.applier.username,
-                self.name,
-                reason_text
-            ), peer
-        )
+        peer2 = self.helper_get_matching_peers()
+        msg1 = "[%s] Suspending rule %s. %sPlease wait..." % (self.applier.username, self.name, reason_text)
+        send_message_multiple(msg1, peer2[1])
+        logger.info("model::commit_delete(): "+str(msg1))
         response = delete.delay(self, reason=reason)
         logger.info('Got delete job id: %s' % response)
         fqdn = Site.objects.get_current().domain
@@ -355,7 +341,8 @@ class Route(models.Model):
                 'address': self.requesters_address,
                 'action': 'removal',
                 'url': admin_url,
-                'peer': username
+                'peer_list': peer2[0],
+                'peer_list_length_greater_one': len(peer2[0])>1
             }
         )
         user_mail = '%s' % self.applier.email
@@ -365,7 +352,7 @@ class Route(models.Model):
             mail_body,
             settings.SERVER_EMAIL,
             user_mail,
-            get_peer_techc_mails(self.applier, username)
+            get_peer_techc_mails__multiple(self.applier, peer2[0])
         )
         d = {
             'clientip': self.requesters_address,
@@ -657,3 +644,12 @@ def send_message(msg, user):
     tube_message = json.dumps({'message': str(msg), 'username': peer})
     b.put(tube_message)
     b.close()
+
+def send_message_multiple(msg, user_list):
+    for peer in user_list:
+      b = beanstalkc.Connection()
+      b.use(settings.POLLS_TUBE)
+      tube_message = json.dumps({'message': str(msg), 'username': peer})
+      b.put(tube_message)
+      b.close()
+
