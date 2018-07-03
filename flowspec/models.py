@@ -628,9 +628,8 @@ class Route(models.Model):
 
 def send_message(msg, user):
 #    username = user.username
-    peer = user
     b = beanstalkc.Connection()
     b.use(settings.POLLS_TUBE)
-    tube_message = json.dumps({'message': str(msg), 'username': peer})
+    tube_message = json.dumps({'message': str(msg), 'username': user})
     b.put(tube_message)
     b.close()
