@@ -126,16 +126,16 @@ class PortSerializer(serializers.HyperlinkedModelSerializer):
 class ThenActionSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = ThenAction
-        fields = ('action', 'action_value')
+        fields = ('action', 'action_value', 'id', 'url')
 
 
 class FragmentTypeSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = FragmentType
-        fields = ('fragmenttype', )
+        fields = ('fragmenttype', 'id', 'url')
 
 
 class MatchProtocolSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = MatchProtocol
-        fields = ('protocol', )
+        fields = ('protocol', 'id', 'url')
