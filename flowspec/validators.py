@@ -88,7 +88,7 @@ def clean_destination(user, destination):
 def clean_expires(date):
     if date:
         range_days = (date - datetime.date.today()).days
-        if range_days > 0 and range_days < 11:
+        if range_days > 0 and range_days < settings.MAX_RULE_EXPIRE_DAYS:
             return date
         else:
             return _('Invalid date range')
