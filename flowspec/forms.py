@@ -86,12 +86,9 @@ class UserProfileForm(forms.ModelForm):
         model = UserProfile
 
 
-class RouteForm(forms.ModelForm):
-    sourceport = PortRangeForm()
-    destinationport = PortRangeForm()
-    port = PortRangeForm()
+class RuleForm(forms.ModelForm):
     class Meta:
-        model = Route
+        model = Rule
 
     def clean_applier(self):
         applier = self.cleaned_data['applier']
@@ -100,31 +97,11 @@ class RouteForm(forms.ModelForm):
         else:
             raise forms.ValidationError('This field is required.')
 
-    def clean_source(self):
-        # run validator which is used by rest framework too
-        source = self.cleaned_data['source']
-        res = clean_source(
-            User.objects.get(pk=self.data['applier']),
-            source
-        )
-        if res != source:
-            raise forms.ValidationError(res)
-        else:
-            return res
-
-    def clean_destination(self):
-        destination = self.cleaned_data.get('destination')
-        res = clean_destination(
-            User.objects.get(pk=self.data['applier']),
-            destination
-        )
-        if destination != res:
-            raise forms.ValidationError(res)
-        else:
-            return res
 
     def clean_expires(self):
         date = self.cleaned_data['expires']
+        if not date:
+            raise forms.ValidationError('This field is required.')
         res = clean_expires(date)
         if date != res:
             raise forms.ValidationError(res)
@@ -143,8 +120,9 @@ class RouteForm(forms.ModelForm):
             peers = Peer.objects.all()
         else:
             peers = user.userprofile.peers.all()
-        existing_routes = Route.objects.all()
-        existing_routes = existing_routes.filter(applier__userprofile__peers__in=peers)
+
+        existing_routes = self.routes.all()
+        #existing_routes = existing_routes.filter(rule__applier__userprofile__peers__in=peers)
         name = self.cleaned_data.get('name', None)
         protocols = self.cleaned_data.get('protocol', None)
         source = self.cleaned_data.get('source', None)
@@ -152,7 +130,70 @@ class RouteForm(forms.ModelForm):
         port = self.cleaned_data.get('port', None)
         destination = self.cleaned_data.get('destination', None)
         destinationports = self.cleaned_data.get('destinationport', None)
-        user = self.cleaned_data.get('applier', None)
+        #user = self.cleaned_data.get('applier', None)
+
+        for route in existing_routes:
+            if name != route.name:
+                existing_url = reverse('edit-route', args=[route.name])
+                if IPNetwork(destination) in IPNetwork(route.destination) or IPNetwork(route.destination) in IPNetwork(destination):
+                    raise forms.ValidationError('Found an exact %s rule, %s with destination prefix %s<br>To avoid overlapping try editing rule <a href=\'%s\'>%s</a>' % (route.status, route.name, route.destination, existing_url, route.name))
+        return self.cleaned_data
+
+class RouteForm(forms.ModelForm):
+    sourceport = PortRangeForm()
+    destinationport = PortRangeForm()
+    port = PortRangeForm()
+    class Meta:
+        model = Route
+
+    def clean_source(self):
+        # run validator which is used by rest framework too
+        source = self.cleaned_data['source']
+        #res = clean_source(
+        #    User.objects.get(pk=self.data['applier']),
+        #    source
+        #)
+        #if res != source:
+        #    raise forms.ValidationError(res)
+        #else:
+        #    return res
+        return source
+
+    def clean_destination(self):
+        destination = self.cleaned_data.get('destination')
+        #res = clean_destination(
+        #    User.objects.get(pk=self.data['applier']),
+        #    destination
+        #)
+        #if destination != res:
+        #    raise forms.ValidationError(res)
+        #else:
+        #    return res
+        return destination
+
+    def clean(self):
+        if self.errors:
+            raise forms.ValidationError(_('Errors in form. Please review and fix them: %s' % ", ".join(self.errors)))
+        error = clean_route_form(self.cleaned_data)
+        if error:
+            raise forms.ValidationError(error)
+
+        ## check if same rule exists with other name
+        #user = self.cleaned_data['applier']
+        #if user.is_superuser:
+        #    peers = Peer.objects.all()
+        #else:
+        #    peers = user.userprofile.peers.all()
+        existing_routes = Route.objects.all()
+        #existing_routes = existing_routes.filter(rule__applier__userprofile__peers__in=peers)
+        name = self.cleaned_data.get('name', None)
+        protocols = self.cleaned_data.get('protocol', None)
+        source = self.cleaned_data.get('source', None)
+        sourceports = self.cleaned_data.get('sourceport', None)
+        port = self.cleaned_data.get('port', None)
+        destination = self.cleaned_data.get('destination', None)
+        destinationports = self.cleaned_data.get('destinationport', None)
+        #user = self.cleaned_data.get('applier', None)
 
         if source:
             source = IPNetwork(source).compressed
