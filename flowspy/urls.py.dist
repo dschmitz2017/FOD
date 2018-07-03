@@ -4,8 +4,10 @@ from django.contrib import admin
 from rest_framework import routers
 from graphs import urls as graphs_urls
 from flowspec.viewsets import (
+    RuleViewSet,
     RouteViewSet,
     PortViewSet,
+    PeerViewSet,
     ThenActionViewSet,
     FragmentTypeViewSet,
     MatchProtocolViewSet,
@@ -15,8 +17,10 @@ admin.autodiscover()
 
 # Routers provide an easy way of automatically determining the URL conf.
 router = routers.DefaultRouter()
+router.register(r'rules', RuleViewSet, base_name='rule')
 router.register(r'routes', RouteViewSet, base_name='route')
 router.register(r'ports', PortViewSet)
+router.register(r'peers', PeerViewSet)
 router.register(r'thenactions', ThenActionViewSet)
 router.register(r'fragmentypes', FragmentTypeViewSet)
 router.register(r'matchprotocol', MatchProtocolViewSet)

@@ -4,7 +4,7 @@ from django.conf import settings
 from django.core.mail import send_mail
 from django.utils.translation import ugettext as _
 from peers.models import PeerRange, Peer
-from flowspec.models import Route
+from flowspec.models import Route, Rule
 from django.core.urlresolvers import reverse
 
 
@@ -149,5 +149,5 @@ def check_if_rule_exists(fields):
         destination=IPNetwork(fields.get('destination')).compressed,
     )
     for route in routes:
-        return _('Rule exists with id %s and status %s. Please edit it.' % (route.id, route.status))
+        return _('Rule exists with id {id} and status {status}. Please edit it.'.format(id=route.id, status=route.status))
     return False

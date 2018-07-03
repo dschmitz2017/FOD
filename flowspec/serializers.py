@@ -1,6 +1,10 @@
+# -*- coding: utf-8 -*- vim:fileencoding=utf-8:
+# vim: tabstop=4:shiftwidth=4:softtabstop=4:expandtab
+
 from rest_framework import serializers
 from flowspec.models import (
     Route,
+    Rule,
     MatchPort,
     ThenAction,
     FragmentType,
@@ -14,8 +18,51 @@ from flowspec.validators import (
 )
 
 
-class RouteSerializer(serializers.HyperlinkedModelSerializer):
+class PeerSerializer(serializers.HyperlinkedModelSerializer):
+   pass
+
+class RuleSerializer(serializers.HyperlinkedModelSerializer):
     applier = serializers.CharField(source='applier_username', read_only=True)
+
+    def validate_expires(self, attrs, source):
+        print("validate expires ")
+        value = attrs[source]
+        if not value:
+            raise serializers.ValidationError('This field is required')
+        res = clean_expires(value)
+        if res != value:
+            raise serializers.ValidationError(res)
+        return attrs
+
+    def validate_then(self, attrs, source):
+        if not source:
+            raise serializers.ValidationError('This field is required')
+        return attrs
+
+    def validate(self, data):
+        user = self.context.get('request').user
+        return data
+
+
+    class Meta:
+        model = Rule
+        fields = (
+            'name',
+            'id',
+            'comments',
+            'applier',
+            'then',
+            'routes',
+            'filed',
+            'last_updated',
+            'expires',
+            'status',
+            'requesters_address',
+            'url'
+        )
+        read_only_fields = ('requesters_address', )
+
+class RouteSerializer(serializers.HyperlinkedModelSerializer):
 
     def validate(self, data):
         user = self.context.get('request').user
@@ -37,14 +84,6 @@ class RouteSerializer(serializers.HyperlinkedModelSerializer):
         if res != destination:
             raise serializers.ValidationError(res)
 
-        # validate expires
-        expires = data.get('expires')
-        res = clean_expires(
-            expires
-        )
-        if res != expires:
-            raise serializers.ValidationError(res)
-
         # check if rule already exists with different name
         fields = {
             'source': data.get('source'),
@@ -60,8 +99,7 @@ class RouteSerializer(serializers.HyperlinkedModelSerializer):
         fields = (
             'name',
             'id',
-            'comments',
-            'applier',
+            'rule',
             'source',
             'sourceport',
             'destination',
@@ -73,16 +111,10 @@ class RouteSerializer(serializers.HyperlinkedModelSerializer):
             'packetlength',
             'protocol',
             'tcpflag',
-            'then',
-            'filed',
-            'last_updated',
-            'status',
-            'expires',
             'response',
-            'comments',
-            'requesters_address',
+            'url',
         )
-        read_only_fields = ('status', 'expires', 'requesters_address', 'response')
+        read_only_fields = ('response', 'id')
 
 
 class PortSerializer(serializers.HyperlinkedModelSerializer):

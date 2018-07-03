@@ -18,7 +18,7 @@
 #
 
 from django.contrib import admin
-from flowspec.models import MatchPort, MatchDscp, MatchProtocol, FragmentType, ThenAction, Route
+from flowspec.models import MatchPort, MatchDscp, MatchProtocol, FragmentType, ThenAction, Route, Rule
 from accounts.models import UserProfile
 from utils import proxy as PR
 from tasks import *
@@ -29,19 +29,25 @@ from flowspec.forms import *
 from longerusername.forms import UserCreationForm, UserChangeForm
 
 
+class RuleAdmin(admin.ModelAdmin):
+    form = RuleForm
+
 class RouteAdmin(admin.ModelAdmin):
     form = RouteForm
     actions = ['deactivate']
-    search_fields = ['destination', 'name', 'applier__username']
+    search_fields = ['destination', 'name', 'applier_username']
 
     def deactivate(self, request, queryset):
-        queryset = queryset.filter(status='ACTIVE')
+        queryset = queryset.filter(rule__status='ACTIVE')
         response = batch_delete.delay(queryset, reason="ADMININACTIVE")
         self.message_user(request, "Added request %s to job que. Check in a while for result" % response)
     deactivate.short_description = "Remove selected routes from network"
 
     def save_model(self, request, obj, form, change):
-        obj.status = "PENDING"
+        rule = Rule()
+        rule.save()
+        obj.rule = rule
+        obj.rule.status = "PENDING"
         obj.save()
         if change:
             obj.commit_edit()
@@ -51,14 +57,11 @@ class RouteAdmin(admin.ModelAdmin):
     def has_delete_permission(self, request, obj=None):
         return False
 
-    list_display = ('name', 'status', 'applier_username', 'applier_peers', 'get_match', 'get_then', 'response', "expires", "comments")
+    list_display = ('name', 'status', 'applier_username', 'applier_peers', 'get_match', 'get_then', 'response', "comments")
 
     fieldsets = [
-        (None, {'fields': ['name', 'applier']}),
         ("Match", {'fields': ['source', 'sourceport', 'destination', 'destinationport', 'port']}),
         ('Advanced Match Statements', {'fields': ['dscp', 'fragmenttype', 'icmpcode', 'icmptype', 'packetlength', 'protocol', 'tcpflag'], 'classes': ['collapse']}),
-        ("Then", {'fields': ['then']}),
-        ("Expires", {'fields': ['expires']}),
         (None, {'fields': ['comments', ]}),
 
     ]
