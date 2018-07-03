@@ -80,10 +80,10 @@ SCRIPT
    )
 
 
-   echo To activate virualenv: source ~vagrant/venv/bin/activate
-   echo TO create a user run: cd ~vagrant/sync; ./manage.py createsuperuser
-   echo To start flowspy server: cd ~vagrant/sync; ./manage.py runserver 0.0.0.0:8000
-   echo To start celeryd: cd ~vagrant/sync; ./manage.py celeryd
+   echo "To activate virualenv: source ~vagrant/venv/bin/activate"
+   echo "To create a user run: cd ~vagrant/sync; ./manage.py createsuperuser"
+   echo "To start flowspy server: cd ~vagrant/sync; ./manage.py runserver 0.0.0.0:8000"
+   echo "To start celeryd: cd ~vagrant/sync; ./manage.py celeryd"
 
    SHELL
 end
