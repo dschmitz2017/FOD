@@ -14,6 +14,7 @@ from flowspec.validators import (
     clean_source,
     clean_destination,
     clean_expires,
+    clean_status,
     check_if_rule_exists
 )
 
@@ -22,6 +23,9 @@ class PeerSerializer(serializers.HyperlinkedModelSerializer):
    pass
 
 class RuleSerializer(serializers.HyperlinkedModelSerializer):
+    """
+    A serializer for `Rule` objects
+    """
     applier = serializers.CharField(source='applier_username', read_only=True)
 
     def validate_expires(self, attrs, source):
@@ -63,36 +67,39 @@ class RuleSerializer(serializers.HyperlinkedModelSerializer):
         read_only_fields = ('requesters_address', )
 
 class RouteSerializer(serializers.HyperlinkedModelSerializer):
+    """
+    A serializer for `Route` objects
+    """
 
-    def validate(self, data):
+    def validate_source(self, attrs, source):
         user = self.context.get('request').user
-        # validate source
-        source = data.get('source')
-        res = clean_source(
-            user,
-            source
-        )
-        if res != source:
+        source_ip = attrs.get('source')
+        res = clean_source(user, source_ip)
+        if res != source_ip:
             raise serializers.ValidationError(res)
+        return attrs
 
-        # validate destination
-        destination = data.get('destination')
-        res = clean_destination(
-            user,
-            destination
-        )
+    def validate_destination(self, attrs, source):
+        user = self.context.get('request').user
+        destination = attrs.get('destination')
+        res = clean_destination(user, destination)
         if res != destination:
             raise serializers.ValidationError(res)
+        return attrs
 
-        # check if rule already exists with different name
-        fields = {
-            'source': data.get('source'),
-            'destination': data.get('destination'),
-        }
-        exists = check_if_rule_exists(fields)
-        if exists:
-            raise serializers.ValidationError(exists)
-        return data
+    def validate_expires(self, attrs, source):
+        expires = attrs.get('expires')
+        res = clean_expires(expires)
+        if res != expires:
+            raise serializers.ValidationError(res)
+        return attrs
+
+    def validate_status(self, attrs, source):
+        status = attrs.get('status')
+        res = clean_status(status)
+        if res != status:
+            raise serializers.ValidationError(res)
+        return attrs
 
     class Meta:
         model = Route
@@ -120,22 +127,33 @@ class RouteSerializer(serializers.HyperlinkedModelSerializer):
 class PortSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = MatchPort
-        fields = ('port', )
+        fields = ('id', 'port', )
+        read_only_fields = ('id', )
 
 
 class ThenActionSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = ThenAction
-        fields = ('action', 'action_value', 'id', 'url')
+        fields = ('id', 'action', 'action_value', 'url')
+        read_only_fields = ('id', )
 
 
 class FragmentTypeSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = FragmentType
-        fields = ('fragmenttype', 'id', 'url')
+        fields = ('id', 'fragmenttype', 'url')
+        read_only_fields = ('id', )
 
 
 class MatchProtocolSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = MatchProtocol
-        fields = ('protocol', 'id', 'url')
+        fields = ('id', 'protocol', 'url')
+        read_only_fields = ('id', )
+
+
+class MatchDscpSerializer(serializers.HyperlinkedModelSerializer):
+    class Meta:
+        model = MatchDscp
+        fields = ('id', 'dscp', 'url')
+        read_only_fields = ('id', )

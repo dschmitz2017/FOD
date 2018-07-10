@@ -94,7 +94,8 @@
 
 		$('#id_expires').datepicker({
 			startDate: '+1d',
-			endDate: '+{{maxexpires}}d'
+			endDate: '+{{maxexpires|add:-1}}d',
+			autoclose: true
 		});
 		$('#setFromAll').click(function(){
 			$("#id_source").val('0.0.0.0/0');
@@ -311,7 +312,7 @@
             <fieldset>
 				<hr>
                 <div class="form-group {% if form.expires.errors %} has-error {% endif %}">
-        		<label for="id_then" class="col-md-2 control-label">{% trans "Expires" %}</label>
+                  <label for="id_then" class="col-md-2 control-label">{% trans "Expires" %} <br>(YYYY-MM-DD)</label>
 		        <div class="col-md-8">
 		            {% render_field form.expires class+="form-control datepicker" data-date-format="yyyy-mm-dd"  %}
 		            {% if form.expires.errors %} <span class="help-block"> {{ form.expires.errors|join:", " }} </span>

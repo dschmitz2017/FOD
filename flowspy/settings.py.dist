@@ -164,6 +164,9 @@ INSTALLED_APPS = (
     'rest_framework.authtoken',
 )
 
+#GRAPHS_API_URL = 'graphs'
+GRAPHS_API_URL = 'http://127.0.0.1:8080/api/routes/'
+
 # A sample logging configuration. The only tangible logging
 # performed by this configuration is to send an email to
 # the site admins on every HTTP 500 error when DEBUG=False.
@@ -276,6 +279,7 @@ EXPIRATION_NOTIFY_DAYS = 4
 # max number of days into the future that is allowed to pick in rule expiration datepicker
 MAX_RULE_EXPIRE_DAYS = 30
 PREFIX_LENGTH = 29
+POLL_SESSION_UPDATE = 60.0
 
 # Shibboleth
 SHIB_AUTH_ENTITLEMENT = 'urn:mace:example.com:pki:user'
@@ -349,7 +353,8 @@ REST_FRAMEWORK = {
 }
 
 # Limit of ports in 'ports' / 'SrcPorts' / 'DstPorts' of a rule:
-PORTRANGE_LIMIT = 100
+#PORTRANGE_LIMIT = 100
+PORTRANGE_LIMIT = 65535
 
 # Statistics polled via SNMP:
 # Default community string
