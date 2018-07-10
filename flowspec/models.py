@@ -24,7 +24,7 @@ from django.contrib.sites.models import Site
 from django.utils.translation import ugettext_lazy as _
 from django.core.urlresolvers import reverse, NoReverseMatch
 
-from flowspec.helpers import send_new_mail, get_peer_techc_mails
+from flowspec.helpers import send_new_mail, get_peer_techc_mails, get_peer_techc_mails__multiple
 from utils import proxy as PR
 from ipaddr import *
 import datetime
@@ -38,6 +38,8 @@ from utils.randomizer import id_generator as id_gen
 
 from tasks import *
 
+import sys, traceback
+from peers.models import PeerRange, Peer
 
 FORMAT = '%(asctime)s %(levelname)s: %(message)s'
 logging.basicConfig(format=FORMAT)
@@ -88,10 +90,11 @@ ROUTE_STATES = (
     ("OUTOFSYNC", "OUTOFSYNC"),
     ("INACTIVE", "INACTIVE"),
     ("ADMININACTIVE", "ADMININACTIVE"),
+    ("INACTIVE_TODELETE", "INACTIVE_TODELETE"),
 )
 
 
-def days_offset(): return datetime.date.today() + datetime.timedelta(days = settings.EXPIRATION_DAYS_OFFSET)
+def days_offset(): return datetime.date.today() + datetime.timedelta(days = settings.EXPIRATION_DAYS_OFFSET-1)
 
 class MatchPort(models.Model):
     port = models.CharField(max_length=24, unique=True)
@@ -161,9 +164,9 @@ class Rule(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.pk:
-            hash = id_gen()
-            self.name = "%s_%s" % (self.name, hash)
-        super(Rule, self).save(*args, **kwargs) # Call the "real" save() method.
+            suff = id_gen()
+            self.name = "%s_%s" % (self.name, suff)
+        super(Rule, self).save(*args, **kwargs)
 
     def _send_mail(self, *args, **kwargs):
         args = kwargs.get("args")
@@ -184,6 +187,35 @@ class Rule(models.Model):
             get_peer_techc_mails(self.applier, args.get("peer"))
         )
         return mail_body
+
+    def helper_get_matching_peers(self):
+      if not settings.MAIL_NOTIFICATION_TO_ALL_MATCHING_PEERS:
+        peers = self.applier.get_profile().peers.all()
+        username = None
+        for peer in peers:
+            if username:
+                break
+            for network in peer.networks.all():
+                net = IPNetwork(network)
+                if IPNetwork(self.destination) in net:
+                    username = peer
+                    break
+        if username:
+            peer = username.peer_tag
+        else:
+            peer = None
+        return ([username], [peer]) # username is a peer, and peer = username.peer_tag
+      else:
+        all_peers = Peer.objects.all()
+        matched_peers = []
+        matched_peer_tags = []
+        for peer in all_peers:
+            for network in peer.networks.all():
+                net = IPNetwork(network)
+                if IPNetwork(self.destination) in net:
+                    matched_peers.append(peer)
+                    matched_peer_tags.append(peer.peer_tag)
+        return (matched_peers, matched_peer_tags)
       
     def commit_add(self, *args, **kwargs):
         peers = self.applier.get_profile().peers.all()
@@ -222,28 +254,10 @@ class Rule(models.Model):
         logger.info(mail_body, extra=d)
 
     def commit_edit(self, *args, **kwargs):
-        peers = self.applier.get_profile().peers.all()
-        username = None
-        for peer in peers:
-            if username:
-                break
-            for network in peer.networks.all():
-                net = IPNetwork(network)
-                for route in self.routes.all():
-                    if IPNetwork(route.destination) in net:
-                        username = peer
-                        break
-        if username:
-            peer = username.peer_tag
-        else:
-            peer = None
-        send_message(
-            '[%s] Editing rule %s. Please wait...' %
-            (
-                self.applier.username,
-                self.name
-            ), peer
-        )
+        peer2 = self.helper_get_matching_peers()
+        msg1 = "[%s] Editing rule %s. Please wait..." % (self.applier.username, self.name)
+        send_message_multiple(msg1, peer2[1])
+        logger.info("model::commit_edit(): "+str(msg1))
         response = edit.delay(self)
         logger.info('Got edit job id: %s' % response)
         mail_body = self._send_mail(args={
@@ -264,33 +278,18 @@ class Rule(models.Model):
         logger.info(mail_body, extra=d)
 
     def commit_delete(self, *args, **kwargs):
+        logger.info("model::commit_delete(): route="+str(self)+", kwargs="+str(kwargs))
+
         username = None
         reason_text = ''
         reason = ''
         if "reason" in kwargs:
             reason = kwargs['reason']
             reason_text = 'Reason: %s.' % reason
-        peers = self.applier.get_profile().peers.all()
-        for peer in peers:
-            if username:
-                break
-            for network in peer.networks.all():
-                net = IPNetwork(network)
-                for route in self.routes.all():
-                    if IPNetwork(route.destination) in net:
-                        username = peer
-                        break
-        if username:
-            peer = username.peer_tag
-        else:
-            peer = None
-        send_message(
-            '[%s] Suspending rule %s. %sPlease wait...' % (
-                self.applier.username,
-                self.name,
-                reason_text
-            ), peer
-        )
+        peer2 = self.helper_get_matching_peers()
+        msg1 = "[%s] Suspending rule %s. %sPlease wait..." % (self.applier.username, self.name, reason_text)
+        send_message_multiple(msg1, peer2[1])
+        logger.info("model::commit_delete(): "+str(msg1))
         response = delete.delay(self, reason=reason)
         logger.info('Got delete job id: %s' % response)
 
@@ -537,7 +536,7 @@ class Route(models.Model):
                     self.status = "ACTIVE"
                     self.save()
                     found = True
-            if self.status == "ADMININACTIVE" or self.status == "INACTIVE" or self.status == "EXPIRED":
+            if self.status == "ADMININACTIVE" or self.status == "INACTIVE" or self.status == "INACTIVE_TODELETE" or self.status == "EXPIRED":
                 found = True
         return found
 
@@ -607,9 +606,32 @@ class Route(models.Model):
             applier_peers = None
         return applier_peers
 
+    # perf has to be checked:
+    @property 
+    def containing_peer_ranges(self):
+        try:
+            destination_network = IPNetwork(self.destination)
+            os.write(4, "containing_peer_ranges(): destination_network"+str(destination_network)+"\n")
+            #containing_peer_ranges = PeerRange.objects.filter(network__contains(destination_network))
+            containing_peer_ranges = [obj for obj in PeerRange.objects.all() if IPNetwork(obj.network).__contains__(destination_network)]
+            os.write(4, "containing_peer_ranges(): containing_peer_ranges"+str(containing_peer_ranges)+"\n")
+        except:
+            os.write(4, "containing_peer_ranges(): exception occured\n")
+            traceback.print_exc(file=sys.stdout)
+            #containing_peer_ranges = None
+            containing_peer_ranges = []
+        return containing_peer_ranges
+
+    # perf has to be checked:
+    def containing_peers(self):
+        containing_peer_ranges2 = set(self.containing_peer_ranges)
+        os.write(4, "containing_peers(): containing_peer_ranges"+str(containing_peer_ranges2)+"\n")
+        #return [obj.peer for obj in containing_peer_ranges2]
+        return [obj for obj in Peer.objects.all() if len(set(obj.networks.all()).intersection(containing_peer_ranges2))>0]
+
     @property
     def days_to_expire(self):
-        if self.status not in ['EXPIRED', 'ADMININACTIVE', 'ERROR', 'INACTIVE']:
+        if self.status not in ['EXPIRED', 'ADMININACTIVE', 'ERROR', 'INACTIVE', 'INACTIVE_TODELETE']:
             expiration_days = (self.expires - datetime.date.today()).days
             if expiration_days < settings.EXPIRATION_NOTIFY_DAYS:
                 return "%s" %expiration_days
@@ -628,8 +650,18 @@ class Route(models.Model):
 
 def send_message(msg, user):
 #    username = user.username
+    peer = user
     b = beanstalkc.Connection()
     b.use(settings.POLLS_TUBE)
-    tube_message = json.dumps({'message': str(msg), 'username': user})
+    tube_message = json.dumps({'message': str(msg), 'username': peer})
     b.put(tube_message)
     b.close()
+
+def send_message_multiple(msg, user_list):
+    for peer in user_list:
+      b = beanstalkc.Connection()
+      b.use(settings.POLLS_TUBE)
+      tube_message = json.dumps({'message': str(msg), 'username': peer})
+      b.put(tube_message)
+      b.close()
+

@@ -52,6 +52,8 @@ from flowspec.helpers import send_new_mail, get_peer_techc_mails
 import datetime
 import os
 
+from flowspec.snmpstats import load_history, get_last_msrm_delay_time
+
 LOG_FILENAME = os.path.join(settings.LOG_FILE_LOCATION, 'celery_jobs.log')
 # FORMAT = '%(asctime)s %(levelname)s: %(message)s'
 # logging.basicConfig(format=FORMAT)
@@ -257,6 +259,7 @@ def build_routes_json(groutes):
 @login_required
 @never_cache
 def add_route(request):
+    logger.info("views::add_route(): request="+str(request))
     applier_peer_networks = []
     applier = request.user.pk
     if request.user.is_superuser:
@@ -293,10 +296,13 @@ def add_route(request):
             except:
                 pass
         form = RouteForm(request_data)
+        #route_status_speced = request_data['status']
         if form.is_valid():
             route = form.save(commit=False)
             if not request.user.is_superuser:
                 route.applier = request.user
+            route_status_speced = route.status
+            logger.info("views::add_route(): route_status_speced="+str(route_status_speced))
             route.status = "PENDING"
             route.response = "Applying"
             route.source = IPNetwork('%s/%s' % (IPNetwork(route.source).network.compressed, IPNetwork(route.source).prefixlen)).compressed
@@ -310,6 +316,7 @@ def add_route(request):
             form.save_m2m()
             # We have to make the commit after saving the form
             # in order to have all the m2m relations.
+            route.status = route_status_speced
             route.commit_add()
             return HttpResponseRedirect(reverse("group-routes"))
         else:
@@ -410,7 +417,7 @@ def edit_route(request, route_slug):
             )
     else:
         if (not route_original.status == 'ACTIVE'):
-            route_edit.expires = datetime.date.today() + datetime.timedelta(days=settings.EXPIRATION_DAYS_OFFSET)
+            route_edit.expires = datetime.date.today() + datetime.timedelta(days=settings.EXPIRATION_DAYS_OFFSET-1)
         dictionary = model_to_dict(route_edit, fields=[], exclude=[])
         if request.user.is_superuser:
             dictionary['issuperuser'] = request.user.username
@@ -438,6 +445,10 @@ def edit_route(request, route_slug):
 @login_required
 @never_cache
 def delete_route(request, route_slug):
+    logger.info("views::delete_route(): route_slug="+str(route_slug)+ " request="+str(request))
+    logger.info("views::delete_route(): route_slug="+str(route_slug)+ " request.dir="+str(dir(request)))
+    logger.info("views::delete_route(): route_slug="+str(route_slug)+ " request.REQUEST="+str(dir(request.REQUEST)))
+    logger.info("views::delete_route(): route_slug="+str(route_slug)+ " request.REQUEST.keys="+str(dir(request.REQUEST.keys)))
     if request.is_ajax():
         route = get_object_or_404(Route, name=route_slug)
         peers = route.applier.get_profile().peers.all()
@@ -571,7 +582,7 @@ def user_login(request):
                 login(request, user)
                 return HttpResponseRedirect(reverse("dashboard"))
             else:
-                error = _("User account <strong>%s</strong> is pending activation. Administrators have been notified and will activate this account within the next days. <br>If this account has remained inactive for a long time contact your technical coordinator or GRNET Helpdesk") %user.username
+                error = _("User account <strong>%s</strong> is pending activation. Administrators have been notified and will activate this account within the next days. <br>If this account has remained inactive for a long time contact your technical coordinator or GEANT Helpdesk") %user.username
                 return render(
                     request,
                     'error.html',
@@ -751,7 +762,7 @@ def selectinst(request):
         if form.is_valid():
             userprofile = form.save()
             user_activation_notify(userprofile.user)
-            error = _("User account <strong>%s</strong> is pending activation. Administrators have been notified and will activate this account within the next days. <br>If this account has remained inactive for a long time contact your technical coordinator or GRNET Helpdesk") %userprofile.user.username
+            error = _("User account <strong>%s</strong> is pending activation. Administrators have been notified and will activate this account within the next days. <br>If this account has remained inactive for a long time contact your technical coordinator or GEANT Helpdesk") %userprofile.user.username
             return render(
                 request,
                 'error.html',
@@ -819,9 +830,19 @@ def lookupShibAttr(attrmap, requestMeta):
 
 # show the details of specific route
 @login_required
+@never_cache
 def routedetails(request, route_slug):
     route = get_object_or_404(Route, name=route_slug)
-    return render(request, 'flowspy/route_details.html', {'route': route})
+    #return render(request, 'flowspy/route_details.html', {'route': route})
+    now = datetime.datetime.now()
+    last_msrm_delay_time = get_last_msrm_delay_time()
+    return render(request, 'flowspy/route_details.html', {
+      'route': route, 
+      'mytime': now, 
+      'last_msrm_delay_time': last_msrm_delay_time,
+      'tz' : settings.TIME_ZONE,
+      'route_comments_len' : len(str(route.comments))
+      })
 
 @login_required
 def routestats(request, route_slug):
@@ -830,17 +851,27 @@ def routestats(request, route_slug):
     import time
     res = {}
     try:
-        with open(settings.SNMP_TEMP_FILE, "r") as f:
-            res = json.load(f)
-        f.close()
+        #with open(settings.SNMP_TEMP_FILE, "r") as f:
+        #    res = json.load(f)
+        #f.close()
+        res = load_history()
         routename = create_junos_name(route)
+        route_id = str(route.id)
         if not res:
             raise Exception("No data stored in the existing file.")
-        elif routename in res:
-            return HttpResponse(json.dumps({"name": routename, "data": res[routename]}), mimetype="application/json")
+        if settings.STATISTICS_PER_RULE==False:
+            if routename in res:
+              return HttpResponse(json.dumps({"name": routename, "data": res[routename]}), mimetype="application/json")
+            else:
+              return HttpResponse(json.dumps({"error": "Route '{}' was not found in statistics.".format(routename)}), mimetype="application/json", status=404)
         else:
-            return HttpResponse(json.dumps({"error": "Route '{}' was not found in statistics.".format(routename)}), mimetype="application/json", status=404)
+            if route_id in res['_per_rule']:
+              return HttpResponse(json.dumps({"name": routename, "data": res['_per_rule'][route_id]}), mimetype="application/json")
+            else:
+              return HttpResponse(json.dumps({"error": "Route '{}' was not found in statistics.".format(route_id)}), mimetype="application/json", status=404)
+
     except Exception as e:
         logger.error('routestats failed: %s' % e)
-        return HttpResponse(json.dumps({"error": "No data available."}), mimetype="application/json", status=404)
+        return HttpResponse(json.dumps({"error": "No data available. %s" % e}), mimetype="application/json", status=404)
+
 

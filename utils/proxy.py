@@ -28,6 +28,8 @@ import os
 from celery.exceptions import TimeLimitExceeded, SoftTimeLimitExceeded
 from portrange import parse_portrange
 
+from ncclient.operations.rpc import RPCError
+
 cwd = os.getcwd()
 
 
@@ -99,13 +101,13 @@ class Applier(object):
         self.port = port
 
     def to_xml(self, operation=None):
-        logger.info("Operation: %s"%operation)
+        logger.info("proxy::to_xml(): Operation: %s"%operation)
         if self.route_object:
             try:
                 settings.PORTRANGE_LIMIT
             except:
                 settings.PORTRANGE_LIMIT = 100
-            logger.info("Generating XML config")
+            logger.info("proxy::to_xml(): Generating XML config")
             route_obj = self.route_object
             device = np.Device()
             flow = np.Flow()
@@ -114,7 +116,7 @@ class Applier(object):
             device.routing_options.append(flow)
             route.name = route_obj.name
             if operation == "delete":
-                logger.info("Requesting a delete operation")
+                logger.info("proxy::to_xml(): Requesting a delete operation")
                 route.operation = operation
                 device = device.export(netconf_config=True)
                 return ET.tostring(device)
@@ -177,17 +179,19 @@ class Applier(object):
                 else:
                     route.then[thenaction.action] = True
             if operation == "replace":
-                logger.info("Requesting a replace operation")
+                logger.info("proxy::to_xml(): Requesting a replace operation")
                 route.operation = operation
             device = device.export(netconf_config=True)
-            logger.debug(ET.tostring(device))
-            return ET.tostring(device)
+            result = ET.tostring(device)
+            logger.info("proxy::to_xml(): result="+str(result))
+            return result
         else:
+            logger.info("proxy::to_xml(): returning False")
             return False
 
     def delete_routes(self):
         if self.route_objects:
-            logger.info("Generating XML config")
+            logger.info("proxy::delete_routes(): Generating XML config")
             device = np.Device()
             flow = np.Flow()
             for route_object in self.route_objects:
@@ -198,8 +202,12 @@ class Applier(object):
                 route.operation = 'delete'
             device.routing_options.append(flow)
             device = device.export(netconf_config=True)
-            return ET.tostring(device)
+            #return ET.tostring(device)
+            msg = ET.tostring(device)
+            logger.info("proxy::delete_routes(): return msg="+str(msg))
+            return msg
         else:
+            logger.info("proxy::delete_routes(): return False")
             return False
 
     def apply(self, configuration = None, operation=None):
@@ -228,10 +236,36 @@ class Applier(object):
                         cause="Task timeout"
                         logger.error(cause)
                         return False, cause
-                    except Exception as e:
-                        cause = "Caught edit exception: %s %s" % (e, reason)
+                    #except ncclient.operations.rpc.RPCError as e:
+                    except RPCError as e:
+                        logger.error("proxy::apply(): RPCError")
+                        #cause = "Caught edit RPCError: %s reason=%s (e.class=)" % (e, reason)
+                        #logger.error(cause)
+                        #cause = "Caught edit RPCError: %s reason=%s (dir=%s)" % (e, reason, str(dir(e)))
+                        #logger.error(cause)
+                        cause = "Caught edit RPCError: %s reason=%s message=%s" % (e, reason, str(e.message))
+                        #logger.error(cause)
+                        #cause = "Caught edit RPCError: %s reason=%s (dir=%s, info=%s)" % (e, reason, str(dir(e)), str(e.info)) # 
+                        #logger.error(cause)
+                        #cause = "Caught edit RPCError: %s reason=%s (dir=%s, tag=%s)" % (e, reason, str(dir(e)), str(e.tag)) # 
+                        #logger.error(cause)
+                        #cause = "Caught edit RPCError: %s reason=%s (dir=%s, severity=%s)" % (e, reason, str(dir(e)), str(e.severity)) # 
                         cause = cause.replace('\n', '')
-                        logger.error(cause)
+                        logger.error("proxy::apply(): "+str(cause))
+                        if "statement not found: route " in str(e.message):
+                          cause = "Ignoring: "+cause
+                          logger.error("proxy::apply(): not calling discard_changes")
+                          edit_is_successful = True
+                          #return True, cause
+                        else:
+                          logger.error("proxy::apply(): calling discard_changes, to revert changes")
+                          m.discard_changes()
+                          return False, cause
+                    except Exception as e:
+                        #cause = "Caught edit exception: %s %s (e.class=)" % (e, reason)
+                        cause = "Caught edit exception: %s %s (e.class=%s)" % (e, reason, str(type(e)))
+                        cause = cause.replace('\n', '')
+                        logger.error("proxy::apply(): "+str(cause))
                         m.discard_changes()
                         return False, cause
                     if edit_is_successful:
@@ -242,21 +276,21 @@ class Applier(object):
                             if not commit_confirmed_is_successful:
                                 raise Exception()
                             else:
-                                logger.info("Successfully confirmed committed @ %s" % self.device)
+                                logger.info("proxy::apply(): Successfully confirmed committed @ %s" % self.device)
                                 if not settings.COMMIT:
                                     return True, "Successfully confirmed committed"
                         except SoftTimeLimitExceeded:
                             cause="Task timeout"
-                            logger.error(cause)
+                            logger.error("proxy::apply(): "+str(cause))
                             return False, cause
                         except TimeLimitExceeded:
                             cause="Task timeout"
-                            logger.error(cause)
+                            logger.error("proxy::apply(): "+str(cause))
                             return False, cause
                         except Exception as e:
                             cause="Caught commit confirmed exception: %s %s" %(e,reason)
                             cause=cause.replace('\n', '')
-                            logger.error(cause)
+                            logger.error("proxy::apply(): "+str(cause))
                             return False, cause
 
                         if settings.COMMIT:
@@ -293,17 +327,20 @@ class Applier(object):
 
 
 def is_successful(response):
+    logger.info("is_successful(): response="+str(response))
     from StringIO import StringIO
     doc = parsexml_(StringIO(response))
     rootNode = doc.getroot()
     success_list = rootNode.xpath("//*[local-name()='ok']")
     if len(success_list) > 0:
+        logger.info("is_successful(): return True")
         return True, None
     else:
         reason_return = ''
         reason_list = rootNode.xpath("//*[local-name()='error-message']")
         for reason in reason_list:
             reason_return = '%s %s' % (reason_return, reason.text)
+        logger.info("is_successful(): return False return="+str(reason_return))
         return False, reason_return
 
 
