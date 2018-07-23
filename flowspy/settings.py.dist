@@ -393,3 +393,32 @@ SNMP_MAX_SAMPLECOUNT = 12
 # Age of inactive routes that can be already removed (in seconds)
 SNMP_REMOVE_RULES_AFTER = 3600
 
+##############################################################################
+##############################################################################
+
+# REST API config
+
+DISABLE_RULE_OVERLAP_CHECK = False
+
+MAIL_NOTIFICATION_TO_ALL_MATCHING_PEERS = True
+
+# statistics calc
+
+STATISTICS_PER_MATCHACTION_ADD_FINAL_ZERO = False # not necessary if STATISTICS_PER_RULE==True
+STATISTICS_PER_RULE = True
+
+STATISTICS_PER_RULE__ADD_INITIAL_ZERO = True
+
+##############################################################################
+##############################################################################
+
+MYSETTING1="default"
+#from settings_local import *
+from flowspy.settings_local import *
+
+print "MYSETTING1="+MYSETTING1
+print "debug settings.NOTIFY_ADMIN_MAILS="+str(NOTIFY_ADMIN_MAILS)
+
+##############################################################################
+##############################################################################
+

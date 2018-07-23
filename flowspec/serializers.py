@@ -6,6 +6,7 @@ from flowspec.models import (
     Route,
     Rule,
     MatchPort,
+    MatchDscp,
     ThenAction,
     FragmentType,
     MatchProtocol

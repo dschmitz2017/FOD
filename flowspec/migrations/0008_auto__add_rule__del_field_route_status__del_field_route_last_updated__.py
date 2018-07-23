@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import datetime
+from south.utils import datetime_utils as datetime
 from south.db import db
 from south.v2 import SchemaMigration
 from django.db import models
@@ -9,29 +9,30 @@ class Migration(SchemaMigration):
 
     def forwards(self, orm):
         # Adding model 'Rule'
-        db.create_table(u'flowspec_rule', (
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('name', self.gf('django.db.models.fields.SlugField')(max_length=128)),
-            ('applier', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['auth.User'], null=True, blank=True)),
-            ('filed', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now, auto_now_add=True, blank=True)),
-            ('last_updated', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now, auto_now=True, blank=True)),
-            ('comments', self.gf('django.db.models.fields.TextField')(null=True, blank=True)),
-            ('requesters_address', self.gf('django.db.models.fields.CharField')(max_length=255, null=True, blank=True)),
-            ('expires', self.gf('django.db.models.fields.DateField')(default=datetime.datetime(2018, 7, 10, 0, 0))),
-            ('status', self.gf('django.db.models.fields.CharField')(default='INACTIVE', max_length=20, null=True, blank=True)),
-        ))
-        db.send_create_signal('flowspec', ['Rule'])
+        #db.create_table(u'flowspec_rule', (
+        #    ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+        #    ('name', self.gf('django.db.models.fields.SlugField')(max_length=128)),
+        #    ('applier', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['auth.User'], null=True, blank=True)),
+        #    ('filed', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now, auto_now_add=True, blank=True)),
+        #    ('last_updated', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now, auto_now=True, blank=True)),
+        #    ('comments', self.gf('django.db.models.fields.TextField')(null=True, blank=True)),
+        #    ('requesters_address', self.gf('django.db.models.fields.CharField')(max_length=255, null=True, blank=True)),
+        #    ('expires', self.gf('django.db.models.fields.DateField')(default=datetime.datetime(2018, 8, 9, 0, 0))),
+        #    ('status', self.gf('django.db.models.fields.CharField')(default='INACTIVE', max_length=20, null=True, blank=True)),
+        #))
+        #db.send_create_signal('flowspec', ['Rule'])
 
-        # Adding M2M table for field then on 'Rule'
-        db.create_table(u'flowspec_rule_then', (
-            ('id', models.AutoField(verbose_name='ID', primary_key=True, auto_created=True)),
-            ('rule', models.ForeignKey(orm['flowspec.rule'], null=False)),
-            ('thenaction', models.ForeignKey(orm['flowspec.thenaction'], null=False))
-        ))
-        db.create_unique(u'flowspec_rule_then', ['rule_id', 'thenaction_id'])
+        ## Adding M2M table for field then on 'Rule'
+        #m2m_table_name = db.shorten_name(u'flowspec_rule_then')
+        #db.create_table(m2m_table_name, (
+        #    ('id', models.AutoField(verbose_name='ID', primary_key=True, auto_created=True)),
+        #    ('rule', models.ForeignKey(orm['flowspec.rule'], null=False)),
+        #    ('thenaction', models.ForeignKey(orm['flowspec.thenaction'], null=False))
+        #))
+        #db.create_unique(m2m_table_name, ['rule_id', 'thenaction_id'])
 
-        # Deleting field 'Route.status'
-        db.delete_column(u'route', 'status')
+        ## Deleting field 'Route.status'
+        #db.delete_column(u'route', 'status')
 
         # Deleting field 'Route.last_updated'
         db.delete_column(u'route', 'last_updated')
@@ -54,7 +55,7 @@ class Migration(SchemaMigration):
                       keep_default=False)
 
         # Removing M2M table for field then on 'Route'
-        db.delete_table('route_then')
+        db.delete_table(db.shorten_name(u'route_then'))
 
 
         # Changing field 'Route.destinationport'
@@ -71,16 +72,18 @@ class Migration(SchemaMigration):
         db.delete_table(u'flowspec_rule')
 
         # Removing M2M table for field then on 'Rule'
-        db.delete_table('flowspec_rule_then')
+        db.delete_table(db.shorten_name(u'flowspec_rule_then'))
 
         # Adding field 'Route.status'
         db.add_column(u'route', 'status',
                       self.gf('django.db.models.fields.CharField')(default='PENDING', max_length=20, null=True, blank=True),
                       keep_default=False)
 
+        # Adding field 'Route.last_updated'
+        db.add_column(u'route', 'last_updated',
+                      self.gf('django.db.models.fields.DateTimeField')(auto_now=True, default=datetime.datetime(2018, 7, 11, 0, 0), blank=True),
+                      keep_default=False)
 
-        # User chose to not deal with backwards NULL issues for 'Route.last_updated'
-        raise RuntimeError("Cannot reverse this migration. 'Route.last_updated' and its values cannot be restored.")
         # Adding field 'Route.requesters_address'
         db.add_column(u'route', 'requesters_address',
                       self.gf('django.db.models.fields.CharField')(max_length=255, null=True, blank=True),
@@ -91,9 +94,11 @@ class Migration(SchemaMigration):
                       self.gf('django.db.models.fields.DateField')(default=datetime.datetime(2017, 2, 8, 0, 0)),
                       keep_default=False)
 
+        # Adding field 'Route.filed'
+        db.add_column(u'route', 'filed',
+                      self.gf('django.db.models.fields.DateTimeField')(auto_now_add=True, default=datetime.datetime(2018, 7, 11, 0, 0), blank=True),
+                      keep_default=False)
 
-        # User chose to not deal with backwards NULL issues for 'Route.filed'
-        raise RuntimeError("Cannot reverse this migration. 'Route.filed' and its values cannot be restored.")
         # Adding field 'Route.applier'
         db.add_column(u'route', 'applier',
                       self.gf('django.db.models.fields.related.ForeignKey')(to=orm['auth.User'], null=True, blank=True),
@@ -103,12 +108,13 @@ class Migration(SchemaMigration):
         db.delete_column(u'route', 'rule_id')
 
         # Adding M2M table for field then on 'Route'
-        db.create_table(u'route_then', (
+        m2m_table_name = db.shorten_name(u'route_then')
+        db.create_table(m2m_table_name, (
             ('id', models.AutoField(verbose_name='ID', primary_key=True, auto_created=True)),
             ('route', models.ForeignKey(orm['flowspec.route'], null=False)),
             ('thenaction', models.ForeignKey(orm['flowspec.thenaction'], null=False))
         ))
-        db.create_unique(u'route_then', ['route_id', 'thenaction_id'])
+        db.create_unique(m2m_table_name, ['route_id', 'thenaction_id'])
 
 
         # Changing field 'Route.destinationport'
@@ -201,7 +207,7 @@ class Migration(SchemaMigration):
             'Meta': {'object_name': 'Rule'},
             'applier': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['auth.User']", 'null': 'True', 'blank': 'True'}),
             'comments': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
-            'expires': ('django.db.models.fields.DateField', [], {'default': 'datetime.datetime(2018, 7, 10, 0, 0)'}),
+            'expires': ('django.db.models.fields.DateField', [], {'default': 'datetime.datetime(2018, 8, 9, 0, 0)'}),
             'filed': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'auto_now_add': 'True', 'blank': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'last_updated': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'auto_now': 'True', 'blank': 'True'}),
