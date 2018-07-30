@@ -177,6 +177,7 @@ class Rule(models.Model):
         except NoReverseMatch:
             admin_url = "Unknown"
         args["url"] = admin_url
+        args["peer_list_length_greater_one"] = len(args.get("peers_list", [])) > 1
         mail_body = render_to_string('rule_action.txt', args)
         user_mail = '%s' % self.applier.email
         user_mail = user_mail.split(';')
@@ -184,55 +185,43 @@ class Rule(models.Model):
             args.get("subject"),
             mail_body,
             settings.SERVER_EMAIL, user_mail,
-            get_peer_techc_mails(self.applier, args.get("peer"))
+            get_peer_techc_mails__multiple(self.applier, args.get("peers"))
         )
         return mail_body
 
     def helper_get_matching_peers(self):
-      if not settings.MAIL_NOTIFICATION_TO_ALL_MATCHING_PEERS:
-        peers = self.applier.get_profile().peers.all()
-        username = None
-        for peer in peers:
-            if username:
-                break
-            for network in peer.networks.all():
-                net = IPNetwork(network)
-                if IPNetwork(self.destination) in net:
-                    username = peer
+        if not settings.MAIL_NOTIFICATION_TO_ALL_MATCHING_PEERS:
+            peers = self.applier.get_profile().peers.all()
+            username = None
+            for peer in peers:
+                if username:
                     break
-        if username:
-            peer = username.peer_tag
-        else:
-            peer = None
-        return ([username], [peer]) # username is a peer, and peer = username.peer_tag
-      else:
-        all_peers = Peer.objects.all()
-        matched_peers = []
-        matched_peer_tags = []
-        for peer in all_peers:
-            for network in peer.networks.all():
-                net = IPNetwork(network)
-                if IPNetwork(self.destination) in net:
-                    matched_peers.append(peer)
-                    matched_peer_tags.append(peer.peer_tag)
-        return (matched_peers, matched_peer_tags)
-      
-    def commit_add(self, *args, **kwargs):
-        peers = self.applier.get_profile().peers.all()
-        username = None
-        for peer in peers:
+                for network in peer.networks.all():
+                    net = IPNetwork(network)
+                    for route in self.routes.all():
+                        if IPNetwork(self.destination) in net:
+                            username = peer
+                            break
             if username:
-                break
-            for network in peer.networks.all():
-                net = IPNetwork(network)
-                for route in self.routes.all():
-                    if IPNetwork(route.destination) in net:
-                        username = peer
-                        break
-        if username:
-            peer = username.peer_tag
+                peer = username.peer_tag
+            else:
+                peer = None
+            return ([username], [peer]) # username is a peer, and peer = username.peer_tag
         else:
-            peer = None
+            all_peers = Peer.objects.all()
+            matched_peers = []
+            matched_peer_tags = []
+            for peer in all_peers:
+                for network in peer.networks.all():
+                    net = IPNetwork(network)
+                    for route in self.routes.all():
+                        if IPNetwork(route.destination) in net:
+                            matched_peers.append(peer)
+                            matched_peer_tags.append(peer.peer_tag)
+            return (matched_peers, matched_peer_tags)
+
+    def commit_add(self, *args, **kwargs):
+        peer2 = self.helper_get_matching_peers()
         send_message("[%s] Adding rule %s. Please wait..." % (self.applier.username, self.name), peer)
         response = add.delay(self)
         logger.info('Got add job id: %s' % response)
@@ -243,7 +232,7 @@ class Rule(models.Model):
                 'routes': self.routes.all(),
                 'address': self.requesters_address,
                 'action': 'creation',
-                'peer': username,
+                'peer_list': peer2[0],
                 'subject': settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier.username),
         })
 
@@ -267,7 +256,7 @@ class Rule(models.Model):
                 'routes': self.routes.all(),
                 'address': self.requesters_address,
                 'action': 'edit',
-                'peer': username,
+                'peer_list': peer2[0],
                 'subject': settings.EMAIL_SUBJECT_PREFIX + 'Rule %s edit request submitted by %s' % (self.name, self.applier.username),
         })
 
@@ -280,7 +269,6 @@ class Rule(models.Model):
     def commit_delete(self, *args, **kwargs):
         logger.info("model::commit_delete(): route="+str(self)+", kwargs="+str(kwargs))
 
-        username = None
         reason_text = ''
         reason = ''
         if "reason" in kwargs:
@@ -300,7 +288,7 @@ class Rule(models.Model):
                 'routes': self.routes.all(),
                 'address': self.requesters_address,
                 'action': 'removal',
-                'peer': username,
+                'peer_list': peer2[0],
                 'subject': settings.EMAIL_SUBJECT_PREFIX + 'Rule %s removal request submitted by %s' % (self.name, self.applier.username),
         })
         d = {
