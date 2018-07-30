@@ -413,8 +413,11 @@ STATISTICS_PER_RULE__ADD_INITIAL_ZERO = True
 ##############################################################################
 
 MYSETTING1="default"
-#from settings_local import *
-from flowspy.settings_local import *
+
+try:
+    from flowspy.settings_local import *
+except Exception as e:
+    print("Could not load local settings :" + str(e))
 
 print "MYSETTING1="+MYSETTING1
 print "debug settings.NOTIFY_ADMIN_MAILS="+str(NOTIFY_ADMIN_MAILS)
