@@ -393,6 +393,9 @@ SNMP_MAX_SAMPLECOUNT = 12
 # Age of inactive routes that can be already removed (in seconds)
 SNMP_REMOVE_RULES_AFTER = 3600
 
+# If PERMIT_PRIVATE_IP_TARGETS is False, then users are not allowed to enter IP addresses from private IP ranges; it is True by default
+PERMIT_PRIVATE_IP_TARGETS = True
+
 ##############################################################################
 ##############################################################################
 
