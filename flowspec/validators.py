@@ -18,7 +18,10 @@ def get_network(ip):
 
 
 def clean_ip(address):
-    if False and address.is_private:
+    if not hasattr(settings, "PERMIT_PRIVATE_IP_TARGETS"):
+        settings.PERMIT_PRIVATE_IP_TARGETS = True
+
+    if settings.PERMIT_PRIVATE_IP_TARGETS == False and address.is_private:
             return _('Private addresses not allowed')
 
     if address.version == 4 and int(address.prefixlen) == 32:
