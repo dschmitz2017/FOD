@@ -95,10 +95,16 @@ class RuleViewSet(viewsets.ModelViewSet):
             obj.applier = self.request.user
 
     def post_save(self, obj, created):
-        if created:
+        logger.info("RuleViewSet::post_save(): "+str(self)+", obj="+str(obj) + " " + str(created))
+        if created and obj.editing == False:
             obj.commit_add()
         else:
-            if obj.status not in ['EXPIRED', 'INACTIVE', 'ADMININACTIVE']:
+            if obj.status == "CREATED" and obj.editing == False:
+                obj.status = "INACTIVE"
+                obj.save()
+                logger.info("RuleViewSet::post_save(): changed from CREATED to INACTIVE "+str(self)+", obj="+str(obj))
+                obj.commit_add()
+            elif obj.status not in ['EXPIRED', 'INACTIVE', 'ADMININACTIVE'] and obj.editing == False:
                 obj.commit_edit()
 
     def pre_delete(self, obj):
