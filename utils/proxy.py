@@ -92,8 +92,8 @@ class Retriever(object):
 
 
 class Applier(object):
-    def __init__(self, route_objects=[], route_object=None, device=settings.NETCONF_DEVICE, username=settings.NETCONF_USER, password=settings.NETCONF_PASS, port=settings.NETCONF_PORT):
-        self.route_object = route_object
+    def __init__(self, route_objects=[], rule_object=None, device=settings.NETCONF_DEVICE, username=settings.NETCONF_USER, password=settings.NETCONF_PASS, port=settings.NETCONF_PORT):
+        self.rule_object = rule_object
         self.route_objects = route_objects
         self.device = device
         self.username = username
@@ -102,24 +102,26 @@ class Applier(object):
 
     def to_xml(self, operation=None):
         logger.info("proxy::to_xml(): Operation: %s"%operation)
-        if self.route_object:
+        if self.rule_object:
             try:
                 settings.PORTRANGE_LIMIT
             except:
                 settings.PORTRANGE_LIMIT = 100
             logger.info("proxy::to_xml(): Generating XML config")
-            route_obj = self.route_object
+            rule_obj = self.rule_object
             device = np.Device()
             flow = np.Flow()
             route = np.Route()
             flow.routes.append(route)
             device.routing_options.append(flow)
-            route.name = route_obj.name
+            route.name = rule_obj.name
             if operation == "delete":
                 logger.info("proxy::to_xml(): Requesting a delete operation")
                 route.operation = operation
                 device = device.export(netconf_config=True)
                 return ET.tostring(device)
+            # TODO convert to multiple Routes
+            # rule.routes is a list of Routes
             if route_obj.source:
                 route.match['source'].append(route_obj.source)
             if route_obj.destination:

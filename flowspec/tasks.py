@@ -50,50 +50,51 @@ logger.addHandler(handler)
 
 
 @task(ignore_result=True)
-def add(route, callback=None):
+def add(rule, callback=None):
     try:
         status_initial = route.status
         logger.info("tasks::add(): route="+str(route)+", status_initial="+str(status_initial))
         if status_initial == "INACTIVE":
           route.response = "None yet"
           route.save()
-          msg1 = "[%s] Rule add inactive: %s - Result: %s" % (route.applier, route.name, "No response yet")
+          msg1 = "[%s] Rule add inactive: %s - Result: %s" % (rule.applier, rule.name, "No response yet")
           logger.info("tasks::add(): return inactive msg="+str(msg1))
-          announce(msg1, route.applier, route)
+          announce(msg1, rule.applier, rule)
         else:
-          applier = PR.Applier(route_object=route)
+          # TODO PR.Applier can't work with multiple routes
+          applier = PR.Applier(rule_object=rule)
           commit, response = applier.apply()
           if commit:
               status = "ACTIVE"
           else:
               status = "ERROR"
-          route.status = status
-          route.response = response
-          route.save()
+          rule.status = status
+          rule.response = response
+          rule.save()
           msg1 = "[%s] Rule add: %s - Result: %s" % (route.applier, route.name, response)
           logger.info("tasks::add(): return msg="+str(msg1))
-          announce(msg1, route.applier, route)
+          announce(msg1, rule.applier, rule)
     except TimeLimitExceeded:
-        route.status = "ERROR"
-        route.response = "Task timeout"
-        route.save()
-        msg1 = "[%s] Rule add: %s - Result: %s" % (route.applier, route.name, route.response)
+        rule.status = "ERROR"
+        rule.response = "Task timeout"
+        rule.save()
+        msg1 = "[%s] Rule add: %s - Result: %s" % (rule.applier, rule.name, rule.response)
         logger.info("tasks::add(): TimeLimitExceeded msg="+str(msg1))
-        announce(msg1, route.applier, route)
+        announce(msg1, rule.applier, rule)
     except SoftTimeLimitExceeded:
-        route.status = "ERROR"
-        route.response = "Task timeout"
-        route.save()
-        msg1 = "[%s] Rule add: %s - Result: %s" % (route.applier, route.name, route.response)
+        rule.status = "ERROR"
+        rule.response = "Task timeout"
+        rule.save()
+        msg1 = "[%s] Rule add: %s - Result: %s" % (rule.applier, rule.name, rule.response)
         logger.info("tasks::add(): SoftTimeLimitExceeded msg="+str(msg1))
-        announce(msg1, route.applier, route)
+        announce(msg1, rule.applier, rule)
     except Exception, e:
-        route.status = "ERROR"
-        route.response = "Error"
-        route.save()
-        msg1 = "[%s] Rule add: %s - Result: %s" % (route.applier, route.name, route.response)
+        rule.status = "ERROR"
+        rule.response = "Error"
+        rule.save()
+        msg1 = "[%s] Rule add: %s - Result: %s" % (rule.applier, rule.name, rule.response)
         logger.info("tasks::add(): Exception msg="+str(msg1)+" exc="+str(e))
-        announce(msg1, route.applier, route)
+        announce(msg1, rule.applier, rule)
 
 @task(ignore_result=True)
 def edit(route, callback=None):
@@ -236,21 +237,13 @@ def batch_delete(routes, **kwargs):
 
 
 #@task(ignore_result=True)
-def announce(messg, user, route):
-    peers = user.get_profile().peers.all()
+def announce(messg, user, rule):
     username = None
-    for peer in peers:
-        if username:
-            break
-        for network in peer.networks.all():
-            net = IPNetwork(network)
-            if IPNetwork(route.destination) in net:
-                username = peer.peer_tag
-                break
+    peers, peer_tags = rule.helper_get_matching_peers()
     messg = str(messg)
     b = beanstalkc.Connection()
     b.use(settings.POLLS_TUBE)
-    tube_message = json.dumps({'message': messg, 'username': username})
+    tube_message = json.dumps({'message': messg, 'username': peers})
     b.put(tube_message)
     b.close()
 
