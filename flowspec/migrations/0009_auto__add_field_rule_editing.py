@@ -8,123 +8,16 @@ from django.db import models
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
-        # Adding model 'Rule'
-        db.create_table(u'flowspec_rule', (
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('name', self.gf('django.db.models.fields.SlugField')(max_length=128)),
-            ('applier', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['auth.User'], null=True, blank=True)),
-            ('filed', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now, auto_now_add=True, blank=True)),
-            ('last_updated', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now, auto_now=True, blank=True)),
-            ('comments', self.gf('django.db.models.fields.TextField')(null=True, blank=True)),
-            ('requesters_address', self.gf('django.db.models.fields.CharField')(max_length=255, null=True, blank=True)),
-            ('expires', self.gf('django.db.models.fields.DateField')(default=datetime.datetime(2018, 8, 2, 0, 0))),
-            ('status', self.gf('django.db.models.fields.CharField')(default='INACTIVE', max_length=20, null=True, blank=True)),
-        ))
-        db.send_create_signal('flowspec', ['Rule'])
-
-        # Adding M2M table for field then on 'Rule'
-        m2m_table_name = db.shorten_name(u'flowspec_rule_then')
-        db.create_table(m2m_table_name, (
-            ('id', models.AutoField(verbose_name='ID', primary_key=True, auto_created=True)),
-            ('rule', models.ForeignKey(orm['flowspec.rule'], null=False)),
-            ('thenaction', models.ForeignKey(orm['flowspec.thenaction'], null=False))
-        ))
-        db.create_unique(m2m_table_name, ['rule_id', 'thenaction_id'])
-
-        # Deleting field 'Route.status'
-        db.delete_column(u'route', 'status')
-
-        # Deleting field 'Route.last_updated'
-        db.delete_column(u'route', 'last_updated')
-
-        # Deleting field 'Route.requesters_address'
-        db.delete_column(u'route', 'requesters_address')
-
-        # Deleting field 'Route.expires'
-        db.delete_column(u'route', 'expires')
-
-        # Deleting field 'Route.filed'
-        db.delete_column(u'route', 'filed')
-
-        # Deleting field 'Route.applier'
-        db.delete_column(u'route', 'applier_id')
-
-        # Adding field 'Route.rule'
-        db.add_column(u'route', 'rule',
-                      self.gf('django.db.models.fields.related.ForeignKey')(related_name='routes', null=True, to=orm['flowspec.Rule']),
+        # Adding field 'Rule.editing'
+        db.add_column(u'flowspec_rule', 'editing',
+                      self.gf('django.db.models.fields.BooleanField')(default=True),
                       keep_default=False)
 
-        # Removing M2M table for field then on 'Route'
-        db.delete_table(db.shorten_name(u'route_then'))
-
-
-        # Changing field 'Route.destinationport'
-        db.alter_column(u'route', 'destinationport', self.gf('django.db.models.fields.CharField')(max_length=65535, null=True))
-
-        # Changing field 'Route.sourceport'
-        db.alter_column(u'route', 'sourceport', self.gf('django.db.models.fields.CharField')(max_length=65535, null=True))
-
-        # Changing field 'Route.port'
-        db.alter_column(u'route', 'port', self.gf('django.db.models.fields.CharField')(max_length=65535, null=True))
 
     def backwards(self, orm):
-        # Deleting model 'Rule'
-        db.delete_table(u'flowspec_rule')
+        # Deleting field 'Rule.editing'
+        db.delete_column(u'flowspec_rule', 'editing')
 
-        # Removing M2M table for field then on 'Rule'
-        db.delete_table(db.shorten_name(u'flowspec_rule_then'))
-
-        # Adding field 'Route.status'
-        db.add_column(u'route', 'status',
-                      self.gf('django.db.models.fields.CharField')(default='PENDING', max_length=20, null=True, blank=True),
-                      keep_default=False)
-
-        # Adding field 'Route.last_updated'
-        db.add_column(u'route', 'last_updated',
-                      self.gf('django.db.models.fields.DateTimeField')(auto_now=True, default=datetime.datetime(2018, 7, 27, 0, 0), blank=True),
-                      keep_default=False)
-
-        # Adding field 'Route.requesters_address'
-        db.add_column(u'route', 'requesters_address',
-                      self.gf('django.db.models.fields.CharField')(max_length=255, null=True, blank=True),
-                      keep_default=False)
-
-        # Adding field 'Route.expires'
-        db.add_column(u'route', 'expires',
-                      self.gf('django.db.models.fields.DateField')(default=datetime.datetime(2017, 2, 8, 0, 0)),
-                      keep_default=False)
-
-        # Adding field 'Route.filed'
-        db.add_column(u'route', 'filed',
-                      self.gf('django.db.models.fields.DateTimeField')(auto_now_add=True, default=datetime.datetime(2018, 7, 27, 0, 0), blank=True),
-                      keep_default=False)
-
-        # Adding field 'Route.applier'
-        db.add_column(u'route', 'applier',
-                      self.gf('django.db.models.fields.related.ForeignKey')(to=orm['auth.User'], null=True, blank=True),
-                      keep_default=False)
-
-        # Deleting field 'Route.rule'
-        db.delete_column(u'route', 'rule_id')
-
-        # Adding M2M table for field then on 'Route'
-        m2m_table_name = db.shorten_name(u'route_then')
-        db.create_table(m2m_table_name, (
-            ('id', models.AutoField(verbose_name='ID', primary_key=True, auto_created=True)),
-            ('route', models.ForeignKey(orm['flowspec.route'], null=False)),
-            ('thenaction', models.ForeignKey(orm['flowspec.thenaction'], null=False))
-        ))
-        db.create_unique(m2m_table_name, ['route_id', 'thenaction_id'])
-
-
-        # Changing field 'Route.destinationport'
-        db.alter_column(u'route', 'destinationport', self.gf('django.db.models.fields.CharField')(max_length=50, null=True))
-
-        # Changing field 'Route.sourceport'
-        db.alter_column(u'route', 'sourceport', self.gf('django.db.models.fields.CharField')(max_length=50, null=True))
-
-        # Changing field 'Route.port'
-        db.alter_column(u'route', 'port', self.gf('django.db.models.fields.CharField')(max_length=50, null=True))
 
     models = {
         'auth.group': {
@@ -207,6 +100,7 @@ class Migration(SchemaMigration):
             'Meta': {'object_name': 'Rule'},
             'applier': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['auth.User']", 'null': 'True', 'blank': 'True'}),
             'comments': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
+            'editing': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
             'expires': ('django.db.models.fields.DateField', [], {'default': 'datetime.datetime(2018, 8, 2, 0, 0)'}),
             'filed': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'auto_now_add': 'True', 'blank': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
