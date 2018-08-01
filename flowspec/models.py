@@ -148,6 +148,7 @@ class Rule(models.Model):
     requesters_address = models.CharField(max_length=255, blank=True, null=True)
     expires = models.DateField(default=days_offset, verbose_name=_("Expires"))
     status = models.CharField(max_length=20, choices=ROUTE_STATES, blank=True, null=True, verbose_name=_("Status"), default="INACTIVE")
+    editing = models.BooleanField(default=True)
 
 
     class Meta:
