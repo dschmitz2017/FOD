@@ -91,6 +91,7 @@ ROUTE_STATES = (
     ("INACTIVE", "INACTIVE"),
     ("ADMININACTIVE", "ADMININACTIVE"),
     ("INACTIVE_TODELETE", "INACTIVE_TODELETE"),
+    ("CREATED", "CREATED"),
 )
 
 
@@ -147,7 +148,7 @@ class Rule(models.Model):
     comments = models.TextField(null=True, blank=True, verbose_name=_("Comments"))
     requesters_address = models.CharField(max_length=255, blank=True, null=True)
     expires = models.DateField(default=days_offset, verbose_name=_("Expires"))
-    status = models.CharField(max_length=20, choices=ROUTE_STATES, blank=True, null=True, verbose_name=_("Status"), default="INACTIVE")
+    status = models.CharField(max_length=20, choices=ROUTE_STATES, blank=True, null=True, verbose_name=_("Status"), default="CREATED")
     editing = models.BooleanField(default=True)
 
 
@@ -366,7 +367,7 @@ class Route(models.Model):
         if self.rule:
             return self.rule.status
         else:
-            return ROUTE_STATES["INACTIVE"]
+            return ROUTE_STATES["CREATED"]
 
     def check_sync(self):
         if not self.is_synced():

@@ -61,6 +61,7 @@ class RuleSerializer(serializers.HyperlinkedModelSerializer):
             'filed',
             'last_updated',
             'expires',
+            'editing',
             'status',
             'requesters_address',
             'url'
