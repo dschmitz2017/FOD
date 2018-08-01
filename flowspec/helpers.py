@@ -50,11 +50,12 @@ def get_peer_techc_mails__multiple(user, peer_list):
     user_mail = '%s' % user.email
     user_mail = user_mail.split(';')
     techmails = []
-    for peer in peer_list:
-      techmails = peer.techc_emails.all()
-      if techmails:
-        for techmail in techmails:
-            techmails_list.append(techmail.email)
+    if peer_list:
+        for peer in peer_list:
+            techmails = peer.techc_emails.all()
+            if techmails:
+                for techmail in techmails:
+                    techmails_list.append(techmail.email)
     if settings.NOTIFY_ADMIN_MAILS:
         additional_mail = settings.NOTIFY_ADMIN_MAILS
     additional_mail=helper_list_unique(additional_mail)
