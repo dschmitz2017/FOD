@@ -108,7 +108,9 @@ class RuleViewSet(viewsets.ModelViewSet):
                 obj.commit_edit()
 
     def pre_delete(self, obj):
+        logger.info("RuleViewSet::pre_delete(): called "+str(self)+", obj="+str(obj))
         obj.commit_delete()
+        logger.info("RuleViewSet::pre_delete(): returning "+str(self)+", obj="+str(obj))
 
 class RouteViewSet(viewsets.ModelViewSet):
     queryset = Route.objects.all()
@@ -280,10 +282,10 @@ class RouteViewSet(viewsets.ModelViewSet):
         else:
             obj.applier = self.request.user
 
-    def pre_delete(self, obj):
-        logger.info("RouteViewSet::pre_delete(): called "+str(self)+", obj="+str(obj))
-        obj.commit_delete()
-        logger.info("RouteViewSet::pre_delete(): returning "+str(self)+", obj="+str(obj))
+    #def pre_delete(self, obj):
+    #    logger.info("RouteViewSet::pre_delete(): called "+str(self)+", obj="+str(obj))
+    #    obj.commit_delete()
+    #    logger.info("RouteViewSet::pre_delete(): returning "+str(self)+", obj="+str(obj))
 
 class PortViewSet(viewsets.ModelViewSet):
     queryset = MatchPort.objects.all()
