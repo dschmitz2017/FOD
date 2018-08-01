@@ -200,7 +200,7 @@ def delete(route, **kwargs):
         route.response = "Error"
         route.save()
         msg1 = "[%s] Suspending rule : %s - Result: %s" % (route.applier, route.name, route.response)
-        logger.info("tasks::delete(): Exception msg="+msg1+", exc="+str(exc))
+        logger.info("tasks::delete(): Exception msg="+msg1+", exc="+str(e))
         announce(msg1, route.applier, route)
     logger.info("tasks::delete(): before returning; route.status="+str(route.status))
 
