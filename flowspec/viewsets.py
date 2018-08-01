@@ -274,10 +274,6 @@ class RouteViewSet(viewsets.ModelViewSet):
         else:
             obj.applier = self.request.user
 
-    def post_save(self, obj, created):
-        if created:
-            obj.commit_add()
-
     def pre_delete(self, obj):
         logger.info("RouteViewSet::pre_delete(): called "+str(self)+", obj="+str(obj))
         obj.commit_delete()

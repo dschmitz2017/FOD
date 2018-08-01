@@ -639,7 +639,6 @@ class Route(models.Model):
 
 
 def send_message(msg, user):
-#    username = user.username
     peer = user
     b = beanstalkc.Connection()
     b.use(settings.POLLS_TUBE)
