@@ -223,7 +223,8 @@ class Rule(models.Model):
 
     def commit_add(self, *args, **kwargs):
         peer2 = self.helper_get_matching_peers()
-        send_message("[%s] Adding rule %s. Please wait..." % (self.applier.username, self.name), peer)
+        msg1 = "[%s] Adding rule %s. Please wait..." % (self.applier.username, self.name)
+        send_message_multiple(msg1, peer2[1])
         response = add.delay(self)
         logger.info('Got add job id: %s' % response)
         mail_body = self._send_mail(args={
