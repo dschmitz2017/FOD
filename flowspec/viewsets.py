@@ -42,8 +42,10 @@ class PeerViewSet(viewsets.ViewSet):
     def get_queryset(self):
         print(self.request.user)
         if self.request.user.is_authenticated: # and not self.request.user.is_anonymous:
-            pr = PeerRange.objects.filter(peer__user_profile__peers=self.request.user)
-            return [str(net) for net in pr]
+            #pr = PeerRange.objects.filter(peer__user_profile__peers=self.request.user)
+            pr = PeerRange.objects.filter(peer__user_profile__user=self.request.user)
+            tmp = [str(net) for net in pr] 
+            return list(set(tmp)) # setify to remove duplicates
         else:
             raise PermissionDenied('User is not Authenticated')
 
