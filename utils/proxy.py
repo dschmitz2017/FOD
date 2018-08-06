@@ -107,82 +107,116 @@ class Applier(object):
                 settings.PORTRANGE_LIMIT
             except:
                 settings.PORTRANGE_LIMIT = 100
+
+            if len(self.route_objects)==0:
+              logger.info("proxy::to_xml(): route_objects is empty, returning False");
+              return False
+
             logger.info("proxy::to_xml(): Generating XML config")
             rule_obj = self.rule_object
             device = np.Device()
             flow = np.Flow()
-            route = np.Route()
-            flow.routes.append(route)
+            #route = np.Route()
+            #flow.routes.append(route)
             device.routing_options.append(flow)
-            route.name = rule_obj.name
+            #route.name = rule_obj.name
             if operation == "delete":
                 logger.info("proxy::to_xml(): Requesting a delete operation")
-                route.operation = operation
+                logger.info("proxy::to_xml(): route_objects="+str(self.route_objects))
+              
+                for route_obj in self.route_objects:
+                  route = np.Route()
+                  #route.name = rule_obj.name
+                  route.name = route_obj.name
+                  flow.routes.append(route)
+                  route.operation = operation
+
+                logger.info("proxy::to_xml(): delete: routing_options="+str(device.routing_options))
+                logger.info("proxy::to_xml(): delete: routing_options.export()="+str(device.routing_options[0].export()))
                 device = device.export(netconf_config=True)
-                return ET.tostring(device)
+                result = ET.tostring(device)
+                logger.info("proxy::to_xml(): (delete) result="+str(result))
+                #return ET.tostring(device)
+                return result
             # TODO convert to multiple Routes
             # rule.routes is a list of Routes
-            if route_obj.source:
-                route.match['source'].append(route_obj.source)
-            if route_obj.destination:
-                route.match['destination'].append(route_obj.destination)
-            try:
-                if route_obj.protocol:
-                    for protocol in route_obj.protocol.all():
-                        route.match['protocol'].append(protocol.protocol)
-            except:
-                pass
-            try:
-                ports = []
-                if route_obj.port:
-                    portrange = str(route_obj.port)
-                    for port in portrange.split(","):
-                        route.match['port'].append(port)
-            except:
-                pass
-            try:
-                ports = []
-                if route_obj.destinationport:
-                    portrange = str(route_obj.destinationport)
-                    for port in portrange.split(","):
-                        route.match['destination-port'].append(port)
-            except:
-                pass
-            try:
-                if route_obj.sourceport:
-                    portrange = str(route_obj.sourceport)
-                    for port in portrange.split(","):
-                        route.match['source-port'].append(port)
-            except:
-                pass
-            if route_obj.icmpcode:
-                route.match['icmp-code'].append(route_obj.icmpcode)
-            if route_obj.icmptype:
-                route.match['icmp-type'].append(route_obj.icmptype)
-            if route_obj.tcpflag:
-                route.match['tcp-flags'].append(route_obj.tcpflag)
-            try:
-                if route_obj.dscp:
-                    for dscp in route_obj.dscp.all():
-                        route.match['dscp'].append(dscp.dscp)
-            except:
-                pass
 
-            try:
-                if route_obj.fragmenttype:
-                    for frag in route_obj.fragmenttype.all():
-                        route.match['fragment'].append(frag.fragmenttype)
-            except:
-                pass
+            count1=0
+            for route_obj in self.route_objects:
+              count1=count1+1
 
-            for thenaction in route_obj.then.all():
-                if thenaction.action_value:
-                    route.then[thenaction.action] = thenaction.action_value
-                else:
-                    route.then[thenaction.action] = True
-            if operation == "replace":
-                logger.info("proxy::to_xml(): Requesting a replace operation")
-                route.operation = operation
+              route = np.Route()
+              #route.name = rule_obj.name
+              route.name = route_obj.name
+              flow.routes.append(route)
+
+              if route_obj.source:
+                  route.match['source'].append(route_obj.source)
+              if route_obj.destination:
+                  route.match['destination'].append(route_obj.destination)
+              try:
+                  if route_obj.protocol:
+                      for protocol in route_obj.protocol.all():
+                          route.match['protocol'].append(protocol.protocol)
+              except:
+                  pass
+              try:
+                  ports = []
+                  if route_obj.port:
+                      portrange = str(route_obj.port)
+                      for port in portrange.split(","):
+                          route.match['port'].append(port)
+              except:
+                  pass
+              try:
+                  ports = []
+                  if route_obj.destinationport:
+                      portrange = str(route_obj.destinationport)
+                      for port in portrange.split(","):
+                          route.match['destination-port'].append(port)
+              except:
+                  pass
+              try:
+                  if route_obj.sourceport:
+                      portrange = str(route_obj.sourceport)
+                      for port in portrange.split(","):
+                          route.match['source-port'].append(port)
+              except:
+                  pass
+              if route_obj.icmpcode:
+                  route.match['icmp-code'].append(route_obj.icmpcode)
+              if route_obj.icmptype:
+                  route.match['icmp-type'].append(route_obj.icmptype)
+              if route_obj.tcpflag:
+                  route.match['tcp-flags'].append(route_obj.tcpflag)
+              try:
+                  if route_obj.dscp:
+                      for dscp in route_obj.dscp.all():
+                          route.match['dscp'].append(dscp.dscp)
+              except:
+                  pass
+
+              try:
+                  if route_obj.fragmenttype:
+                      for frag in route_obj.fragmenttype.all():
+                          route.match['fragment'].append(frag.fragmenttype)
+              except:
+                  pass
+
+              for thenaction in rule_obj.then.all():
+                  if thenaction.action_value:
+                      route.then[thenaction.action] = thenaction.action_value
+                  else:
+                      route.then[thenaction.action] = True
+
+              if operation == "replace":
+                  logger.info("proxy::to_xml(): Requesting a replace operation")
+                  route.operation = operation
+
+            #if count1==0: # TODO
+              #route.match['None'] = ['']
+              #route.match = ''
+
             device = device.export(netconf_config=True)
             result = ET.tostring(device)
             logger.info("proxy::to_xml(): result="+str(result))
@@ -216,6 +250,7 @@ class Applier(object):
         reason = None
         if not configuration:
             configuration = self.to_xml(operation=operation)
+            logger.info("proxy::apply(): configuration="+str(configuration))
         edit_is_successful = False
         commit_confirmed_is_successful = False
         commit_is_successful = False
@@ -224,6 +259,15 @@ class Applier(object):
                 assert(":candidate" in m.server_capabilities)
                 with m.locked(target='candidate'):
                     m.discard_changes()
+                    try:
+                      config = m.get_config(source='candidate', filter=Null)
+                      logger.info("proxy::apply(): get_config="+str(config))
+                    except Exception as e:
+                        #cause = "Caught edit exception: %s %s (e.class=)" % (e, reason)
+                        cause = "proxy::apply(): get_config: Caught edit exception: %s %s (e.class=%s)" % (e, "", str(type(e)))
+                        cause = cause.replace('\n', '')
+                        logger.error("proxy::apply(): get_config: "+str(cause))
+
                     try:
                         edit_response = m.edit_config(target='candidate', config=configuration, test_option='test-then-set')
                         edit_is_successful, reason = is_successful(edit_response)

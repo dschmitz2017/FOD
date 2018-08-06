@@ -62,7 +62,8 @@ def add(rule, callback=None):
           announce(msg1, rule.applier, rule)
         else:
           # TODO PR.Applier can't work with multiple routes
-          applier = PR.Applier(rule_object=rule)
+          i#applier = PR.Applier(rule_object=rule)
+          applier = PR.Applier(rule_object=rule, route_objects=route.routes.select_related().all())
           commit, response = applier.apply()
           if commit:
               status = "ACTIVE"
@@ -99,7 +100,10 @@ def add(rule, callback=None):
 @task(ignore_result=True)
 def edit(route, callback=None):
     try:
-        applier = PR.Applier(route_object=route)
+        logger.info("edit(): route="+str(route)+", route.type="+str(type(route)))
+        #logger.info("edit(): route="+str(route)+", route.dir="+str(dir(route)))
+        #applier = PR.Applier(route_object=route)
+        applier = PR.Applier(rule_object=route, route_objects=route.routes.select_related().all())
         commit, response = applier.apply(operation="replace")
         if commit:
             status = "ACTIVE"
@@ -120,21 +124,24 @@ def edit(route, callback=None):
         route.response = "Task timeout"
         route.save()
         msg = "[%s] Rule edit: %s - Result: %s" % (route.applier, route.name, route.response)
-        logger.info("tasks::edit(): TimeLimitExceeded msg="+msg)
+        logger.error("tasks::edit(): TimeLimitExceeded msg="+msg)
         announce(msg, route.applier, route)
     except SoftTimeLimitExceeded:
         route.status = "ERROR"
         route.response = "Task timeout"
         route.save()
         msg = "[%s] Rule edit: %s - Result: %s" % (route.applier, route.name, route.response)
-        logger.info("tasks::edit(): SoftTimeLimitExceeded msg="+msg)
+        logger.error("tasks::edit(): SoftTimeLimitExceeded msg="+msg)
         announce(msg, route.applier, route)
     except Exception, e:
         route.status = "ERROR"
         route.response = "Error"
         route.save()
         msg = "[%s] Rule edit: %s - Result: %s" % (route.applier, route.name, route.response)
-        logger.info("tasks::edit(): Exception msg="+msg+", except="+str(e))
+        logger.error("tasks::edit(): Exception msg="+msg+", except="+str(e))
+        logger.error(e, exc_info=True)
+        #traceback.print_exc(file=sys.stdout)
+        logger.info("tasks::edit(): route.applier="+str(route.applier))
         announce(msg, route.applier, route)
 
 @task(ignore_result=True)
@@ -145,17 +152,28 @@ def delete(route, **kwargs):
     initial_status = route.status
     logger.info("tasks::delete(): called initial_status="+str(initial_status))
     try:
-        applier = PR.Applier(route_object=route)
-        commit, response = applier.apply(operation="delete")
+        rule_routes = route.routes.select_related().all()
         reason_text = ''
-        logger.info("tasks::delete(): called commit="+str(commit))
-        if commit:
-              status = "INACTIVE"
-              if "reason" in kwargs and kwargs['reason'] == 'EXPIRED':
-                  status = 'EXPIRED'
-                  reason_text = " Reason: %s " % status
+        if len(rule_routes)>0:
+          #applier = PR.Applier(route_object=route)
+          applier = PR.Applier(rule_object=route, route_objects=rule_routes)
+          commit, response = applier.apply(operation="delete")
+          logger.info("tasks::delete(): called commit="+str(commit))
+          if commit:
+                status = "INACTIVE"
+                if "reason" in kwargs and kwargs['reason'] == 'EXPIRED':
+                    status = 'EXPIRED'
+                    reason_text = " Reason: %s " % status
+          else:
+                    status = "ERROR"
         else:
-                  status = "ERROR"
+          logger.info("tasks::delete(): rule has no routes, initial_status="+str(initial_status))
+          commit = True
+          if initial_status == "INACTIVE_TODELETE":
+            status = initial_status
+          else:
+            status = "INACTIVE"
+          response = "nothing todo: rule has no routes"
 
         if commit and initial_status == "INACTIVE_TODELETE": # special new case for fully deleting a rule via REST API
               route.delete()
@@ -187,21 +205,22 @@ def delete(route, **kwargs):
         route.response = "Task timeout"
         route.save()
         msg1= "[%s] Suspending rule : %s - Result: %s" % (route.applier, route.name, route.response)
-        logger.info("tasks::delete(): TimeLimitExceeded msg="+msg1)
+        logger.error("tasks::delete(): TimeLimitExceeded msg="+msg1)
         announce(msg1, route.applier, route)
     except SoftTimeLimitExceeded:
         route.status = "ERROR"
         route.response = "Task timeout"
         route.save()
         msg1 = "[%s] Suspending rule : %s - Result: %s" % (route.applier, route.name, route.response)
-        logger.info("tasks::delete(): SoftTimeLimitExceeded msg="+msg1)
+        logger.error("tasks::delete(): SoftTimeLimitExceeded msg="+msg1)
         announce(msg1, route.applier, route)
     except Exception, e:
         route.status = "ERROR"
         route.response = "Error"
         route.save()
         msg1 = "[%s] Suspending rule : %s - Result: %s" % (route.applier, route.name, route.response)
-        logger.info("tasks::delete(): Exception msg="+msg1+", exc="+str(e))
+        logger.error("tasks::delete(): Exception msg="+msg1+", exc="+str(e))
+        logger.error(e, exc_info=True)
         announce(msg1, route.applier, route)
     logger.info("tasks::delete(): before returning; route.status="+str(route.status))
 
@@ -213,6 +232,7 @@ def batch_delete(routes, **kwargs):
         for route in routes:
             route.status = 'PENDING';route.save()
         applier = PR.Applier(route_objects=routes)
+        #applier = PR.Applier(rule_object=route, route_objects=route.routes.select_related().all())
         conf = applier.delete_routes()
         commit, response = applier.apply(configuration=conf)
         reason_text = ''
@@ -243,8 +263,9 @@ def announce(messg, user, rule):
     messg = str(messg)
     b = beanstalkc.Connection()
     b.use(settings.POLLS_TUBE)
-    tube_message = json.dumps({'message': messg, 'username': peers})
-    b.put(tube_message)
+    for peer_tag in peer_tags:
+      tube_message = json.dumps({'message': messg, 'username': peer_tag})
+      b.put(tube_message)
     b.close()
 
 
