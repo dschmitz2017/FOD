@@ -25,7 +25,8 @@ import json
 import os
 import time
 
-from flowspec.models import Route
+#from flowspec.models import Route
+from flowspec.models import Rule
 from flowspec.junos import create_junos_name
 
 logger = logging.getLogger(__name__)
@@ -293,6 +294,7 @@ def poll_snmp_statistics():
     
         if settings.STATISTICS_PER_RULE == True:
           queryset = Route.objects.all()
+          #queryset = Rule.objects.all()
           for ruleobj in queryset:
             rule_id = str(ruleobj.id)
             rule_status = str(ruleobj.status)
