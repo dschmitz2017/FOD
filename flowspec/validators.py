@@ -165,8 +165,8 @@ def clean_route_form(data):
         return _('Once destination port is matched, destination has to be filled as well. Either deselect destination port or fill destination address')
     if not (source or sourceports or ports or destination or destinationports):
         return _('Fill at least a Rule Match Condition')
-    if not user.is_superuser and then[0].action not in settings.UI_USER_THEN_ACTIONS:
-        return _('This action "%s" is not permitted') % (then[0].action)
+    #if not user or (not user.is_superuser and then[0].action not in settings.UI_USER_THEN_ACTIONS):
+    #    return _('This action "%s" is not permitted') % (then[0].action) if then and then[0] else _("No Then action given.")
 
 
 def check_if_rule_exists(fields, queryset):
