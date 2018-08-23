@@ -266,7 +266,8 @@ def add_route(request):
         )
         return HttpResponseRedirect(reverse("group-routes"))
     if request.method == "GET":
-        form = RouteForm(initial={'applier': applier})
+        expires = datetime.date.today() + datetime.timedelta(days=settings.EXPIRATION_DAYS_OFFSET - 1)
+        form = RouteForm(initial={'applier': applier, 'expires': expires})
         form.fields['expires'] = forms.DateField()
         form.fields['applier'] = forms.ModelChoiceField(queryset=User.objects.filter(pk=request.user.pk), required=True, empty_label=None)
         if request.user.is_superuser:
@@ -287,9 +288,21 @@ def add_route(request):
         else:
             request_data['applier'] = applier
             try:
-                del requset_data['issuperuser']
+                del request_data['issuperuser']
             except:
                 pass
+        logger.info("views::add_route(): create new Rule " + request_data['name'])
+        rule = Rule()
+        rule.name = request_data['name']
+        rule.applier = request.user
+        rule.expires = request_data['expires']
+        rule.save()
+        rule.then.add(request_data['then'])
+        rule.save()
+        logger.info("views::add_route(): created new Rule " + str(rule.pk) + " " + str(rule))
+        request_data['rule'] = rule.pk
+            
+        logger.info("views::add_route(): request_data " + str(request_data))
         form = RouteForm(request_data)
         #route_status_speced = request_data['status']
         if form.is_valid():
@@ -298,6 +311,8 @@ def add_route(request):
                 route.applier = request.user
             route_status_speced = route.status
             logger.info("views::add_route(): route_status_speced="+str(route_status_speced))
+            rule.routes.add(route)
+            rule.save()
             route.status = "PENDING"
             route.response = "Applying"
             route.source = IPNetwork('%s/%s' % (IPNetwork(route.source).network.compressed, IPNetwork(route.source).prefixlen)).compressed
@@ -312,10 +327,17 @@ def add_route(request):
             # We have to make the commit after saving the form
             # in order to have all the m2m relations.
             route.status = route_status_speced
-            route.commit_add()
+            rule.editing = False
+            rule.save()
+            rule.commit_add()
             return HttpResponseRedirect(reverse("group-routes"))
         else:
-            if not request.user.is_superuser:
+            form.fields['expires'] = forms.DateField()
+            form.fields['applier'] = forms.ModelChoiceField(queryset=User.objects.filter(pk=request.user.pk), required=True, empty_label=None)
+            if request.user.is_superuser:
+                form.fields['then'] = forms.ModelMultipleChoiceField(queryset=ThenAction.objects.all().order_by('action'), required=True)
+                form.fields['protocol'] = forms.ModelMultipleChoiceField(queryset=MatchProtocol.objects.all().order_by('protocol'), required=False)
+            else:
                 form.fields['then'] = forms.ModelMultipleChoiceField(queryset=ThenAction.objects.filter(action__in=settings.UI_USER_THEN_ACTIONS).order_by('action'), required=True)
                 form.fields['protocol'] = forms.ModelMultipleChoiceField(queryset=MatchProtocol.objects.filter(protocol__in=settings.UI_USER_PROTOCOLS).order_by('protocol'), required=False)
             return render(
