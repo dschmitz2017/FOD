@@ -196,7 +196,8 @@ class RouteForm(forms.ModelForm):
         port = self.cleaned_data.get('port', None)
         destination = self.cleaned_data.get('destination', None)
         destinationports = self.cleaned_data.get('destinationport', None)
-        #user = self.cleaned_data.get('applier', None)
+        then = self.cleaned_data.get('then', None)
+        user = self.cleaned_data.get('applier', None)
 
         if source:
             source = IPNetwork(source).compressed
