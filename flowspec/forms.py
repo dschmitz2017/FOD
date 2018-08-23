@@ -130,7 +130,7 @@ class RuleForm(forms.ModelForm):
         port = self.cleaned_data.get('port', None)
         destination = self.cleaned_data.get('destination', None)
         destinationports = self.cleaned_data.get('destinationport', None)
-        #user = self.cleaned_data.get('applier', None)
+        user = self.cleaned_data.get('applier', None)
 
         for route in existing_routes:
             if name != route.name:
@@ -143,6 +143,7 @@ class RouteForm(forms.ModelForm):
     sourceport = PortRangeForm()
     destinationport = PortRangeForm()
     port = PortRangeForm()
+    rule = RuleForm()
     class Meta:
         model = Route
 
@@ -179,11 +180,13 @@ class RouteForm(forms.ModelForm):
             raise forms.ValidationError(error)
 
         ## check if same rule exists with other name
-        #user = self.cleaned_data['applier']
-        #if user.is_superuser:
-        #    peers = Peer.objects.all()
-        #else:
-        #    peers = user.userprofile.peers.all()
+        rule = self.cleaned_data['rule']
+        user = rule.applier
+        print(vars(rule))
+        if user.is_superuser:
+            peers = Peer.objects.all()
+        else:
+            peers = user.userprofile.peers.all()
         existing_routes = Route.objects.all()
         #existing_routes = existing_routes.filter(rule__applier__userprofile__peers__in=peers)
         name = self.cleaned_data.get('name', None)

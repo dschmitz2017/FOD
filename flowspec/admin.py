@@ -31,6 +31,7 @@ from longerusername.forms import UserCreationForm, UserChangeForm
 
 class RuleAdmin(admin.ModelAdmin):
     form = RuleForm
+    list_display = ('name', 'status', 'applier_username', 'applier_peers', 'get_match', 'get_then', 'response', "comments")
 
 class RouteAdmin(admin.ModelAdmin):
     form = RouteForm

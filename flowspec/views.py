@@ -89,7 +89,7 @@ def welcome(request):
 @login_required
 @never_cache
 def dashboard(request):
-    all_group_routes = []
+    all_group_rules = []
     message = ''
     try:
         peers = request.user.get_profile().peers.select_related('user_profile')
@@ -104,13 +104,13 @@ def dashboard(request):
         )
     if peers:
         if request.user.is_superuser:
-            all_group_routes = Route.objects.all().order_by('-last_updated')[:10]
+            all_group_rules = Rule.objects.all().order_by('-last_updated')[:10]
         else:
             query = Q()
             for peer in peers:
                 query |= Q(applier__userprofile__in=peer.user_profile.all())
-            all_group_routes = Route.objects.filter(query)
-        if all_group_routes is None:
+            all_group_rules = Rule.objects.filter(query)
+        if all_group_rules is None:
             message = 'You have not added any rules yet'
     else:
         message = 'You are not associated with a peer.'
@@ -125,7 +125,7 @@ def dashboard(request):
         request,
         'dashboard.html',
         {
-            'routes': all_group_routes.prefetch_related(
+            'routes': all_group_rules.prefetch_related(
                 'applier',
                 'applier',
                 'fragmenttype',
@@ -161,7 +161,7 @@ def group_routes(request):
 @login_required
 @never_cache
 def group_routes_ajax(request):
-    all_group_routes = []
+    all_group_rules = []
     try:
         peers = request.user.get_profile().peers.prefetch_related('networks')
     except UserProfile.DoesNotExist:
@@ -172,22 +172,22 @@ def group_routes_ajax(request):
             {'error': error}
         )
     if request.user.is_superuser:
-        all_group_routes = Route.objects.all()
+        all_group_rules = Rule.objects.all()
     else:
         query = Q()
         for peer in peers:
             query |= Q(applier__userprofile__in=peer.user_profile.all())
-        all_group_routes = Route.objects.filter(query)
+        all_group_rules = Route.objects.filter(query)
     jresp = {}
-    routes = build_routes_json(all_group_routes)
-    jresp['aaData'] = routes
+    rules = build_routes_json(all_group_rules)
+    jresp['aaData'] = rules
     return HttpResponse(json.dumps(jresp), mimetype='application/json')
 
 
 @login_required
 @never_cache
 def overview_routes_ajax(request):
-    all_group_routes = []
+    all_group_rules = []
     try:
         peers = request.user.get_profile().peers.all().select_related()
     except UserProfile.DoesNotExist:
@@ -196,36 +196,41 @@ def overview_routes_ajax(request):
     query = Q()
     for peer in peers:
         query |= Q(applier__userprofile__in=peer.user_profile.all())
-    all_group_routes = Route.objects.filter(query)
+    all_group_rules = Route.objects.filter(query)
     if request.user.is_superuser or request.user.has_perm('accounts.overview'):
-        all_group_routes = Route.objects.all()
+        all_group_rules = Route.objects.all()
     jresp = {}
-    routes = build_routes_json(all_group_routes)
-    jresp['aaData'] = routes
+    rules = build_routes_json(all_group_rules)
+    jresp['aaData'] = rules
     return HttpResponse(json.dumps(jresp), mimetype='application/json')
 
 
-def build_routes_json(groutes):
+def build_routes_json(grules):
     routes = []
-    for r in groutes.prefetch_related(
+    for r in grules.prefetch_related(
             'applier',
-            'fragmenttype',
-            'protocol',
-            'dscp',
+            'routes',
     ):
         rd = {}
         rd['id'] = r.pk
-        rd['port'] = r.port
-        rd['sourceport'] = r.sourceport
-        rd['destinationport'] = r.destinationport
-        # name with link to rule details
         rd['name'] = r.name
         rd['details'] = '<a href="%s">%s</a>' % (r.get_absolute_url(), r.name)
+        rd['routes'] = list()
+        for routei in r.routes.all():
+            route = {}
+            route['port'] = routei.port
+            route['sourceport'] = routei.sourceport
+            route['destinationport'] = routei.destinationport
+            route['response'] = "%s" % routei.response
+            route['match'] = routei.get_match()
+            rd['routes'].append(route)
+        # name with link to rule details
         if not r.comments:
             rd['comments'] = 'Not Any'
         else:
             rd['comments'] = r.comments
         rd['match'] = r.get_match()
+        rd['response'] = r.get_responses()
         rd['then'] = r.get_then()
         rd['status'] = r.status
         # in case there is no applier (this should not occur)
@@ -235,23 +240,8 @@ def build_routes_json(groutes):
             rd['applier'] = 'unknown'
             rd['peer'] = ''
         else:
-            peers = r.applier.get_profile().peers.select_related('networks')
-            username = None
-            for peer in peers:
-                if username:
-                    break
-                for network in peer.networks.all():
-                    net = IPNetwork(network)
-                    if IPNetwork(r.destination) in net:
-                        username = peer.peer_name
-                        break
-            try:
-                rd['peer'] = username
-            except UserProfile.DoesNotExist:
-                rd['peer'] = ''
-
+            rd['peer'] = r.helper_get_matching_peers()[1]
         rd['expires'] = "%s" % r.expires
-        rd['response'] = "%s" % r.response
         routes.append(rd)
     return routes
 
@@ -277,7 +267,12 @@ def add_route(request):
         return HttpResponseRedirect(reverse("group-routes"))
     if request.method == "GET":
         form = RouteForm(initial={'applier': applier})
-        if not request.user.is_superuser:
+        form.fields['expires'] = forms.DateField()
+        form.fields['applier'] = forms.ModelChoiceField(queryset=User.objects.filter(pk=request.user.pk), required=True, empty_label=None)
+        if request.user.is_superuser:
+            form.fields['then'] = forms.ModelMultipleChoiceField(queryset=ThenAction.objects.all().order_by('action'), required=True)
+            form.fields['protocol'] = forms.ModelMultipleChoiceField(queryset=MatchProtocol.objects.all().order_by('protocol'), required=False)
+        else:
             form.fields['then'] = forms.ModelMultipleChoiceField(queryset=ThenAction.objects.filter(action__in=settings.UI_USER_THEN_ACTIONS).order_by('action'), required=True)
             form.fields['protocol'] = forms.ModelMultipleChoiceField(queryset=MatchProtocol.objects.filter(protocol__in=settings.UI_USER_PROTOCOLS).order_by('protocol'), required=False)
         return render_to_response('apply.html', {'form': form,
@@ -831,9 +826,23 @@ def lookupShibAttr(attrmap, requestMeta):
 # show the details of specific route
 @login_required
 @never_cache
+def ruledetails(request, rule_slug):
+    rule = get_object_or_404(Rule, name=rule_slug)
+    now = datetime.datetime.now()
+    last_msrm_delay_time = get_last_msrm_delay_time()
+    return render(request, 'flowspy/rule_details.html', {
+      'rule': rule,
+      'mytime': now,
+      'last_msrm_delay_time': last_msrm_delay_time,
+      'tz' : settings.TIME_ZONE,
+      'route_comments_len' : len(str(rule.comments))
+      })
+
+# show the details of specific route
+@login_required
+@never_cache
 def routedetails(request, route_slug):
     route = get_object_or_404(Route, name=route_slug)
-    #return render(request, 'flowspy/route_details.html', {'route': route})
     now = datetime.datetime.now()
     last_msrm_delay_time = get_last_msrm_delay_time()
     return render(request, 'flowspy/route_details.html', {

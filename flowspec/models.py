@@ -300,6 +300,37 @@ class Rule(models.Model):
         }
         logger.info(mail_body, extra=d)
 
+    def get_absolute_url(self):
+        return reverse('rule-details', kwargs={'rule_slug': self.name})
+
+    def get_then(self):
+        ret = ''
+        then_statements = self.then.all()
+        for statement in then_statements:
+            if statement.action_value:
+                ret = "%s %s %s" %(ret, statement.action, statement.action_value)
+            else:
+                ret = "%s %s" %(ret, statement.action)
+        return ret
+
+    get_then.short_description = 'Then statement'
+    get_then.allow_tags = True
+
+    def get_match(self):
+        res = ''
+        if self.routes:
+            for r in self.routes.all():
+                res = res + r.get_match()
+        return res
+    get_match.short_description = 'Match statement'
+    get_match.allow_tags = True
+
+    def get_responses(self):
+        if self.routes:
+            return ', '.join([str(r.response) for r in self.routes.all()])
+        else:
+            return ''
+
 
 class Route(models.Model):
     name = models.SlugField(max_length=128, verbose_name=_("Name"))
@@ -533,12 +564,13 @@ class Route(models.Model):
 
     def get_then(self):
         ret = ''
-        then_statements = self.then.all()
-        for statement in then_statements:
-            if statement.action_value:
-                ret = "%s %s %s" %(ret, statement.action, statement.action_value)
-            else:
-                ret = "%s %s" %(ret, statement.action)
+        if self.rule:
+            then_statements = self.rule.then.all()
+            for statement in then_statements:
+                if statement.action_value:
+                    ret = "%s %s %s" %(ret, statement.action, statement.action_value)
+                else:
+                    ret = "%s %s" %(ret, statement.action)
         return ret
 
     get_then.short_description = 'Then statement'
