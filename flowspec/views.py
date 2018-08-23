@@ -355,7 +355,13 @@ def add_route(request):
 @never_cache
 def edit_route(request, route_slug):
     applier = request.user.pk
-    route_edit = get_object_or_404(Route, name=route_slug)
+    rule_edit = get_object_or_404(Rule, name=route_slug)
+    if rule_edit.routes:
+        if rule_edit.routes.count() > 1:
+            raise Exception("Not implemented editing multiple routes in a single rule.")
+        route_edit = rule_edit.routes.get()
+    else:
+        raise Exception("There is no configured route for this rule.")
 
     applier_peer_networks = []
     if request.user.is_superuser:
@@ -371,13 +377,14 @@ def edit_route(request, route_slug):
             ('Insufficient rights on administrative networks. Cannot add rule. Contact your administrator')
         )
         return HttpResponseRedirect(reverse("group-routes"))
-    if route_edit.status == 'PENDING':
+    if rule_edit.status == 'PENDING':
         messages.add_message(
             request,
             messages.WARNING,
             ('Cannot edit a pending rule: %s.') % (route_slug)
         )
         return HttpResponseRedirect(reverse("group-routes"))
+    rule_original = deepcopy(rule_edit)
     route_original = deepcopy(route_edit)
     if request.POST:
         request_data = request.POST.copy()
@@ -389,20 +396,23 @@ def edit_route(request, route_slug):
                 del request_data['issuperuser']
             except:
                 pass
+        request_data["rule"] = rule_edit.id
         form = RouteForm(
             request_data,
-            instance=route_edit
+            instance=rule_edit.routes.get()
         )
+        form.fields['expires'] = forms.DateField()
+        form.fields['applier'] = forms.ModelChoiceField(queryset=User.objects.filter(pk=request.user.pk), required=True, empty_label=None)
         critical_changed_values = ['source', 'destination', 'sourceport', 'destinationport', 'port', 'protocol', 'then', 'fragmenttype']
         if form.is_valid():
             changed_data = form.changed_data
             route = form.save(commit=False)
             route.name = route_original.name
-            route.status = route_original.status
+            #route.status = rule_original.status
             route.response = route_original.response
             if not request.user.is_superuser:
-                route.applier = request.user
-            if bool(set(changed_data) & set(critical_changed_values)) or (not route_original.status == 'ACTIVE'):
+                route.rule.applier = request.user
+            if bool(set(changed_data) & set(critical_changed_values)) or (not rule_original.status == 'ACTIVE'):
                 route.status = "PENDING"
                 route.response = "Applying"
                 route.source = IPNetwork('%s/%s' % (IPNetwork(route.source).network.compressed, IPNetwork(route.source).prefixlen)).compressed
@@ -413,13 +423,18 @@ def edit_route(request, route_slug):
                     # in case the header is not provided
                     route.requesters_address = 'unknown'
 
+            route.rule.expires = request_data["expires"]
+            route.rule.save()
             route.save()
-            if bool(set(changed_data) & set(critical_changed_values)) or (not route_original.status == 'ACTIVE'):
+            if bool(set(changed_data) & set(critical_changed_values)) or (not rule_original.status == 'ACTIVE'):
                 form.save_m2m()
-                route.commit_edit()
+                route.rule.commit_edit()
             return HttpResponseRedirect(reverse("group-routes"))
         else:
-            if not request.user.is_superuser:
+            if request.user.is_superuser:
+                form.fields['then'] = forms.ModelMultipleChoiceField(queryset=ThenAction.objects.all().order_by('action'), required=True)
+                form.fields['protocol'] = forms.ModelMultipleChoiceField(queryset=MatchProtocol.objects.all().order_by('protocol'), required=False)
+            else:
                 form.fields['then'] = forms.ModelMultipleChoiceField(queryset=ThenAction.objects.filter(action__in=settings.UI_USER_THEN_ACTIONS).order_by('action'), required=True)
                 form.fields['protocol'] = forms.ModelMultipleChoiceField(queryset=MatchProtocol.objects.filter(protocol__in=settings.UI_USER_PROTOCOLS).order_by('protocol'), required=False)
             return render_to_response(
@@ -433,9 +448,12 @@ def edit_route(request, route_slug):
                 context_instance=RequestContext(request)
             )
     else:
-        if (not route_original.status == 'ACTIVE'):
-            route_edit.expires = datetime.date.today() + datetime.timedelta(days=settings.EXPIRATION_DAYS_OFFSET-1)
+        rule_edit.expires = rule_original.expires
+        maxexpires = datetime.date.today() + datetime.timedelta(days = settings.EXPIRATION_DAYS_OFFSET - 1)
+        if (not rule_original.status == 'ACTIVE' and rule_edit.expires < maxexpires):
+            rule_edit.expires = maxexpires
         dictionary = model_to_dict(route_edit, fields=[], exclude=[])
+        dictionary.update(model_to_dict(rule_edit, fields=[], exclude=[]))
         if request.user.is_superuser:
             dictionary['issuperuser'] = request.user.username
         else:
@@ -444,7 +462,12 @@ def edit_route(request, route_slug):
             except:
                 pass
         form = RouteForm(dictionary)
-        if not request.user.is_superuser:
+        form.fields['expires'] = forms.DateField()
+        form.fields['applier'] = forms.ModelChoiceField(queryset=User.objects.filter(pk=request.user.pk), required=True, empty_label=None)
+        if request.user.is_superuser:
+            form.fields['then'] = forms.ModelMultipleChoiceField(queryset=ThenAction.objects.all().order_by('action'), required=True)
+            form.fields['protocol'] = forms.ModelMultipleChoiceField(queryset=MatchProtocol.objects.all().order_by('protocol'), required=False)
+        else:
             form.fields['then'] = forms.ModelMultipleChoiceField(queryset=ThenAction.objects.filter(action__in=settings.UI_USER_THEN_ACTIONS).order_by('action'), required=True)
             form.fields['protocol'] = forms.ModelMultipleChoiceField(queryset=MatchProtocol.objects.filter(protocol__in=settings.UI_USER_PROTOCOLS).order_by('protocol'), required=False)
         return render_to_response(
