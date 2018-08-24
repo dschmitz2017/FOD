@@ -193,12 +193,13 @@ def overview_routes_ajax(request):
     except UserProfile.DoesNotExist:
         error = "User <strong>%s</strong> does not belong to any peer or organization. It is not possible to create new firewall rules.<br>Please contact Helpdesk to resolve this issue" % request.user.username
         return render_to_response('error.html', {'error': error}, context_instance=RequestContext(request))
-    query = Q()
-    for peer in peers:
-        query |= Q(applier__userprofile__in=peer.user_profile.all())
-    all_group_rules = Route.objects.filter(query)
     if request.user.is_superuser or request.user.has_perm('accounts.overview'):
-        all_group_rules = Route.objects.all()
+        all_group_rules = Rule.objects.all()
+    else:
+        query = Q()
+        for peer in peers:
+            query |= Q(applier__userprofile__in=peer.user_profile.all())
+        all_group_rules = Rule.objects.filter(query)
     jresp = {}
     rules = build_routes_json(all_group_rules)
     jresp['aaData'] = rules
