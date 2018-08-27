@@ -62,7 +62,7 @@ def add(rule, callback=None):
           announce(msg1, rule.applier, rule)
         else:
           # TODO PR.Applier can't work with multiple routes
-          i#applier = PR.Applier(rule_object=rule)
+          #applier = PR.Applier(rule_object=rule)
           applier = PR.Applier(rule_object=rule, route_objects=route.routes.select_related().all())
           commit, response = applier.apply()
           if commit:

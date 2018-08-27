@@ -71,6 +71,7 @@ class Retriever(object):
             xmlconfig = self.xml
         else:
             xmlconfig = self.fetch_xml()
+            logger.info("proxy::retriever(): fetched xmlconfig"+str(xmlconfig))
         parser = np.Parser()
         parser.confile = xmlconfig
         device = parser.export()
@@ -225,32 +226,90 @@ class Applier(object):
             logger.info("proxy::to_xml(): returning False")
             return False
 
-    def delete_routes(self):
-        if self.route_objects:
-            logger.info("proxy::delete_routes(): Generating XML config")
+#####
+
+    def get_delete_routes_config_by_names(self, name_list):
+        if name_list != None:
+            logger.info("proxy::get_delete_routes_config_by_names(): Generating XML config")
             device = np.Device()
             flow = np.Flow()
-            for route_object in self.route_objects:
-                route_obj = route_object
+            for name in name_list:
                 route = np.Route()
                 flow.routes.append(route)
-                route.name = route_obj.name
+                route.name = name
                 route.operation = 'delete'
             device.routing_options.append(flow)
             device = device.export(netconf_config=True)
             #return ET.tostring(device)
-            msg = ET.tostring(device)
-            logger.info("proxy::delete_routes(): return msg="+str(msg))
-            return msg
+            config = ET.tostring(device)
+            logger.info("proxy::get_delete_routes_config_by_names(): return config="+str(config))
+            return config
+        else:
+            logger.info("proxy::get_delete_routes_config_by_names(): return False")
+            return False
+
+    def delete_routes(self):
+        if self.route_objects:
+            logger.info("proxy::delete_routes(): Generating XML config")
+            name_list = [route.name for route in self.route_objects]
+            config = self.get_delete_routes_config_by_names(name_list)
+            return config
         else:
             logger.info("proxy::delete_routes(): return False")
             return False
+
+    def delete_routes_by_names__immediately(self, name_list):
+        config = self.get_delete_routes_config_by_names(name_list)
+        if config:
+            logger.info("proxy::delete_routes_by_names(): return config="+str(config))
+            commit, response = self.apply(configuration=config)
+            return True
+        else:
+            logger.info("proxy::delete_routes_by_names(): return False")
+            return False
+    
+####
+
+    def get_existing_config_xml(self):
+        retriever0 = Retriever(xml=None)
+        config_xml_running = retriever0.fetch_xml()
+        logger.info("proxy::get_existing_config(): config_xml_running="+str(config_xml_running))
+        return config_xml_running
+
+    def get_existing_config(self):
+        retriever0 = Retriever(xml=None)
+        config_parsed = retriever0.proccess_xml()
+        logger.info("proxy::get_existing_config(): config_parsed="+str(config_parsed))
+        return config_parsed
+
+    def get_existing_routes(self):
+        config_parsed = self.get_existing_config()
+        if config_parsed.routing_options and config_parsed.routing_options.__len__()>0:
+          flow = config_parsed.routing_options[0]
+          logger.info("proxy::get_existing_routes(): config_parsed.flow="+str(flow))
+          routes_existing = flow.routes
+          logger.info("proxy::get_existing_routes(): config_parsed.flow.routes="+str(routes_existing))
+          return routes_existing
+        else:
+          logger.info("proxy::get_existing_routes(): no routing_options or is empty")
+          return []
+
+    def get_existing_route_names(self):
+      routes_existing = self.get_existing_routes()
+      route_ids_existing = [route.name for route in routes_existing]
+      logger.info("proxy::get_existing_route_names(): config_parsed.flow.routes.ids="+str(route_ids_existing))
+      return route_ids_existing
+
+####
 
     def apply(self, configuration = None, operation=None):
         reason = None
         if not configuration:
             configuration = self.to_xml(operation=operation)
             logger.info("proxy::apply(): configuration="+str(configuration))
+
+        #self.get_existing_route_names()
+
         edit_is_successful = False
         commit_confirmed_is_successful = False
         commit_is_successful = False
@@ -259,14 +318,15 @@ class Applier(object):
                 assert(":candidate" in m.server_capabilities)
                 with m.locked(target='candidate'):
                     m.discard_changes()
-                    try:
-                      config = m.get_config(source='candidate', filter=Null)
-                      logger.info("proxy::apply(): get_config="+str(config))
-                    except Exception as e:
-                        #cause = "Caught edit exception: %s %s (e.class=)" % (e, reason)
-                        cause = "proxy::apply(): get_config: Caught edit exception: %s %s (e.class=%s)" % (e, "", str(type(e)))
-                        cause = cause.replace('\n', '')
-                        logger.error("proxy::apply(): get_config: "+str(cause))
+#                    try:
+#                      config = m.get_config(source='candidate', filter=None)
+#                      logger.info("proxy::apply(): get_config="+str(config))
+#                    except Exception as e:
+#                        logger.error("proxy::apply(): get_config: Caught edit exception1: ", exc_info=True)                        
+#                        #cause = "Caught edit exception: %s %s (e.class=)" % (e, reason)
+#                        cause = "proxy::apply(): get_config: Caught edit exception: %s %s (e.class=%s)" % (e, "", str(type(e)))
+#                        cause = cause.replace('\n', '')
+#                        logger.error("proxy::apply(): get_config: "+str(cause))
 
                     try:
                         edit_response = m.edit_config(target='candidate', config=configuration, test_option='test-then-set')
