@@ -124,12 +124,21 @@ class RuleViewSet(viewsets.ModelViewSet):
 
         logger.info("RuleViewSet::update(): called request="+str(request))
         if request.META.has_key('HTTP_X_METHODOVERRIDE'):
+
+          serializer = RouteSerializer(
+            obj, context={'request': request},
+            data=request.DATA, partial=partial)
+
+          if serializer.is_valid():
+            new_status = serializer.object.status
+            super(RuleViewSet, self).update(request, pk, partial=partial)
+
           method_overriden = request.META['HTTP_X_METHODOVERRIDE']
           logger.info("RuleViewSet::update(): HTTP_X_METHODOVERRIDE="+str(method_overriden))
           if method_overriden == "DELETE":
             logger.info("RuleViewSet::update(): redirecting to delete with full delete on")
-            obj.status = "INACTIVE_TODELETE"
-            return self.delete(obj)
+            #obj.status = "INACTIVE_TODELETE"
+            return self.delete(obj, delete_really=True)
 
         return super(RuleViewSet, self).update(request, pk=pk, partial=partial)
 
@@ -278,7 +287,7 @@ class RouteViewSet(viewsets.ModelViewSet):
               logger.info("RouteViewSet::update(): HTTP_X_METHODOVERRIDE="+str(method_overriden))
               if method_overriden == "DELETE":
                 logger.info("RouteViewSet::update(): redirecting to delete with full delete on")
-                obj.status = "INACTIVE_TODELETE"
+                #obj.status = "INACTIVE_TODELETE"
                 return self.delete(obj)
 
             if old_status == 'ACTIVE':

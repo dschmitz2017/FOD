@@ -271,6 +271,8 @@ class Rule(models.Model):
 
     def commit_delete(self, *args, **kwargs):
         logger.info("model::commit_delete(): route="+str(self)+", kwargs="+str(kwargs))
+        initial_status=self.status
+        logger.info("model::commit_delete(): initial_status="+str(initial_status))
 
         reason_text = ''
         reason = ''
@@ -281,7 +283,8 @@ class Rule(models.Model):
         msg1 = "[%s] Suspending rule %s. %sPlease wait..." % (self.applier.username, self.name, reason_text)
         send_message_multiple(msg1, peer2[1])
         logger.info("model::commit_delete(): "+str(msg1))
-        response = delete.delay(self, reason=reason)
+        #response = delete.delay(self, reason=reason)
+        response = delete.delay(self, self.routes.all() ,reason=reason)
         logger.info('Got delete job id: %s' % response)
 
         mail_body = self._send_mail(args={
