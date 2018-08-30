@@ -145,20 +145,26 @@ def edit(route, callback=None):
         announce(msg, route.applier, route)
 
 @task(ignore_result=True)
-def delete(route, **kwargs):
+#def delete(route, **kwargs):
+def delete(route, rule_routes, **kwargs): # route is actually a rule
     logger.info("tasks::delete(): called route="+str(route))
-    logger.info("tasks::delete(): called route.dir="+str(dir(route)))
+    logger.info("tasks::delete(): called rule_routes="+str(rule_routes))
+    #logger.info("tasks::delete(): called route.dir="+str(dir(route)))
     logger.info("tasks::delete(): called kwargs="+str(kwargs))
     initial_status = route.status
     logger.info("tasks::delete(): called initial_status="+str(initial_status))
+    delete_full=False
+    if initial_status == "INACTIVE_TODELETE":
+      delete_full=True
+    logger.info("tasks::delete(): => delete_full="+str(delete_full))
     try:
-        rule_routes = route.routes.select_related().all()
+        #rule_routes = route.routes.select_related().all()        
         reason_text = ''
         if len(rule_routes)>0:
           #applier = PR.Applier(route_object=route)
           applier = PR.Applier(rule_object=route, route_objects=rule_routes)
           commit, response = applier.apply(operation="delete")
-          logger.info("tasks::delete(): called commit="+str(commit))
+          logger.info("tasks::delete(): delete_full="+str(delete_full)+" commit="+str(commit))
           if commit:
                 status = "INACTIVE"
                 if "reason" in kwargs and kwargs['reason'] == 'EXPIRED':
@@ -167,15 +173,15 @@ def delete(route, **kwargs):
           else:
                     status = "ERROR"
         else:
-          logger.info("tasks::delete(): rule has no routes, initial_status="+str(initial_status))
+          logger.info("tasks::delete(): delete_full="+str(delete_full)+" rule has no routes, initial_status="+str(initial_status))
           commit = True
-          if initial_status == "INACTIVE_TODELETE":
+          if delete_full:
             status = initial_status
           else:
             status = "INACTIVE"
           response = "nothing todo: rule has no routes"
 
-        if commit and initial_status == "INACTIVE_TODELETE": # special new case for fully deleting a rule via REST API
+        if commit and delete_full: # special new case for fully deleting a rule via REST API
               route.delete()
               msg1 = "[%s] Fully deleted rule : %s%s- Result %s" % (route.applier, route.name, reason_text, response)
               logger.info("tasks::delete(): DELETED msg="+msg1)
@@ -185,6 +191,8 @@ def delete(route, **kwargs):
               route.response = response
 
               route.save()
+              for rule_route1 in rule_routes:
+                rule_route1.save()
               msg1 = "[%s] Suspending rule : %s%s- Result %s" % (route.applier, route.name, reason_text, response)
               logger.info("tasks::delete(): msg="+msg1)
               announce(msg1 , route.applier, route)
@@ -219,10 +227,10 @@ def delete(route, **kwargs):
         route.response = "Error"
         route.save()
         msg1 = "[%s] Suspending rule : %s - Result: %s" % (route.applier, route.name, route.response)
-        logger.error("tasks::delete(): Exception msg="+msg1+", exc="+str(e))
+        logger.error("tasks::delete(): delete_full="+str(delete_full)+" Exception msg="+msg1+", exc="+str(e))
         logger.error(e, exc_info=True)
         announce(msg1, route.applier, route)
-    logger.info("tasks::delete(): before returning; route.status="+str(route.status))
+    logger.info("tasks::delete(): before returning; delete_full="+str(delete_full)+" route.status="+str(route.status))
 
 
 # May not work in the first place... proxy is not aware of Route models
