@@ -187,12 +187,13 @@ class Rule(models.Model):
             args.get("subject"),
             mail_body,
             settings.SERVER_EMAIL, user_mail,
-            get_peer_techc_mails__multiple(self.applier, args.get("peers"))
+            get_peer_techc_mails__multiple(self.applier, args.get("peer_list"))
         )
         return mail_body
 
     def helper_get_matching_peers(self):
         if not settings.MAIL_NOTIFICATION_TO_ALL_MATCHING_PEERS:
+            logger.error("helper_get_matching_peers(): old behavior, you might switch to new one")
             peers = self.applier.get_profile().peers.all()
             username = None
             for peer in peers:
@@ -218,8 +219,11 @@ class Rule(models.Model):
                     net = IPNetwork(network)
                     for route in self.routes.all():
                         if IPNetwork(route.destination) in net:
-                            matched_peers.append(peer)
-                            matched_peer_tags.append(peer.peer_tag)
+                            if not peer in matched_peers:
+                              matched_peers.append(peer)
+                              matched_peer_tags.append(peer.peer_tag)
+            logger.info("helper_get_matching_peers(): self="+str(self)+" matched_peers="+str(matched_peers))
+            logger.info("helper_get_matching_peers(): self="+str(self)+" matched_peer_tags="+str(matched_peer_tags))
             return (matched_peers, matched_peer_tags)
 
     def commit_add(self, *args, **kwargs):

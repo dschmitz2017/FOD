@@ -43,7 +43,7 @@ def helper_list_unique(mylist):
   return [x for x in mylist if not (x in seen or seen.add(x))]
 
 def get_peer_techc_mails__multiple(user, peer_list):
-    logger.info("helpers::get_peer_techc_mails__mulitple(): user="+str(user)+", peer_list="+str(peer_list))
+    logger.info("helpers::get_peer_techc_mails__multiple(): user="+str(user)+", peer_list="+str(peer_list))
     mail = []
     additional_mail = []
     techmails_list = []
