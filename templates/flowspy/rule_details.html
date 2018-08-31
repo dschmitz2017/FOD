@@ -88,7 +88,7 @@ function myreloadPage() {
                 {% endfor %}
                 )
                 {% endif %}
-                {% if rule.routes.count == 1 %}
+                {% if false and rule.routes.count == 1 %}
                 <div>
                     <h2>Statistics</h2>
                     <div>(all times are in {{ tz }}; current System time: {{ mytime|date:'Y-m-d H:i' }}, active rules will be updated every 5 minutes, last duration for measurement was {{ last_msrm_delay_time }})</div>
@@ -107,6 +107,22 @@ function myreloadPage() {
                 <div><a href="{% url route-details route.name %}">Details</a></div>
                 {% endif %}
             {% endfor %}
+
+            <div>
+                <h2>Rule Statistics</h2>
+                <div>(all times are in {{ tz }}; current System time: {{ mytime|date:'Y-m-d H:i' }}, active rules will be updated every 5 minutes, last duration for measurement was {{ last_msrm_delay_time }})</div>
+                <div><span id="traffic-plot-loading">(Loading data...)</span>
+                <h3>Rule's Number of packets (absolute)</h3>
+            <div><canvas id="traffic-plot-pkts-abs" width=200 height=200></canvas></div>
+                <h3>Rule's Number of packets (relative)</h3>
+                <div><canvas id="traffic-plot-pkts-rel" width=200 height=200></canvas></div>
+                <h3>Rule's Number of bytes (absolute)</h3>
+            <div><canvas id="traffic-plot-bytes-abs" width=200 height=200></canvas></div>
+                <h3>Rule's Number of bytes (relative)</h3>
+                <div><canvas id="traffic-plot-bytes-rel" width=200 height=200></canvas></div>
+            </div>
+            <div><a href="{% url rulestats rule.name %}">Download raw data in JSON</a></div>
+
         </div>
     </div>
     {% comment %}check if graphs plugin in installed apps{% endcomment %}
@@ -303,9 +319,23 @@ function plotGraph(data)
 }
 
 $(document).ready(function() {
-   var statsurls = Array({% for route in rule.routes.all %}"{% url routestats route.name %}",{% endfor %});
-   for (i = 0; i < statsurls.length; i++) {
-       statsurl = statsurls[i];
+    if (false)
+    {
+      var statsurls = Array({% for route in rule.routes.all %}"{% url routestats route.name %}",{% endfor %});
+      for (i = 0; i < statsurls.length; i++) {
+      statsurl = statsurls[i];
+      $.get(statsurl).done(function(data) {
+        if (data["error"]) {
+        $("#traffic-plot-loading").text("No data, try later");
+        } else {
+        $("#traffic-plot-loading").hide();
+        plotGraph(data);
+        }
+        });
+      }
+    }
+
+       var statsurl = "{% url rulestats rule.name %}";
        $.get(statsurl).done(function(data) {
           if (data["error"]) {
               $("#traffic-plot-loading").text("No data, try later");
@@ -314,7 +344,7 @@ $(document).ready(function() {
               plotGraph(data);
           }
        });
-   }
+
 });
 </script> 
 

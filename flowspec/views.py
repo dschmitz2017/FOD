@@ -910,18 +910,18 @@ def routestats(request, route_slug):
         #    res = json.load(f)
         #f.close()
         res = load_history()
-        routename = create_junos_name(route)
-        route_id = str(route.id)
         if not res:
             raise Exception("No data stored in the existing file.")
+        routename = create_junos_name(route)
         if settings.STATISTICS_PER_RULE==False:
             if routename in res:
               return HttpResponse(json.dumps({"name": routename, "data": res[routename]}), mimetype="application/json")
             else:
               return HttpResponse(json.dumps({"error": "Route '{}' was not found in statistics.".format(routename)}), mimetype="application/json", status=404)
         else:
-            if route_id in res['_per_rule']:
-              return HttpResponse(json.dumps({"name": routename, "data": res['_per_rule'][route_id]}), mimetype="application/json")
+            route_id = str(route.id)
+            if route_id in res['_per_route']:
+              return HttpResponse(json.dumps({"name": routename, "data": res['_per_route'][route_id]}), mimetype="application/json")
             else:
               return HttpResponse(json.dumps({"error": "Route '{}' was not found in statistics.".format(route_id)}), mimetype="application/json", status=404)
 
@@ -929,4 +929,24 @@ def routestats(request, route_slug):
         logger.error('routestats failed: %s' % e)
         return HttpResponse(json.dumps({"error": "No data available. %s" % e}), mimetype="application/json", status=404)
 
+@login_required
+def rulestats(request, route_slug):
+    rule = get_object_or_404(Rule, name=route_slug)
+    import junos
+    import time
+    res = {}
+    try:
+        res = load_history()
+        rulename = rule.name
+        rule_id = str(rule.id)
+        if not res:
+            raise Exception("No data stored in the existing file.")
+        if rule_id in res['_per_rule']:
+          return HttpResponse(json.dumps({"name": rulename, "data": res['_per_rule'][rule_id]}), mimetype="application/json")
+        else:
+          return HttpResponse(json.dumps({"error": "Rule '{}' was not found in statistics.".format(rule_id)}), mimetype="application/json", status=404)
+
+    except Exception as e:
+        logger.error('rulestats failed: %s' % e)
+        return HttpResponse(json.dumps({"error": "No data available. %s" % e}), mimetype="application/json", status=404)
 
