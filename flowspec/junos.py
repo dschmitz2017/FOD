@@ -195,7 +195,8 @@ def get_ports(rule):
     os.write(2, "rule.port="+str(rule.port))
     os.write(2, str(type(rule.port)))
     if rule.port:
-        result = 'port'+translate_ports(rule.port.all())
+        #result = 'port'+translate_ports(rule.port.all())
+        result = 'port'+translate_ports(rule.port)
     else:
         result = ''
         if rule.destinationport:
