@@ -252,20 +252,86 @@ def process_history_get_new_value_of_rule(ruleobj, newdata, zero_measurement):
       #flowspec_params_str=create_junos_name(routeobj)
       #new_data_value = newdata[flowspec_params_str] # old case with single route = rule
 
+      new_data_value_per_route__hash = {}
       new_data_value = zero_measurement.copy()
       rule_routes = ruleobj.routes.all()
       for routeobj in rule_routes:
         flowspec_params_str=create_junos_name(routeobj)
         logger.info("process_history_get_new_value_of_rule(): rule_id="+str(ruleobj.id)+" routeobj="+str(routeobj)+" => flowspec_params_str="+str(flowspec_params_str))
         new_data_value_of_route = newdata[flowspec_params_str]
+        new_data_value_per_route__hash[str(routeobj.id)]=new_data_value_of_route
         logger.info("process_history_get_new_value_of_rule(): rule_id="+str(ruleobj.id)+" routeobj="+str(routeobj)+" => new_data_value_of_route="+str(new_data_value_of_route))
         for key in new_data_value_of_route:
           if not key in new_data_value:
             new_data_value[key] = 0
           new_data_value[key] = new_data_value[key] + new_data_value_of_route[key]
-      return new_data_value
+      #logger.info("process_history_new_data_per_rule(): rule_id="+str(ruleobj.id)+" => new_data_value="+str(new_data_value))
+      #logger.info("process_history_new_data_per_rule(): rule_id="+str(ruleobj.id)+" => new_data_value_per_route__hash="+str(new_data_value_per_route__hash))
+      return (new_data_value, new_data_value_per_route__hash)
 
-def process_history_new_data_per_rule(nowstr, samplecount, newdata, history_per_rule, null_measurement, null_measurement_missing, zero_measurement):
+# is used for history_per_rule and history_per_route actually:
+def process_history_calc_final_value_of_rule_or_route(is_rule_or_route, history_per_rule, rule_id, rule_status, rule_last_updated, counter, counter_is_null, counter_null, counter_zero, samplecount):
+      if is_rule_or_route: # just used for debugging
+        debug_str = "rule_id="+str(rule_id)
+      else:
+        debug_str = "route_id="+str(rule_id)
+
+      try:
+          if not rule_id in history_per_rule:
+            if rule_status!="ACTIVE":
+              logger.info("process_history_calc_final_value_of_rule_or_route(): "+debug_str+" case notexisting inactive")
+              #history_per_rule[rule_id] = [counter]
+            else:
+              logger.info("process_history_calc_final_value_of_rule_or_route(): "+debug_str+" case notexisting active")
+              if counter_is_null:
+                history_per_rule[rule_id] = [counter_zero]
+              else:
+                history_per_rule[rule_id] = [counter, counter_zero]
+          else:
+            rec = history_per_rule[rule_id]
+            if rule_status!="ACTIVE":
+              logger.info("process_history_calc_final_value_of_rule_or_route(): "+debug_str+" case existing inactive")
+              rec.insert(0, counter)
+            else:
+              last_value = rec[0]
+              null_measurement=counter_null['value']
+              last_is_null = last_value==None or last_value['value'] == null_measurement
+              if last_value==None:
+                rule_newer_than_last = true
+              else:
+                last_ts = helper_stats_store_parse_ts(last_value['ts'])
+                rule_newer_than_last = last_ts==None or rule_last_updated > last_ts
+              logger.info("process_history_calc_final_value_of_rule_or_route(): "+debug_str+" last_updated="+str(rule_last_updated)+", last_value="+str(last_value))
+              if last_is_null and rule_newer_than_last:
+                logger.info("process_history_calc_final_value_of_rule_or_route(): "+debug_str+" case existing active 11")
+                if counter_is_null:
+                  rec.insert(0, counter_zero)
+                else:
+                  rec.insert(0, counter_zero)
+                  rec.insert(0, counter)
+              elif last_is_null and not rule_newer_than_last:
+                logger.info("process_history_calc_final_value_of_rule_or_route(): "+debug_str+" case existing active 10")
+                rec.insert(0, counter_zero)
+                rec.insert(0, counter)
+              elif not last_is_null and rule_newer_than_last:
+                logger.info("process_history_calc_final_value_of_rule_or_route(): "+debug_str+" case existing active 01")
+                if counter_is_null:
+                  rec.insert(0, counter_null)
+                  rec.insert(0, counter_zero)
+                else:
+                  rec.insert(0, counter_null)
+                  rec.insert(0, counter_zero)
+                  rec.insert(0, counter)
+              elif not last_is_null and not rule_newer_than_last:
+                  logger.info("process_history_calc_final_value_of_rule_or_route(): "+debug_str+" case existing active 00")
+                  rec.insert(0, counter)
+
+            history_per_rule[rule_id] = rec[:samplecount]
+      except Exception as e:
+          logger.info("process_history_calc_final_value_of_rule_or_route(): "+debug_str+" got exception: "+str(e), exc_info=True)
+
+
+def process_history_new_data_per_rule(nowstr, samplecount, newdata, history_per_route, history_per_rule, null_measurement, null_measurement_missing, zero_measurement):
     #queryset = Route.objects.all()
     queryset = Rule.objects.all()
     for ruleobj in queryset:
@@ -280,10 +346,12 @@ def process_history_new_data_per_rule(nowstr, samplecount, newdata, history_per_
       counter_null = {"ts": rule_last_updated.isoformat(), "value": null_measurement }
       counter_zero = {"ts": rule_last_updated.isoformat(), "value": zero_measurement }
 
+      new_data_value_per_route__hash = {}
       if rule_status=="ACTIVE":
         try:
-          new_data_value = process_history_get_new_value_of_rule(ruleobj, newdata, zero_measurement)
+          (new_data_value, new_data_value_per_route__hash) = process_history_get_new_value_of_rule(ruleobj, newdata, zero_measurement)
           logger.info("process_history_new_data_per_rule(): rule_id="+str(rule_id)+" => new_data_value="+str(new_data_value))
+          #logger.info("process_history_new_data_per_rule(): rule_id="+str(rule_id)+" => new_data_value_per_route__hash="+str(new_data_value_per_route__hash))
 
           counter = {"ts": nowstr, "value": new_data_value}
           counter_is_null = False
@@ -295,59 +363,13 @@ def process_history_new_data_per_rule(nowstr, samplecount, newdata, history_per_
         counter = {"ts": nowstr, "value": null_measurement }
         counter_is_null = True
 
-      try:
-          if not rule_id in history_per_rule:
-            if rule_status!="ACTIVE":
-              logger.info("process_history_new_data_per_rule(): rule_id="+str(rule_id)+" case notexisting inactive")
-              #history_per_rule[rule_id] = [counter]
-            else:
-              logger.info("process_history_new_data_per_rule(): rule_id="+str(rule_id)+" case notexisting active")
-              if counter_is_null:
-                history_per_rule[rule_id] = [counter_zero]
-              else:
-                history_per_rule[rule_id] = [counter, counter_zero]
-          else:
-            rec = history_per_rule[rule_id]
-            if rule_status!="ACTIVE":
-              logger.info("process_history_new_data_per_rule(): rule_id="+str(rule_id)+" case existing inactive")
-              rec.insert(0, counter)
-            else:
-              last_value = rec[0]
-              last_is_null = last_value==None or last_value['value'] == null_measurement
-              if last_value==None:
-                rule_newer_than_last = true
-              else:
-                last_ts = helper_stats_store_parse_ts(last_value['ts'])
-                rule_newer_than_last = last_ts==None or rule_last_updated > last_ts
-              logger.info("process_history_new_data_per_rule(): rule_id="+str(rule_id)+" rule_last_updated="+str(rule_last_updated)+", last_value="+str(last_value))
-              if last_is_null and rule_newer_than_last:
-                logger.info("process_history_new_data_per_rule(): rule_id="+str(rule_id)+" case existing active 11")
-                if counter_is_null:
-                  rec.insert(0, counter_zero)
-                else:
-                  rec.insert(0, counter_zero)
-                  rec.insert(0, counter)
-              elif last_is_null and not rule_newer_than_last:
-                logger.info("process_history_new_data_per_rule(): rule_id="+str(rule_id)+" case existing active 10")
-                rec.insert(0, counter_zero)
-                rec.insert(0, counter)
-              elif not last_is_null and rule_newer_than_last:
-                logger.info("process_history_new_data_per_rule(): rule_id="+str(rule_id)+" case existing active 01")
-                if counter_is_null:
-                  rec.insert(0, counter_null)
-                  rec.insert(0, counter_zero)
-                else:
-                  rec.insert(0, counter_null)
-                  rec.insert(0, counter_zero)
-                  rec.insert(0, counter)
-              elif not last_is_null and not rule_newer_than_last:
-                  logger.info("process_history_new_data_per_rule(): rule_id="+str(rule_id)+" case existing active 00")
-                  rec.insert(0, counter)
+      process_history_calc_final_value_of_rule_or_route(True, history_per_rule, rule_id, rule_status, rule_last_updated, counter, counter_is_null, counter_null, counter_zero, samplecount)
 
-            history_per_rule[rule_id] = rec[:samplecount]
-      except Exception as e:
-          logger.info("process_history_new_data_per_rule(): got exception: "+str(e), exc_info=True)
-
+      for route_id in new_data_value_per_route__hash:
+        #logger.info("debug iter new_data_value_per_route__hash "+str(route_id)+", val="+str(new_data_value_per_route__hash[route_id]))
+        if not counter_is_null:
+          counter = {"ts": nowstr, "value": new_data_value_per_route__hash[route_id]}
+          process_history_calc_final_value_of_rule_or_route(False, history_per_route, route_id, rule_status, rule_last_updated, counter, counter_is_null, counter_null, counter_zero, samplecount)
 
 def poll_snmp_statistics():
     logger.info("poll_snmp_statistics(): Polling SNMP statistics.")
@@ -410,13 +432,19 @@ def poll_snmp_statistics():
 
         if settings.STATISTICS_PER_RULE == True:
           try:
+            history_per_route = history['_per_route']
+          except Exception as e:
+            history_per_route = {}
+          try:
             history_per_rule = history['_per_rule']
           except Exception as e:
             history_per_rule = {}
 
-          process_history_new_data_per_rule(nowstr, samplecount, newdata, history_per_rule, null_measurement, null_measurement_missing, zero_measurement)
+          process_history_new_data_per_rule(nowstr, samplecount, newdata, history_per_route, history_per_rule, null_measurement, null_measurement_missing, zero_measurement)
+          #postprocess_history__remove_old_rules(now, history_per_route, settings.SNMP_REMOVE_RULES_AFTER)
           #postprocess_history__remove_old_rules(now, history_per_rule, settings.SNMP_REMOVE_RULES_AFTER)
 
+          history['_per_route'] = history_per_route
           history['_per_rule'] = history_per_rule 
 
         # store updated history
