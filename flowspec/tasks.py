@@ -348,7 +348,7 @@ def snmp_lock_create(wait=0):
       first=0
       try:
           os.mkdir(settings.SNMP_POLL_LOCK)
-          logger.error("snmp_lock_create(): creating lock dir succeeded")
+          logger.info("snmp_lock_create(): creating lock dir succeeded")
           success=1
           return success
       except OSError, e:
