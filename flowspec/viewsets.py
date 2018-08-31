@@ -32,6 +32,8 @@ from rest_framework.response import Response
 import os
 import logging
 
+from flowspec.helpers import helper_list_unique
+
 FORMAT = '%(asctime)s %(levelname)s: %(message)s'
 logging.basicConfig(format=FORMAT)
 logger = logging.getLogger(__name__)
@@ -61,14 +63,31 @@ class RuleViewSet(viewsets.ModelViewSet):
             if self.request.user.is_anonymous():
                 return Rule.objects.all()
             elif self.request.user.is_authenticated():
-                return Rule.objects.filter(applier=self.request.user)
+                logger.info("ruleviewset::get_queryset(): DEBUG on")
+                #return Rule.objects.filter(applier=self.request.user)
+                return convert_container_to_queryset(self.get_users_rules_all(), Rule)
             else:
                 raise PermissionDenied('User is not Authenticated')
 
         if self.request.user.is_superuser:
             return Rule.objects.all()
         elif self.request.user.is_authenticated and not self.request.user.is_anonymous:
-            return Rule.objects.filter(applier=self.request.user)
+            #return Rule.objects.filter(applier=self.request.user)
+            #return global__get_users_rules_all(self.request.user)
+            return convert_container_to_queryset(self.get_users_rules_all(), Rule)
+
+##
+
+    def get_users_rules_all(self):
+        return global__get_users_rules_all(self.request.user)
+
+    def get_users_rules_by_its_peers(self):
+        return global__get_users_rules_by_its_peers(self.request.user)
+
+    def get_users_rules_by_applier_only(self):
+        return global__get_users_rules_by_applier_only(self.request.user)
+
+##
 
     def list(self, request):
         serializer = RuleSerializer(self.get_queryset(), many=True, context={'request': request})
@@ -111,6 +130,16 @@ class RuleViewSet(viewsets.ModelViewSet):
 
     def pre_delete(self, obj):
         logger.info("RuleViewSet::pre_delete(): called "+str(self)+", obj="+str(obj))
+        logger.info("RuleViewSet::pre_delete(): called "+str(self)+", obj="+str(obj))
+        logger.info("RuleViewSet::pre_delete(): self.request.user.is_superuser="+str(self.request.user.is_superuser))
+        logger.info("RuleViewSet::pre_delete(): settings.ALLOW_DELETE_FULL_FOR_NONADMIN="+str(settings.ALLOW_DELETE_FULL_FOR_NONADMIN))
+        logger.info("RuleViewSet::pre_delete(): obj.status="+str(obj.status))
+
+        if (not self.request.user.is_superuser) and (not settings.ALLOW_DELETE_FULL_FOR_NONADMIN) and obj.status=="INACTIVE_TODELETE":
+            logger.info("RuleViewSet::pre_delete(): non admin full delete forbidden, lowering to normal delete")
+            obj.status="INACTIVE"
+            #obj.save()
+
         obj.commit_delete()
         logger.info("RuleViewSet::pre_delete(): returning "+str(self)+", obj="+str(obj))
 
@@ -155,7 +184,8 @@ class RouteViewSet(viewsets.ModelViewSet):
             elif self.request.user.is_authenticated():
 
                 logger.info("RouteViewSet::get_queryset(): DEBUG=true, is_authenticated")
-                temp1 = self.get_users_routes_by_its_peers()
+                #temp1 = self.get_users_routes_all()
+                temp1 = convert_container_to_queryset(self.get_users_routes_all(), Route)
                 logger.info("RouteViewSet::get_queryset(): DEBUG=true, is_authenticated => temp="+str(temp1))
                 return temp1
 
@@ -166,19 +196,16 @@ class RouteViewSet(viewsets.ModelViewSet):
             return Route.objects.all()
         elif (self.request.user.is_authenticated() and not self.request.user.is_anonymous()):
             #return Route.objects.filter(applier=self.request.user)
-            return self.get_users_routes_by_its_peers()
+            return convert_container_to_queryset(self.get_users_routes_all(), Route)
+
+    def get_users_routes_all(self):
+        return global__get_users_routes_all(self.request.user)
 
     def get_users_routes_by_its_peers(self):
-        users_peers_set = set(self.request.user.userprofile.peers.all())
-        routes_all = list(Route.objects.all())
-        #temp1 = [obj for obj in routes_all]
-        temp1 = [obj for obj in routes_all if len(set(obj.containing_peers()).intersection(users_peers_set))>0]
-        temp1_ids = [obj.id for obj in temp1]
-        temp2_ids = set(temp1_ids)
-        return Route.objects.filter(id__in=temp2_ids)
+        return global__get_users_routes_by_its_peers(self.request.user)
 
     def get_users_routes_by_applier_only(self):
-        return Route.objects.filter(applier=self.request.user)
+        return global__get_users_routes_by_applier_only(self.request.user)
 
     #####
 
@@ -300,6 +327,20 @@ class RouteViewSet(viewsets.ModelViewSet):
         else:
             return Response(serializer.errors, status=400)
 
+    def pre_delete(self, obj):
+        logger.info("RouteViewSet::pre_delete(): called "+str(self)+", obj="+str(obj))
+        logger.info("RouteViewSet::pre_delete(): self.request.user.is_superuser="+str(self.request.user.is_superuser))
+        logger.info("RouteViewSet::pre_delete(): settings.ALLOW_DELETE_FULL_FOR_NONADMIN="+str(settings.ALLOW_DELETE_FULL_FOR_NONADMIN))
+        logger.info("RouteViewSet::pre_delete(): obj.status="+str(obj.status))
+
+        if (not self.request.user.is_superuser) and (not settings.ALLOW_DELETE_FULL_FOR_NONADMIN) and obj.status=="INACTIVE_TODELETE":
+            logger.info("RouteViewSet::pre_delete(): non admin full delete forbidden, lowering to normal delete")
+            obj.status="INACTIVE"
+            #obj.save()
+
+        obj.commit_delete()
+        logger.info("RouteViewSet::pre_delete(): returning "+str(self)+", obj="+str(obj))
+
     def pre_save(self, obj):
         # DEBUG
         if settings.DEBUG:
@@ -341,3 +382,61 @@ class MatchProtocolViewSet(viewsets.ModelViewSet):
 class MatchDscpViewSet(viewsets.ModelViewSet):
     queryset = MatchDscp.objects.all()
     serializer_class = MatchDscpSerializer
+
+##################################
+# global helpers 
+
+# class1's attribute 'id' should be existing and by primary key
+def convert_container_to_queryset(list1, class1):
+         temp1_ids = [obj.id for obj in list1]
+         temp2_ids = set(temp1_ids)
+         return class1.objects.filter(id__in=temp2_ids)
+
+# all these following functions return normal containers, not particular query sets
+# if needed convert them back to query sets by convert_container_to_queryset
+def global__get_users_routes_by_its_peers(user):
+        users_peers_set = set(user.userprofile.peers.all())
+        routes_all = list(Route.objects.all())
+        #temp1 = [obj for obj in routes_all]
+        temp1 = [obj for obj in routes_all if len(set(obj.containing_peers()).intersection(users_peers_set))>0]
+        #temp1_ids = [obj.id for obj in temp1]
+        #temp2_ids = set(temp1_ids)
+        #return Route.objects.filter(id__in=temp2_ids)
+        #return convert_container_to_queryset(temp1, Route)
+        return temp1
+
+def global__get_users_routes_by_applier_only(user):
+        return Route.objects.filter(rule__applier=user)
+        #return list(Route.objects.filter(rule__applier=user))
+
+def global__get_users_routes_all(user):
+         routes1=global__get_users_routes_by_its_peers(user)
+         routes2=global__get_users_routes_by_applier_only(user)
+         routes_all=list(routes1)+list(routes2)
+         routes_all=helper_list_unique(routes_all)
+         #return routes_all
+         #temp1_ids = [obj.id for obj in routes_all]
+         #temp2_ids = set(temp1_ids)
+         #return Route.objects.filter(id__in=temp2_ids)
+         #return convert_container_to_queryset(routes_all, Route)
+         return routes_all
+
+def global__get_users_rules_by_its_routes(user):
+            users_routes = global__get_users_routes_all(user)
+            #logger.info("global__get_users_rules_by_its_routes(): users_routes="+str(users_routes))
+            rules = [route.rule for route in users_routes]
+            #logger.info("global__get_users_rules_by_its_routes(): rules="+str(rules))
+            return rules
+
+def global__get_users_rules_by_applier_only(user):
+        return Rule.objects.filter(applier=user)
+        #return list(Rule.objects.filter(applier=user))
+
+def global__get_users_rules_all(user):
+         rules1=global__get_users_rules_by_its_routes(user)
+         rules2=global__get_users_rules_by_applier_only(user)
+         rules_all=list(rules1)+list(rules2)
+         rules_all=helper_list_unique(rules_all)
+         #return convert_container_to_queryset(rules_all, Rule)
+         return rules_all
+
