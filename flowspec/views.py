@@ -525,6 +525,11 @@ def delete_route(request, route_slug):
             except:
                 # in case the header is not provided
                 route.requesters_address = 'unknown'
+
+            if (not self.request.user.is_superuser) and (not settings.ALLOW_DELETE_FULL_FOR_NONADMIN) and route.status=="INACTIVE_TODELETE":
+                logger.info("views::delete_route(): non admin full delete forbidden, lowering to normal delete")
+                route.status="INACTIVE"
+
             route.save()
             route.commit_delete()
         html = "<html><body>Done</body></html>"
