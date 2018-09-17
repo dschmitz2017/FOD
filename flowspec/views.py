@@ -485,53 +485,37 @@ def edit_route(request, route_slug):
 
 @login_required
 @never_cache
-def delete_route(request, route_slug):
-    logger.info("views::delete_route(): route_slug="+str(route_slug)+ " request="+str(request))
-    logger.info("views::delete_route(): route_slug="+str(route_slug)+ " request.dir="+str(dir(request)))
-    logger.info("views::delete_route(): route_slug="+str(route_slug)+ " request.REQUEST="+str(dir(request.REQUEST)))
-    logger.info("views::delete_route(): route_slug="+str(route_slug)+ " request.REQUEST.keys="+str(dir(request.REQUEST.keys)))
+def delete_rule(request, rule_slug):
+    logger.info("views::delete_route(): rule_slug="+str(rule_slug)+ " request="+str(request))
+    logger.info("views::delete_route(): rule_slug="+str(rule_slug)+ " request.dir="+str(dir(request)))
+    logger.info("views::delete_route(): rule_slug="+str(rule_slug)+ " request.REQUEST="+str(dir(request.REQUEST)))
+    logger.info("views::delete_route(): rule_slug="+str(rule_slug)+ " request.REQUEST.keys="+str(dir(request.REQUEST.keys)))
     if request.is_ajax():
-        route = get_object_or_404(Route, name=route_slug)
-        peers = route.applier.get_profile().peers.all()
-        username = None
-        for peer in peers:
-            if username:
-                break
-            for network in peer.networks.all():
-                net = IPNetwork(network)
-                if IPNetwork(route.destination) in net:
-                    username = peer
-                    break
-        applier_peer = username
-        peers = request.user.get_profile().peers.all()
-        username = None
-        for peer in peers:
-            if username:
-                break
-            for network in peer.networks.all():
-                net = IPNetwork(network)
-                if IPNetwork(route.destination) in net:
-                    username = peer
-                    break
-        requester_peer = username
-        if applier_peer == requester_peer or request.user.is_superuser:
-            route.status = "PENDING"
-            route.expires = datetime.date.today()
+        rule = get_object_or_404(Rule, name=rule_slug)
+        # get peers of original applier
+        applier_peers = rule.helper_get_matching_peers()[0]
+        logger.info("views::delete_route(): rule_slug="+str(rule_slug)+ " "+str(applier_peers))
+        #logger.info("views::delete_route(): rule_slug="+str(rule_slug)+ " "+str(rule.helper_get_matching_peers()[0])
+        # get request user peers
+        requester_peers = request.user.get_profile().peers.all()
+        if any([requester_peer in applier_peers for requester_peer in requester_peers]) or request.user.is_superuser:
+            rule.status = "PENDING"
+            rule.expires = datetime.date.today()
             if not request.user.is_superuser:
-                route.applier = request.user
-            route.response = "Deactivating"
+                rule.applier = request.user
+            rule.response = "Deactivating"
             try:
-                route.requesters_address = request.META['HTTP_X_FORWARDED_FOR']
+                rule.requesters_address = request.META['HTTP_X_FORWARDED_FOR']
             except:
                 # in case the header is not provided
-                route.requesters_address = 'unknown'
+                rule.requesters_address = 'unknown'
 
-            if (not self.request.user.is_superuser) and (not settings.ALLOW_DELETE_FULL_FOR_NONADMIN) and route.status=="INACTIVE_TODELETE":
+            if (not request.user.is_superuser) and (not settings.ALLOW_DELETE_FULL_FOR_NONADMIN) and rule.status=="INACTIVE_TODELETE":
                 logger.info("views::delete_route(): non admin full delete forbidden, lowering to normal delete")
-                route.status="INACTIVE"
+                rule.status="INACTIVE"
 
-            route.save()
-            route.commit_delete()
+            rule.save()
+            rule.commit_delete()
         html = "<html><body>Done</body></html>"
         return HttpResponse(html)
     else:
