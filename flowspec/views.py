@@ -354,12 +354,21 @@ def add_route(request):
 
 @login_required
 @never_cache
-def edit_route(request, route_slug):
+def edit_route(request, rule_slug):
     applier = request.user.pk
-    rule_edit = get_object_or_404(Rule, name=route_slug)
+    rule_edit = get_object_or_404(Rule, name=rule_slug)
     if rule_edit.routes:
         if rule_edit.routes.count() > 1:
-            raise Exception("Not implemented editing multiple routes in a single rule.")
+            if rule_edit.status != "INACTIVE":
+                raise Exception("Not implemented editing multiple routes in a single rule.")
+            else:
+                rule_edit.status = "PENDING"
+                rule_edit.response = "Applying"
+                maxexpires = datetime.date.today() + datetime.timedelta(days = settings.EXPIRATION_DAYS_OFFSET - 1)
+                rule_edit.expires = maxexpires
+                rule_edit.save()
+                rule_edit.commit_edit()
+                return HttpResponseRedirect(reverse("group-routes"))
         route_edit = rule_edit.routes.get()
     else:
         raise Exception("There is no configured route for this rule.")
