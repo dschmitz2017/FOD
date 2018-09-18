@@ -95,6 +95,7 @@ def add(rule, callback=None):
         rule.save()
         msg1 = "[%s] Rule add: %s - Result: %s" % (rule.applier, rule.name, rule.response)
         logger.info("tasks::add(): Exception msg="+str(msg1)+" exc="+str(e))
+        logger.info("tasks::add(): ", exc_info=True)
         announce(msg1, rule.applier, rule)
 
 @task(ignore_result=True)
@@ -139,7 +140,7 @@ def edit(route, callback=None):
         route.save()
         msg = "[%s] Rule edit: %s - Result: %s" % (route.applier, route.name, route.response)
         logger.error("tasks::edit(): Exception msg="+msg+", except="+str(e))
-        logger.error(e, exc_info=True)
+        logger.error("tasks::edit(): ", exc_info=True)
         #traceback.print_exc(file=sys.stdout)
         logger.info("tasks::edit(): route.applier="+str(route.applier))
         announce(msg, route.applier, route)
@@ -228,7 +229,7 @@ def delete(route, rule_routes, **kwargs): # route is actually a rule
         route.save()
         msg1 = "[%s] Suspending rule : %s - Result: %s" % (route.applier, route.name, route.response)
         logger.error("tasks::delete(): delete_full="+str(delete_full)+" Exception msg="+msg1+", exc="+str(e))
-        logger.error(e, exc_info=True)
+        logger.error("tasks::delete(): ", exc_info=True)
         announce(msg1, route.applier, route)
     logger.info("tasks::delete(): before returning; delete_full="+str(delete_full)+" route.status="+str(route.status))
 
