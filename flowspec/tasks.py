@@ -196,7 +196,7 @@ def delete(rule, rule_routes, **kwargs): # route is actually a rule
               rule.response = response
 
               rule.save()
-              for rule_route1 in rule_rules:
+              for rule_route1 in rule_routes:
                 rule_route1.save()
               msg1 = "[%s] Suspending rule : %s%s- Result %s" % (rule.applier, rule.name, reason_text, response)
               logger.info("tasks::delete(): msg="+msg1)
