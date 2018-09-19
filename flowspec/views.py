@@ -328,9 +328,11 @@ def add_route(request):
             # We have to make the commit after saving the form
             # in order to have all the m2m relations.
             route.status = route_status_speced
+            logger.info("views::add_route(): before actually commint rule")
             rule.editing = False
             rule.save()
             rule.commit_add()
+            logger.info("views::add_route(): after actually commint rule")
             return HttpResponseRedirect(reverse("group-routes"))
         else:
             form.fields['expires'] = forms.DateField()
