@@ -222,16 +222,17 @@ class Rule(models.Model):
                             if not peer in matched_peers:
                               matched_peers.append(peer)
                               matched_peer_tags.append(peer.peer_tag)
-            logger.info("helper_get_matching_peers(): self="+str(self)+" matched_peers="+str(matched_peers))
-            logger.info("helper_get_matching_peers(): self="+str(self)+" matched_peer_tags="+str(matched_peer_tags))
+            #logger.info("helper_get_matching_peers(): self="+str(self)+" matched_peers="+str(matched_peers))
+            #logger.info("helper_get_matching_peers(): self="+str(self)+" matched_peer_tags="+str(matched_peer_tags))
             return (matched_peers, matched_peer_tags)
 
     def commit_add(self, *args, **kwargs):
+        logger.info("model::commit_add(): rule="+str(self))
         peer2 = self.helper_get_matching_peers()
         msg1 = "[%s] Adding rule %s. Please wait..." % (self.applier.username, self.name)
         send_message_multiple(msg1, peer2[1])
         response = add.delay(self)
-        logger.info('Got add job id: %s' % response)
+        logger.info('model::commit_add(): Got add job id: %s' % response)
         mail_body = self._send_mail(args={
                 'url_path': 'edit-route',
                 'url_id': 'route_slug',
@@ -248,14 +249,16 @@ class Rule(models.Model):
             'user': self.applier.username
         }
         logger.info(mail_body, extra=d)
+        logger.info("model::commit_add(): done rule="+str(self))
 
     def commit_edit(self, *args, **kwargs):
+        logger.info("model::commit_edit(): rule="+str(self))
         peer2 = self.helper_get_matching_peers()
         msg1 = "[%s] Editing rule %s. Please wait..." % (self.applier.username, self.name)
         send_message_multiple(msg1, peer2[1])
         logger.info("model::commit_edit(): "+str(msg1))
         response = edit.delay(self)
-        logger.info('Got edit job id: %s' % response)
+        logger.info('model::commit_edit(): Got edit job id: %s' % response)
         mail_body = self._send_mail(args={
                 'url_path': 'edit-route',
                 'url_id': 'route_slug',
@@ -272,9 +275,10 @@ class Rule(models.Model):
             'user': self.applier.username
         }
         logger.info(mail_body, extra=d)
+        logger.info("model::commit_edit(): done rule="+str(self))
 
     def commit_delete(self, *args, **kwargs):
-        logger.info("model::commit_delete(): route="+str(self)+", kwargs="+str(kwargs))
+        logger.info("model::commit_delete(): rule="+str(self)+", kwargs="+str(kwargs))
         initial_status=self.status
         logger.info("model::commit_delete(): initial_status="+str(initial_status))
 
@@ -289,7 +293,7 @@ class Rule(models.Model):
         logger.info("model::commit_delete(): "+str(msg1))
         #response = delete.delay(self, reason=reason)
         response = delete.delay(self, self.routes.all() ,reason=reason)
-        logger.info('Got delete job id: %s' % response)
+        logger.info('model::commit_delete(): Got delete job id: %s' % response)
 
         mail_body = self._send_mail(args={
                 'url_path': 'edit-route',
@@ -306,6 +310,7 @@ class Rule(models.Model):
             'user': self.applier.username
         }
         logger.info(mail_body, extra=d)
+        logger.info("model::commit_delete(): done rule="+str(self))
 
     def get_absolute_url(self):
         return reverse('rule-details', kwargs={'rule_slug': self.name})

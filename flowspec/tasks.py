@@ -52,27 +52,31 @@ logger.addHandler(handler)
 @task(ignore_result=True)
 def add(rule, callback=None):
     try:
-        status_initial = route.status
-        logger.info("tasks::add(): route="+str(route)+", status_initial="+str(status_initial))
+        status_initial = rule.status
+        logger.info("tasks::add(): route="+str(rule)+", status_initial="+str(status_initial))
         if status_initial == "INACTIVE":
-          route.response = "None yet"
-          route.save()
+          rule.response = "None yet"
+          rule.save()
           msg1 = "[%s] Rule add inactive: %s - Result: %s" % (rule.applier, rule.name, "No response yet")
           logger.info("tasks::add(): return inactive msg="+str(msg1))
           announce(msg1, rule.applier, rule)
         else:
           # TODO PR.Applier can't work with multiple routes
           #applier = PR.Applier(rule_object=rule)
-          applier = PR.Applier(rule_object=rule, route_objects=route.routes.select_related().all())
+          applier = PR.Applier(rule_object=rule, route_objects=rule.routes.select_related().all())
           commit, response = applier.apply()
           if commit:
               status = "ACTIVE"
+              try:
+                snmp_add_initial_zero_value.delay(str(rule.id), True)
+              except Exception as e:
+                logger.error("task::add(): rule="+str(rule)+", ACTIVE, add_initial_zero_value failed: "+str(e))
           else:
               status = "ERROR"
           rule.status = status
           rule.response = response
           rule.save()
-          msg1 = "[%s] Rule add: %s - Result: %s" % (route.applier, route.name, response)
+          msg1 = "[%s] Rule add: %s - Result: %s" % (rule.applier, rule.name, response)
           logger.info("tasks::add(): return msg="+str(msg1))
           announce(msg1, rule.applier, rule)
     except TimeLimitExceeded:
@@ -99,71 +103,71 @@ def add(rule, callback=None):
         announce(msg1, rule.applier, rule)
 
 @task(ignore_result=True)
-def edit(route, callback=None):
+def edit(rule, callback=None):
     try:
-        logger.info("edit(): route="+str(route)+", route.type="+str(type(route)))
-        #logger.info("edit(): route="+str(route)+", route.dir="+str(dir(route)))
-        #applier = PR.Applier(route_object=route)
-        applier = PR.Applier(rule_object=route, route_objects=route.routes.select_related().all())
+        logger.info("edit(): rule="+str(rule)+", rule.type="+str(type(rule)))
+        #logger.info("edit(): rule="+str(rule)+", rule.dir="+str(dir(rule)))
+        #applier = PR.Applier(rule_object=rule)
+        applier = PR.Applier(rule_object=rule, route_objects=rule.routes.select_related().all())
         commit, response = applier.apply(operation="replace")
         if commit:
             status = "ACTIVE"
             try:
-              snmp_add_initial_zero_value.delay(str(route.id), True)
+              snmp_add_initial_zero_value.delay(str(rule.id), True)
             except Exception as e:
-              logger.error("edit(): route="+str(route)+", ACTIVE, add_initial_zero_value failed: "+str(e))
+              logger.error("edit(): rule="+str(rule)+", ACTIVE, add_initial_zero_value failed: "+str(e))
         else:
             status = "ERROR"
-        route.status = status
-        route.response = response
-        route.save()
-        msg = "[%s] Rule edit: %s - Result: %s" % (route.applier, route.name, response)
+        rule.status = status
+        rule.response = response
+        rule.save()
+        msg = "[%s] Rule edit: %s - Result: %s" % (rule.applier, rule.name, response)
         logger.info("tasks::edit(): msg="+msg)
-        announce(msg, route.applier, route)
+        announce(msg, rule.applier, rule)
     except TimeLimitExceeded:
-        route.status = "ERROR"
-        route.response = "Task timeout"
-        route.save()
-        msg = "[%s] Rule edit: %s - Result: %s" % (route.applier, route.name, route.response)
+        rule.status = "ERROR"
+        rule.response = "Task timeout"
+        rule.save()
+        msg = "[%s] Rule edit: %s - Result: %s" % (rule.applier, rule.name, rule.response)
         logger.error("tasks::edit(): TimeLimitExceeded msg="+msg)
-        announce(msg, route.applier, route)
+        announce(msg, rule.applier, rule)
     except SoftTimeLimitExceeded:
-        route.status = "ERROR"
-        route.response = "Task timeout"
-        route.save()
-        msg = "[%s] Rule edit: %s - Result: %s" % (route.applier, route.name, route.response)
+        rule.status = "ERROR"
+        rule.response = "Task timeout"
+        rule.save()
+        msg = "[%s] Rule edit: %s - Result: %s" % (rule.applier, rule.name, rule.response)
         logger.error("tasks::edit(): SoftTimeLimitExceeded msg="+msg)
-        announce(msg, route.applier, route)
+        announce(msg, rule.applier, rule)
     except Exception, e:
-        route.status = "ERROR"
-        route.response = "Error"
-        route.save()
-        msg = "[%s] Rule edit: %s - Result: %s" % (route.applier, route.name, route.response)
+        rule.status = "ERROR"
+        rule.response = "Error"
+        rule.save()
+        msg = "[%s] Rule edit: %s - Result: %s" % (rule.applier, rule.name, rule.response)
         logger.error("tasks::edit(): Exception msg="+msg+", except="+str(e))
         logger.error("tasks::edit(): ", exc_info=True)
         #traceback.print_exc(file=sys.stdout)
-        logger.info("tasks::edit(): route.applier="+str(route.applier))
-        announce(msg, route.applier, route)
+        logger.info("tasks::edit(): rule.applier="+str(rule.applier))
+        announce(msg, rule.applier, rule)
 
 @task(ignore_result=True)
 #def delete(route, **kwargs):
-def delete(route, rule_routes, **kwargs): # route is actually a rule
-    logger.info("tasks::delete(): called route="+str(route))
+def delete(rule, rule_routes, **kwargs): # route is actually a rule
+    logger.info("tasks::delete(): called rule="+str(rule))
     logger.info("tasks::delete(): called rule_routes="+str(rule_routes))
-    #logger.info("tasks::delete(): called route.dir="+str(dir(route)))
+    #logger.info("tasks::delete(): called rule.dir="+str(dir(rule)))
     logger.info("tasks::delete(): called kwargs="+str(kwargs))
-    initial_status = route.status
+    initial_status = rule.status
     logger.info("tasks::delete(): called initial_status="+str(initial_status))
     delete_full=False
     if initial_status == "INACTIVE_TODELETE":
       delete_full=True
     logger.info("tasks::delete(): => delete_full="+str(delete_full))
     try:
-        #rule_routes = route.routes.select_related().all()        
+        #rule_routes = rule.routes.select_related().all()        
         reason_text = ''
         if len(rule_routes)>0:
-          #applier = PR.Applier(route_object=route)
-          applier = PR.Applier(rule_object=route, route_objects=rule_routes)
+          #applier = PR.Applier(rule_object=rule)
+          applier = PR.Applier(rule_object=rule, route_objects=rule_routes)
           commit, response = applier.apply(operation="delete")
           logger.info("tasks::delete(): delete_full="+str(delete_full)+" commit="+str(commit))
           if commit:
@@ -183,55 +187,55 @@ def delete(route, rule_routes, **kwargs): # route is actually a rule
           response = "nothing todo: rule has no routes"
 
         if commit and delete_full: # special new case for fully deleting a rule via REST API
-              route.delete()
-              msg1 = "[%s] Fully deleted rule : %s%s- Result %s" % (route.applier, route.name, reason_text, response)
+              rule.delete()
+              msg1 = "[%s] Fully deleted rule : %s%s- Result %s" % (rule.applier, rule.name, reason_text, response)
               logger.info("tasks::delete(): DELETED msg="+msg1)
-              announce(msg1, route.applier, route)
+              announce(msg1, rule.applier, rule)
         else:
-              route.status = status
-              route.response = response
+              rule.status = status
+              rule.response = response
 
-              route.save()
-              for rule_route1 in rule_routes:
+              rule.save()
+              for rule_route1 in rule_rules:
                 rule_route1.save()
-              msg1 = "[%s] Suspending rule : %s%s- Result %s" % (route.applier, route.name, reason_text, response)
+              msg1 = "[%s] Suspending rule : %s%s- Result %s" % (rule.applier, rule.name, reason_text, response)
               logger.info("tasks::delete(): msg="+msg1)
-              announce(msg1 , route.applier, route)
+              announce(msg1 , rule.applier, rule)
         try:
-              snmp_add_initial_zero_value.delay(str(route.id), False)
+              snmp_add_initial_zero_value.delay(str(rule.id), False)
         except Exception as e:
-              logger.error("tasks::delete(): route="+str(route)+", INACTIVE, add_null_value failed: "+str(e))
+              logger.error("tasks::delete(): rule="+str(rule)+", INACTIVE, add_null_value failed: "+str(e))
 #        else:
 #            status = "ERROR"
-#            route.status = status
-#            route.response = response
-#            route.save()
-#            msg1 = "[%s] Suspending rule : %s%s- Result %s" % (route.applier, route.name, reason_text, response)
+#            rule.status = status
+#            rule.response = response
+#            rule.save()
+#            msg1 = "[%s] Suspending rule : %s%s- Result %s" % (rule.applier, rule.name, reason_text, response)
 #            logger.info("tasks::delete(): ERROR msg="+msg1)
-#            announce(msg1, route.applier, route)
+#            announce(msg1, rule.applier, rule)
     except TimeLimitExceeded:
-        route.status = "ERROR"
-        route.response = "Task timeout"
-        route.save()
-        msg1= "[%s] Suspending rule : %s - Result: %s" % (route.applier, route.name, route.response)
+        rule.status = "ERROR"
+        rule.response = "Task timeout"
+        rule.save()
+        msg1= "[%s] Suspending rule : %s - Result: %s" % (rule.applier, rule.name, rule.response)
         logger.error("tasks::delete(): TimeLimitExceeded msg="+msg1)
-        announce(msg1, route.applier, route)
+        announce(msg1, rule.applier, rule)
     except SoftTimeLimitExceeded:
-        route.status = "ERROR"
-        route.response = "Task timeout"
-        route.save()
-        msg1 = "[%s] Suspending rule : %s - Result: %s" % (route.applier, route.name, route.response)
+        rule.status = "ERROR"
+        rule.response = "Task timeout"
+        rule.save()
+        msg1 = "[%s] Suspending rule : %s - Result: %s" % (rule.applier, rule.name, rule.response)
         logger.error("tasks::delete(): SoftTimeLimitExceeded msg="+msg1)
-        announce(msg1, route.applier, route)
+        announce(msg1, rule.applier, rule)
     except Exception, e:
-        route.status = "ERROR"
-        route.response = "Error"
-        route.save()
-        msg1 = "[%s] Suspending rule : %s - Result: %s" % (route.applier, route.name, route.response)
+        rule.status = "ERROR"
+        rule.response = "Error"
+        rule.save()
+        msg1 = "[%s] Suspending rule : %s - Result: %s" % (rule.applier, rule.name, rule.response)
         logger.error("tasks::delete(): delete_full="+str(delete_full)+" Exception msg="+msg1+", exc="+str(e))
         logger.error("tasks::delete(): ", exc_info=True)
-        announce(msg1, route.applier, route)
-    logger.info("tasks::delete(): before returning; delete_full="+str(delete_full)+" route.status="+str(route.status))
+        announce(msg1, rule.applier, rule)
+    logger.info("tasks::delete(): before returning; delete_full="+str(delete_full)+" rule.status="+str(rule.status))
 
 
 # May not work in the first place... proxy is not aware of Route models

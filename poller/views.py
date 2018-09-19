@@ -67,7 +67,7 @@ class Msgs(object):
         return cls._instance
 
     def __init__(self):
-        logger.info("initializing")
+        logger.info("poller::views::Msgs(): initializing")
         self.user = None
         self.user_cache = {}
         self.user_cursor = {}
@@ -163,11 +163,11 @@ class Msgs(object):
             job = b.reserve()
             msg = json.loads(job.body)
             job.bury()
-            logger.info("Got New message")
+            logger.info("poller::views::Msgs::monitor_polls(): Got New message")
             self.message_new(msg)
 
     def start_polling(self):
-        logger.info("Start Polling")
+        logger.info("poller::views::Msgs::start_polling(): Start Polling")
         gevent.spawn(self.monitor_polls)
 
 
