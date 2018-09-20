@@ -396,7 +396,9 @@ def convert_container_to_queryset(list1, class1):
 # if needed convert them back to query sets by convert_container_to_queryset
 def global__get_users_routes_by_its_peers(user):
         users_peers_set = set(user.userprofile.peers.all())
-        routes_all = list(Route.objects.all())
+        #routes_all = list(Route.objects.all())
+        #routes_all = [route for route in routes_all if not route.deleted]
+        routes_all = list(Route.objects.filter(deleted=False))
         #temp1 = [obj for obj in routes_all]
         temp1 = [obj for obj in routes_all if len(set(obj.containing_peers()).intersection(users_peers_set))>0]
         #temp1_ids = [obj.id for obj in temp1]

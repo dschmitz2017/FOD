@@ -151,7 +151,6 @@ class Rule(models.Model):
     status = models.CharField(max_length=20, choices=ROUTE_STATES, blank=True, null=True, verbose_name=_("Status"), default="CREATED")
     editing = models.BooleanField(default=True)
 
-
     class Meta:
         db_table = u'flowspec_rule'
         verbose_name = "Rule"
@@ -201,7 +200,8 @@ class Rule(models.Model):
                     break
                 for network in peer.networks.all():
                     net = IPNetwork(network)
-                    for route in self.routes.all():
+                    #for route in self.routes.all():
+                    for route in self.get_routes_nondeleted:
                         if IPNetwork(self.destination) in net:
                             username = peer
                             break
@@ -217,7 +217,8 @@ class Rule(models.Model):
             for peer in all_peers:
                 for network in peer.networks.all():
                     net = IPNetwork(network)
-                    for route in self.routes.all():
+                    #for route in self.routes.all():
+                    for route in self.get_routes_nondeleted:
                         if IPNetwork(route.destination) in net:
                             if not peer in matched_peers:
                               matched_peers.append(peer)
@@ -237,7 +238,8 @@ class Rule(models.Model):
                 'url_path': 'edit-route',
                 'url_id': 'route_slug',
                 'rule': self,
-                'routes': self.routes.all(),
+                #'routes': self.routes.all(),
+                'routes': self.get_routes_nondeleted,
                 'address': self.requesters_address,
                 'action': 'creation',
                 'peer_list': peer2[0],
@@ -253,17 +255,32 @@ class Rule(models.Model):
 
     def commit_edit(self, *args, **kwargs):
         logger.info("model::commit_edit(): rule="+str(self))
+        try:
+          current_routes_to_delete = kwargs['current_routes_to_delete']
+        except:
+          current_routes_to_delete = []
+        logger.info("model::commit_edit(): current_routes_to_delete="+str(current_routes_to_delete))
+
         peer2 = self.helper_get_matching_peers()
         msg1 = "[%s] Editing rule %s. Please wait..." % (self.applier.username, self.name)
         send_message_multiple(msg1, peer2[1])
         logger.info("model::commit_edit(): "+str(msg1))
+
+        if current_routes_to_delete!=None and len(current_routes_to_delete)>0:
+          response1 = delete_some_routes.delay(self, current_routes_to_delete)
+          logger.info('model::commit_edit(): current_routes_to_delete job id: %s' % response1)
+        else:
+          logger.info('model::commit_edit(): no current_routes_to_delete')
+
+        #response = edit.delay(self, current_routes_to_delete=current_routes_to_delete)
         response = edit.delay(self)
         logger.info('model::commit_edit(): Got edit job id: %s' % response)
         mail_body = self._send_mail(args={
                 'url_path': 'edit-route',
                 'url_id': 'route_slug',
                 'rule': self,
-                'routes': self.routes.all(),
+                #'routes': self.routes.all(),
+                'routes': self.get_routes_nondeleted,
                 'address': self.requesters_address,
                 'action': 'edit',
                 'peer_list': peer2[0],
@@ -292,14 +309,16 @@ class Rule(models.Model):
         send_message_multiple(msg1, peer2[1])
         logger.info("model::commit_delete(): "+str(msg1))
         #response = delete.delay(self, reason=reason)
-        response = delete.delay(self, self.routes.all() ,reason=reason)
+        #response = delete.delay(self, self.routes.all() ,reason=reason)
+        response = delete.delay(self, self.get_routes_nondeleted, reason=reason)
         logger.info('model::commit_delete(): Got delete job id: %s' % response)
 
         mail_body = self._send_mail(args={
                 'url_path': 'edit-route',
                 'url_id': 'route_slug',
                 'rule': self,
-                'routes': self.routes.all(),
+                #'routes': self.routes.all(),
+                'routes': self.get_routes_nondeleted,
                 'address': self.requesters_address,
                 'action': 'removal',
                 'peer_list': peer2[0],
@@ -331,7 +350,8 @@ class Rule(models.Model):
     def get_match(self):
         res = ''
         if self.routes:
-            for r in self.routes.all():
+            #for r in self.routes.all():
+            for r in self.get_routes_nondeleted:
                 res = res + r.get_match()
         return res
     get_match.short_description = 'Match statement'
@@ -339,10 +359,68 @@ class Rule(models.Model):
 
     def get_responses(self):
         if self.routes:
-            return ', '.join([str(r.response) for r in self.routes.all()])
+            #return ', '.join([str(r.response) for r in self.routes.all()])
+            return ', '.join([str(r.response) for r in self.get_routes_nondeleted])
         else:
             return ''
 
+    @property 
+    def get_routes_nondeleted(self):
+        #return [route for route in self.routes.all() if not route.deleted]
+        return list(self.routes.filter(deleted=False))
+
+    #def check_if_nondeleted_routes_are_compatible
+    def check_if_nondeleted_routes_differ_only_in_source_prefix(self):
+      nondel_incompatible_routes = self.get_routes__source_compatible(include_nondeleted=True, include_deleted=False, compatible_or_incompatible=False)
+      logger.info("model::rule::check_if_nondeleted_routes_differ_only_in_source_prefix(): nondel_incompatible_routes="+str(nondel_incompatible_routes))
+      return len(nondel_incompatible_routes)==0
+
+    def get_routes__source_compatible(self, include_nondeleted=True, include_deleted=True, compatible_or_incompatible=True):
+        nondel_routes = self.routes.filter(deleted=False)
+        first_route = nondel_routes[:1]
+        if first_route==None or first_route.get()==None:
+          return []
+        else:
+          first_route=first_route.get()
+
+        if include_nondeleted and include_deleted:
+          routes1 = self.routes
+        elif include_nondeleted and not include_deleted:
+          #routes1 = self.routes.filter(deleted=False)
+          routes1 = nondel_routes
+        elif not include_nondeleted and include_deleted:
+          routes1 = self.routes.filter(deleted=True)
+        else:
+          return []
+        #logger.info("model::rule::get_routes__source_compatible(): include_nondeleted="+str(include_nondeleted)+", include_deleted="+str(include_deleted)+" => routes1="+str(routes1))
+        if compatible_or_incompatible:
+          # TODO: attributes here hardcoded: replace by code which uses django attribute reflection
+          # attributes to exclude are: id, name, comments and source
+          list_compatible = routes1.filter(
+            packetlength=first_route.packetlength,
+            destination=first_route.destination,
+            sourceport=first_route.sourceport,
+            destinationport=first_route.destinationport,
+            port=first_route.port,
+            icmptype=first_route.icmptype,
+            icmpcode=first_route.icmpcode,
+            tcpflag=first_route.tcpflag)
+          #logger.info("model::rule::get_routes__source_compatible(): include_nondeleted="+str(include_nondeleted)+", include_deleted="+str(include_deleted)+" => list_compatible="+str(list_compatible))
+          return list_compatible
+        else:
+          # TODO: attributes here hardcoded: replace by code which uses django attribute reflection
+          # attributes to exclude are: id, name, comments and source
+          list_incompatible = routes1.exclude(
+            packetlength=first_route.packetlength,
+            destination=first_route.destination,
+            sourceport=first_route.sourceport,
+            destinationport=first_route.destinationport,
+            port=first_route.port,
+            icmptype=first_route.icmptype,
+            icmpcode=first_route.icmpcode,
+            tcpflag=first_route.tcpflag)
+          #logger.info("model::rule::get_routes__source_compatible(): include_nondeleted="+str(include_nondeleted)+", include_deleted="+str(include_deleted)+" => list_incompatible="+str(list_incompatible))
+          return list_incompatible
 
 class Route(models.Model):
     name = models.SlugField(max_length=128, verbose_name=_("Name"))
@@ -363,6 +441,7 @@ class Route(models.Model):
 #    is_active = models.BooleanField(default=False)
     response = models.CharField(max_length=512, blank=True, null=True, verbose_name=_("Response"))
     comments = models.TextField(null=True, blank=True, verbose_name=_("Comments"))
+    deleted = models.BooleanField(default=False)
 
     @property
     def applier_username(self):
@@ -674,6 +753,7 @@ class Route(models.Model):
                 return False
         else:
             return False
+
 
     @property
     def junos_name(self):

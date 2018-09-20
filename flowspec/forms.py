@@ -121,7 +121,8 @@ class RuleForm(forms.ModelForm):
         else:
             peers = user.userprofile.peers.all()
 
-        existing_routes = self.routes.all()
+        #existing_routes = self.routes.all()
+        existing_routes = self.get_routes_nondeleted
         #existing_routes = existing_routes.filter(rule__applier__userprofile__peers__in=peers)
         name = self.cleaned_data.get('name', None)
         protocols = self.cleaned_data.get('protocol', None)

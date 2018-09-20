@@ -64,7 +64,8 @@ function myreloadPage() {
             
             <h3>Routes:</h3>
 
-            {% for route in rule.routes.all %}
+            {#% for route in rule.routes.all %#}
+            {% for route in rule.get_routes_nondeleted %}
                 {% trans 'all'%}
                 {% if route.protocol.count %}
                     {% for proto in route.protocol.all %}
@@ -321,7 +322,7 @@ function plotGraph(data)
 $(document).ready(function() {
     if (false)
     {
-      var statsurls = Array({% for route in rule.routes.all %}"{% url routestats route.name %}",{% endfor %});
+      var statsurls = Array({% for route in rule.get_routes_nondeleted %}"{% url routestats route.name %}",{% endfor %});
       for (i = 0; i < statsurls.length; i++) {
       statsurl = statsurls[i];
       $.get(statsurl).done(function(data) {
