@@ -254,7 +254,8 @@ def process_history_get_new_value_of_rule(ruleobj, newdata, zero_measurement):
 
       new_data_value_per_route__hash = {}
       new_data_value = zero_measurement.copy()
-      rule_routes = ruleobj.routes.all()
+      #rule_routes = ruleobj.routes.all()
+      rule_routes = ruleobj.get_routes_nondeleted
       for routeobj in rule_routes:
         flowspec_params_str=create_junos_name(routeobj)
         logger.info("process_history_get_new_value_of_rule(): rule_id="+str(ruleobj.id)+" routeobj="+str(routeobj)+" => flowspec_params_str="+str(flowspec_params_str))

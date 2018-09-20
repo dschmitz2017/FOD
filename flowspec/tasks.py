@@ -106,6 +106,18 @@ def add(rule, callback=None):
 def edit(rule, callback=None):
     try:
         logger.info("edit(): rule="+str(rule)+", rule.type="+str(type(rule)))
+
+        try:
+          current_routes_to_delete = kwargs['current_routes_to_delete']
+        except:
+          current_routes_to_delete = []
+        logger.info("edit(): current_routes_to_delete="+str(current_routes_to_delete))
+        if current_routes_to_delete!=None and len(current_routes_to_delete)>0:
+          self.delete_some_routes(current_routes_to_delete) # TODO response ??
+          logger.info('edit(): delete_some_routes done')
+        else:
+          logger.info('edit(): no current_routes_to_delete')
+
         #logger.info("edit(): rule="+str(rule)+", rule.dir="+str(dir(rule)))
         #applier = PR.Applier(rule_object=rule)
         applier = PR.Applier(rule_object=rule, route_objects=rule.routes.select_related().all())
@@ -149,13 +161,60 @@ def edit(rule, callback=None):
         logger.info("tasks::edit(): rule.applier="+str(rule.applier))
         announce(msg, rule.applier, rule)
 
+## TODO: somehow consolidate with delete? or better with edit if possible ???
+@task(ignore_result=True)
+def delete_some_routes(rule, rule_routes, **kwargs):
+    logger.info("tasks::delete_some_routes(): called rule="+str(rule))
+    logger.info("tasks::delete_some_routes(): called rule_routes="+str(rule_routes))
+
+    try:
+        if len(rule_routes)>0:
+          applier = PR.Applier(rule_object=rule, route_objects=rule_routes)
+          commit, response = applier.apply(operation="delete")
+          logger.info("tasks::delete_some_routes(): => commit="+str(commit))
+          if commit:
+              status = 'EXPIRED'
+          else:
+              status = "ERROR"
+        else:
+          return True
+
+        for rule_route1 in rule_routes:
+          rule_route1.status = status
+          rule_route1.save()
+
+    except TimeLimitExceeded:
+        rule.status = "ERROR"
+        rule.response = "Task timeout"
+        rule.save()
+        msg1= "[%s] Suspending some of rule's routes : %s - Result: %s" % (rule.applier, rule.name, rule.response)
+        logger.error("tasks::delete_some_routes(): TimeLimitExceeded msg="+msg1)
+        announce(msg1, rule.applier, rule)
+    except SoftTimeLimitExceeded:
+        rule.status = "ERROR"
+        rule.response = "Task timeout"
+        rule.save()
+        msg1 = "[%s] Suspending some of rule's routes : %s - Result: %s" % (rule.applier, rule.name, rule.response)
+        logger.error("tasks::delete_some_routes(): SoftTimeLimitExceeded msg="+msg1)
+        announce(msg1, rule.applier, rule)
+    except Exception, e:
+        rule.status = "ERROR"
+        rule.response = "Error"
+        rule.save()
+        msg1 = "[%s] Suspending some of rule's routes : %s - Result: %s" % (rule.applier, rule.name, rule.response)
+        logger.error("tasks::delete_some_routes(): Exception msg="+msg1+", exc="+str(e))
+        logger.error("tasks::delete_some_routes(): ", exc_info=True)
+        announce(msg1, rule.applier, rule)
+    logger.info("tasks::delete_some_routes(): before returning")
+
+
 @task(ignore_result=True)
 #def delete(route, **kwargs):
-def delete(rule, rule_routes, **kwargs): # route is actually a rule
+def delete(rule, rule_routes, **kwargs): 
     logger.info("tasks::delete(): called rule="+str(rule))
     logger.info("tasks::delete(): called rule_routes="+str(rule_routes))
     #logger.info("tasks::delete(): called rule.dir="+str(dir(rule)))
-    logger.info("tasks::delete(): called kwargs="+str(kwargs))
+    #logger.info("tasks::delete(): called kwargs="+str(kwargs))
     initial_status = rule.status
     logger.info("tasks::delete(): called initial_status="+str(initial_status))
     delete_full=False

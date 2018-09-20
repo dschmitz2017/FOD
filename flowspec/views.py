@@ -217,7 +217,8 @@ def build_routes_json(grules):
         rd['name'] = r.name
         rd['details'] = '<a href="%s">%s</a>' % (r.get_absolute_url(), r.name)
         rd['routes'] = list()
-        for routei in r.routes.all():
+        #for routei in r.routes.all():
+        for routei in r.get_routes_nondeleted:
             route = {}
             route['port'] = routei.port
             route['sourceport'] = routei.sourceport
@@ -246,19 +247,39 @@ def build_routes_json(grules):
         routes.append(rd)
     return routes
 
+def helper_prepare_user_request_data(request, applier, request_data):
+        if request.user.is_superuser:
+            request_data['issuperuser'] = request.user.username
+        else:
+            request_data['applier'] = applier
+            try:
+                del request_data['issuperuser']
+            except:
+                pass
 
-@login_required
-@never_cache
-def add_route(request):
-    logger.info("views::add_route(): request="+str(request))
+def helper_calc_applier_peer_networks(request):
     applier_peer_networks = []
-    applier = request.user.pk
     if request.user.is_superuser:
         applier_peer_networks = PeerRange.objects.all()
     else:
         user_peers = request.user.get_profile().peers.all()
         for peer in user_peers:
             applier_peer_networks.extend(peer.networks.all())
+    return applier_peer_networks
+
+@login_required
+@never_cache
+def add_route(request):
+    logger.info("views::add_route(): request="+str(request))
+    applier = request.user.pk
+    #applier_peer_networks = []
+    #if request.user.is_superuser:
+    #    applier_peer_networks = PeerRange.objects.all()
+    #else:
+    #    user_peers = request.user.get_profile().peers.all()
+    #    for peer in user_peers:
+    #        applier_peer_networks.extend(peer.networks.all())
+    applier_peer_networks = helper_calc_applier_peer_networks(request)
     if not applier_peer_networks:
         messages.add_message(
             request,
@@ -284,14 +305,15 @@ def add_route(request):
 
     else:
         request_data = request.POST.copy()
-        if request.user.is_superuser:
-            request_data['issuperuser'] = request.user.username
-        else:
-            request_data['applier'] = applier
-            try:
-                del request_data['issuperuser']
-            except:
-                pass
+        #if request.user.is_superuser:
+        #    request_data['issuperuser'] = request.user.username
+        #else:
+        #    request_data['applier'] = applier
+        #    try:
+        #        del request_data['issuperuser']
+        #    except:
+        #       pass
+        helper_prepare_user_request_data(request, applier, request_data)
         logger.info("views::add_route(): create new Rule " + request_data['name'])
         rule = Rule()
         rule.name = request_data['name']
@@ -302,67 +324,87 @@ def add_route(request):
         rule.save()
         logger.info("views::add_route(): created new Rule " + str(rule.pk) + " " + str(rule))
         request_data['rule'] = rule.pk
-            
+        
         logger.info("views::add_route(): request_data " + str(request_data))
-        form = RouteForm(request_data)
-        #route_status_speced = request_data['status']
-        if form.is_valid():
-            route = form.save(commit=False)
-            if not request.user.is_superuser:
-                route.applier = request.user
-            route_status_speced = route.status
-            logger.info("views::add_route(): route_status_speced="+str(route_status_speced))
-            rule.routes.add(route)
-            rule.save()
-            route.status = "PENDING"
-            route.response = "Applying"
-            route.source = IPNetwork('%s/%s' % (IPNetwork(route.source).network.compressed, IPNetwork(route.source).prefixlen)).compressed
-            route.destination = IPNetwork('%s/%s' % (IPNetwork(route.destination).network.compressed, IPNetwork(route.destination).prefixlen)).compressed
-            try:
-                route.requesters_address = request.META['HTTP_X_FORWARDED_FOR']
-            except:
-                # in case the header is not provided
-                route.requesters_address = 'unknown'
-            route.save()
-            form.save_m2m()
-            # We have to make the commit after saving the form
-            # in order to have all the m2m relations.
-            route.status = route_status_speced
-            logger.info("views::add_route(): before actually commint rule")
-            rule.editing = False
-            rule.save()
-            rule.commit_add()
-            logger.info("views::add_route(): after actually commint rule")
-            return HttpResponseRedirect(reverse("group-routes"))
-        else:
-            form.fields['expires'] = forms.DateField()
-            form.fields['applier'] = forms.ModelChoiceField(queryset=User.objects.filter(pk=request.user.pk), required=True, empty_label=None)
-            if request.user.is_superuser:
-                form.fields['then'] = forms.ModelMultipleChoiceField(queryset=ThenAction.objects.all().order_by('action'), required=True)
-                form.fields['protocol'] = forms.ModelMultipleChoiceField(queryset=MatchProtocol.objects.all().order_by('protocol'), required=False)
-            else:
-                form.fields['then'] = forms.ModelMultipleChoiceField(queryset=ThenAction.objects.filter(action__in=settings.UI_USER_THEN_ACTIONS).order_by('action'), required=True)
-                form.fields['protocol'] = forms.ModelMultipleChoiceField(queryset=MatchProtocol.objects.filter(protocol__in=settings.UI_USER_PROTOCOLS).order_by('protocol'), required=False)
-            return render(
-                request,
-                'apply.html',
-                {
-                    'form': form,
-                    'applier': applier,
-                    'maxexpires': settings.MAX_RULE_EXPIRE_DAYS
-                }
-            )
+           
+        source_prefix_list_str = request_data['source']
+        logger.info("views::add_route(): source_prefix_list_str=" + str(source_prefix_list_str))
+        source_prefix_list = source_prefix_list_str.split()
+
+        for source_prefix in source_prefix_list:
+          logger.info("views::add_route(): source_prefix loop: iter start source_prefix="+str(source_prefix))
+          request_data['source'] = source_prefix
+
+          form = RouteForm(request_data)
+          #route_status_speced = request_data['status']
+          if form.is_valid():
+              route = form.save(commit=False)
+              if not request.user.is_superuser:
+                  route.applier = request.user
+              route_status_speced = route.status
+              logger.info("views::add_route(): route_status_speced="+str(route_status_speced))
+              rule.routes.add(route)
+              #rule.save()
+              route.status = "PENDING"
+              route.response = "Applying"
+              route.source = IPNetwork('%s/%s' % (IPNetwork(route.source).network.compressed, IPNetwork(route.source).prefixlen)).compressed
+              route.destination = IPNetwork('%s/%s' % (IPNetwork(route.destination).network.compressed, IPNetwork(route.destination).prefixlen)).compressed
+              try:
+                  route.requesters_address = request.META['HTTP_X_FORWARDED_FOR']
+              except:
+                  # in case the header is not provided
+                  route.requesters_address = 'unknown'
+              #route.save()
+              form.save_m2m()
+              # We have to make the commit after saving the form
+              # in order to have all the m2m relations.
+              route.status = route_status_speced
+          else:
+              form.fields['expires'] = forms.DateField()
+              form.fields['applier'] = forms.ModelChoiceField(queryset=User.objects.filter(pk=request.user.pk), required=True, empty_label=None)
+              if request.user.is_superuser:
+                  form.fields['then'] = forms.ModelMultipleChoiceField(queryset=ThenAction.objects.all().order_by('action'), required=True)
+                  form.fields['protocol'] = forms.ModelMultipleChoiceField(queryset=MatchProtocol.objects.all().order_by('protocol'), required=False)
+              else:
+                  form.fields['then'] = forms.ModelMultipleChoiceField(queryset=ThenAction.objects.filter(action__in=settings.UI_USER_THEN_ACTIONS).order_by('action'), required=True)
+                  form.fields['protocol'] = forms.ModelMultipleChoiceField(queryset=MatchProtocol.objects.filter(protocol__in=settings.UI_USER_PROTOCOLS).order_by('protocol'), required=False)
+              return render(
+                  request,
+                  'apply.html',
+                  {
+                      'form': form,
+                      'applier': applier,
+                      'maxexpires': settings.MAX_RULE_EXPIRE_DAYS
+                  }
+              )
+          logger.info("views::add_route(): source_prefix loop: iter end source_prefix="+str(source_prefix))
+
+        logger.info("views::add_route(): before actually commint rule")
+        for route in rule.routes.all():
+          route.save()
+        rule.editing = False
+        rule.save()
+        rule.commit_add()
+        logger.info("views::add_route(): after actually commint rule")
+        return HttpResponseRedirect(reverse("group-routes"))
 
 
 @login_required
 @never_cache
 def edit_route(request, rule_slug):
+    logger.info("views::edit_route(): rule_slug="+str(rule_slug)+" request="+str(request))
     applier = request.user.pk
     rule_edit = get_object_or_404(Rule, name=rule_slug)
+    
     if rule_edit.routes:
         if rule_edit.routes.count() > 1:
             if rule_edit.status != "INACTIVE":
-                raise Exception("Not implemented editing multiple routes in a single rule.")
+
+                rule_routes_are_compatible = rule_edit.check_if_nondeleted_routes_differ_only_in_source_prefix()
+                logger.info("views::edit_route(): rule_edit="+str(rule_edit)+" rule_routes_are_compatible="+str(rule_routes_are_compatible))
+                if not rule_routes_are_compatible:
+                  #raise Exception("Not implemented editing multiple routes in a single rule.")
+                  raise Exception("Not implemented editing multiple routes in a single rule, if routes differ in more than source prefix.")                
             else:
                 rule_edit.status = "PENDING"
                 rule_edit.response = "Applying"
@@ -371,17 +413,18 @@ def edit_route(request, rule_slug):
                 rule_edit.save()
                 rule_edit.commit_edit()
                 return HttpResponseRedirect(reverse("group-routes"))
-        route_edit = rule_edit.routes.get()
+        #route_edit = rule_edit.routes.get()
     else:
         raise Exception("There is no configured route for this rule.")
 
-    applier_peer_networks = []
-    if request.user.is_superuser:
-        applier_peer_networks = PeerRange.objects.all()
-    else:
-        user_peers = request.user.get_profile().peers.all()
-        for peer in user_peers:
-            applier_peer_networks.extend(peer.networks.all())
+    #applier_peer_networks = []
+    #if request.user.is_superuser:
+    #    applier_peer_networks = PeerRange.objects.all()
+    #else:
+    #    user_peers = request.user.get_profile().peers.all()
+    #    for peer in user_peers:
+    #        applier_peer_networks.extend(peer.networks.all())
+    applier_peer_networks = helper_calc_applier_peer_networks(request)
     if not applier_peer_networks:
         messages.add_message(
             request,
@@ -393,77 +436,152 @@ def edit_route(request, rule_slug):
         messages.add_message(
             request,
             messages.WARNING,
-            ('Cannot edit a pending rule: %s.') % (route_slug)
+            ('Cannot edit a pending rule: %s.') % (rule_slug)
         )
         return HttpResponseRedirect(reverse("group-routes"))
     rule_original = deepcopy(rule_edit)
-    route_original = deepcopy(route_edit)
     if request.POST:
         request_data = request.POST.copy()
-        if request.user.is_superuser:
-            request_data['issuperuser'] = request.user.username
-        else:
-            request_data['applier'] = applier
-            try:
-                del request_data['issuperuser']
-            except:
-                pass
+        #if request.user.is_superuser:
+        #    request_data['issuperuser'] = request.user.username
+        #else:
+        #    request_data['applier'] = applier
+        #    try:
+        #        del request_data['issuperuser']
+        #    except:
+        #        pass
+        helper_prepare_user_request_data(request, applier, request_data)
         request_data["rule"] = rule_edit.id
-        form = RouteForm(
-            request_data,
-            instance=rule_edit.routes.get()
-        )
-        form.fields['expires'] = forms.DateField()
-        form.fields['applier'] = forms.ModelChoiceField(queryset=User.objects.filter(pk=request.user.pk), required=True, empty_label=None)
-        critical_changed_values = ['source', 'destination', 'sourceport', 'destinationport', 'port', 'protocol', 'then', 'fragmenttype']
-        if form.is_valid():
-            changed_data = form.changed_data
-            route = form.save(commit=False)
-            route.name = route_original.name
-            #route.status = rule_original.status
-            route.response = route_original.response
-            if not request.user.is_superuser:
-                route.rule.applier = request.user
-            if bool(set(changed_data) & set(critical_changed_values)) or (not rule_original.status == 'ACTIVE'):
-                route.status = "PENDING"
-                route.response = "Applying"
-                route.source = IPNetwork('%s/%s' % (IPNetwork(route.source).network.compressed, IPNetwork(route.source).prefixlen)).compressed
-                route.destination = IPNetwork('%s/%s' % (IPNetwork(route.destination).network.compressed, IPNetwork(route.destination).prefixlen)).compressed
-                try:
-                    route.requesters_address = request.META['HTTP_X_FORWARDED_FOR']
-                except:
-                    # in case the header is not provided
-                    route.requesters_address = 'unknown'
 
-            route.rule.expires = request_data["expires"]
-            route.rule.save()
-            route.save()
-            if bool(set(changed_data) & set(critical_changed_values)) or (not rule_original.status == 'ACTIVE'):
-                form.save_m2m()
-                route.rule.commit_edit()
-            return HttpResponseRedirect(reverse("group-routes"))
-        else:
-            if request.user.is_superuser:
-                form.fields['then'] = forms.ModelMultipleChoiceField(queryset=ThenAction.objects.all().order_by('action'), required=True)
-                form.fields['protocol'] = forms.ModelMultipleChoiceField(queryset=MatchProtocol.objects.all().order_by('protocol'), required=False)
-            else:
-                form.fields['then'] = forms.ModelMultipleChoiceField(queryset=ThenAction.objects.filter(action__in=settings.UI_USER_THEN_ACTIONS).order_by('action'), required=True)
-                form.fields['protocol'] = forms.ModelMultipleChoiceField(queryset=MatchProtocol.objects.filter(protocol__in=settings.UI_USER_PROTOCOLS).order_by('protocol'), required=False)
-            return render_to_response(
-                'apply.html',
-                {
-                    'form': form,
-                    'edit': True,
-                    'applier': applier,
-                    'maxexpires': settings.MAX_RULE_EXPIRE_DAYS
-                },
-                context_instance=RequestContext(request)
-            )
+        ###
+
+        source_prefix_list_str = request_data['source']
+        logger.info("views::edit_route(): source_prefix_list_str=" + str(source_prefix_list_str))
+        source_prefix_list = source_prefix_list_str.split()
+
+        # calculate based on source attribute:
+        # 1. which nondeleted (=> so also compatible) routes to reuse, 
+        # 2. which deleted+compatible routes to reuse (but prefer nondeleted first if possible)
+        # 3. which nondeleted routes to delete (also in NETCONF) 
+        # 4. and which routes missing to create and use
+        # and finally to replace all now used routes in NETCONF
+        (source_prefix_to_reused_route__hash, current_routes_to_make_deleted) = calculate_route_reuse(rule_edit, source_prefix_list)
+        new_nondeleted_routes = []
+        form_list=[]
+
+        for source in source_prefix_list:
+          request_data['source'] = source
+
+          try:
+            route_reused = source_prefix_to_reused_route__hash[source]
+            logger.info("views::edit_route(): source_prefix_list loop: source="+str(source)+" => route_reused="+str(route_reused)+" => route_reused.source="+str(route_reused.source))
+          except:
+            route_reused = None
+            logger.info("views::edit_route(): source_prefix_list loop: source="+str(source)+" => route_reused="+str(route_reused))
+
+          form = RouteForm(
+              request_data,
+              #instance=rule_edit.routes.get()
+              instance=route_reused
+          )
+          form.fields['expires'] = forms.DateField()
+          form.fields['applier'] = forms.ModelChoiceField(queryset=User.objects.filter(pk=request.user.pk), required=True, empty_label=None)
+          critical_changed_values = ['source', 'destination', 'sourceport', 'destinationport', 'port', 'protocol', 'then', 'fragmenttype']
+          if form.is_valid():
+              form_list.append(form)
+              logger.info("views::edit_route(): source_prefix_list loop: source="+str(source)+" => route_reused="+str(route_reused)+" form valid")
+
+              changed_data = form.changed_data
+              route = form.save(commit=False)
+              
+              #route_edit = rule_edit.routes.get()
+              route_edit = route_reused
+
+              if route_reused!=None:
+                route_original = deepcopy(route_edit)
+                route.name = route_original.name
+                #route.status = rule_original.status
+                route.response = route_original.response
+              new_nondeleted_routes.append(route)
+
+              if not request.user.is_superuser:
+                route.rule.applier = request.user # TODO: check whether this makes still sense and is secure
+
+              if bool(set(changed_data) & set(critical_changed_values)) or (not rule_original.status == 'ACTIVE'):
+                  route.status = "PENDING"
+                  route.response = "Applying"
+                  route.source = IPNetwork('%s/%s' % (IPNetwork(route.source).network.compressed, IPNetwork(route.source).prefixlen)).compressed
+                  route.destination = IPNetwork('%s/%s' % (IPNetwork(route.destination).network.compressed, IPNetwork(route.destination).prefixlen)).compressed
+                  try:
+                      route.requesters_address = request.META['HTTP_X_FORWARDED_FOR']
+                  except:
+                      # in case the header is not provided
+                      route.requesters_address = 'unknown'
+
+              #route.rule.expires = request_data["expires"]
+              #route.rule.save()
+              #route.save()
+              #if bool(set(changed_data) & set(critical_changed_values)) or (not rule_original.status == 'ACTIVE'):
+              #    form.save_m2m()
+              #    route.rule.commit_edit()
+              #return HttpResponseRedirect(reverse("group-routes"))
+          else:
+              logger.info("views::edit_route(): source_prefix_list loop: source="+str(source)+" => route_reused="+str(route_reused)+" => NOT form valid")
+              if request.user.is_superuser:
+                  form.fields['then'] = forms.ModelMultipleChoiceField(queryset=ThenAction.objects.all().order_by('action'), required=True)
+                  form.fields['protocol'] = forms.ModelMultipleChoiceField(queryset=MatchProtocol.objects.all().order_by('protocol'), required=False)
+              else:
+                  form.fields['then'] = forms.ModelMultipleChoiceField(queryset=ThenAction.objects.filter(action__in=settings.UI_USER_THEN_ACTIONS).order_by('action'), required=True)
+                  form.fields['protocol'] = forms.ModelMultipleChoiceField(queryset=MatchProtocol.objects.filter(protocol__in=settings.UI_USER_PROTOCOLS).order_by('protocol'), required=False)
+              return render_to_response(
+                  'apply.html',
+                  {
+                      'form': form,
+                      'edit': True,
+                      'applier': applier,
+                      'maxexpires': settings.MAX_RULE_EXPIRE_DAYS
+                  },
+                  context_instance=RequestContext(request)
+              )
+        #endfor
+
+        #route.rule.expires = request_data["expires"]
+        rule_edit.expires = request_data["expires"]
+        #route.rule.save()
+        rule_edit.save()
+        #route.save()
+  
+        for route in new_nondeleted_routes:
+          route.deleted = False
+          route.save()
+
+        for route in current_routes_to_make_deleted:
+          route.deleted = True;
+          #route.save()
+
+        if bool(set(changed_data) & set(critical_changed_values)) or (not rule_original.status == 'ACTIVE'):
+            for form in form_list:
+              form.save_m2m()
+              #route.rule.commit_edit()
+
+        rule_edit.status = "ACTIVE" # ???
+        rule_edit.editing = False
+        rule_edit.save()
+        #if rule_edit.status=="ACTIVE":
+        rule_edit.commit_edit(current_routes_to_delete=current_routes_to_make_deleted)
+
+        return HttpResponseRedirect(reverse("group-routes"))
+
     else:
         rule_edit.expires = rule_original.expires
         maxexpires = datetime.date.today() + datetime.timedelta(days = settings.EXPIRATION_DAYS_OFFSET - 1)
         if (not rule_original.status == 'ACTIVE' and rule_edit.expires < maxexpires):
             rule_edit.expires = maxexpires
+
+        #route_edit = rule_edit.routes.get()
+        route_edit_all = rule_edit.get_routes_nondeleted
+        route_edit = route_edit_all[0] # take first nondeleted route as temple for all attributes, except source prefixes
+
         dictionary = model_to_dict(route_edit, fields=[], exclude=[])
         dictionary.update(model_to_dict(rule_edit, fields=[], exclude=[]))
         if request.user.is_superuser:
@@ -474,6 +592,10 @@ def edit_route(request, rule_slug):
             except:
                 pass
         form = RouteForm(dictionary)
+
+        #form.fields['source'] = " ".join([route.source for route in route_edit_all])
+        #logger.info("views::edit_route(): form="+str(form))
+
         form.fields['expires'] = forms.DateField()
         form.fields['applier'] = forms.ModelChoiceField(queryset=User.objects.filter(pk=request.user.pk), required=True, empty_label=None)
         if request.user.is_superuser:
@@ -494,13 +616,39 @@ def edit_route(request, rule_slug):
         )
 
 
+def calculate_route_reuse(rule_edit, source_prefix_list):
+
+    source_prefix_set = set(source_prefix_list)
+
+    old_routes_nondeleted_compatible = rule_edit.get_routes__source_compatible(include_nondeleted=True, include_deleted=False, compatible_or_incompatible=True)
+    old_routes_deleted_compatible = rule_edit.get_routes__source_compatible(include_nondeleted=False, include_deleted=True, compatible_or_incompatible=True)
+
+    source_prefix_to_reused_route__hash = {}
+    current_routes_to_make_deleted = []
+
+    for route in old_routes_nondeleted_compatible:
+      prefix = route.source
+      if prefix in source_prefix_set:
+        source_prefix_to_reused_route__hash[prefix] = route
+        source_prefix_set.remove(prefix)
+      else:
+        current_routes_to_make_deleted.append(route)
+
+    for route in old_routes_deleted_compatible:
+      prefix = route.source
+      if prefix in source_prefix_set:
+        source_prefix_to_reused_route__hash[prefix] = route
+        source_prefix_set.delete(prefix)
+    
+    return (source_prefix_to_reused_route__hash, current_routes_to_make_deleted)
+
 @login_required
 @never_cache
 def delete_rule(request, rule_slug):
     logger.info("views::delete_route(): rule_slug="+str(rule_slug)+ " request="+str(request))
-    logger.info("views::delete_route(): rule_slug="+str(rule_slug)+ " request.dir="+str(dir(request)))
-    logger.info("views::delete_route(): rule_slug="+str(rule_slug)+ " request.REQUEST="+str(dir(request.REQUEST)))
-    logger.info("views::delete_route(): rule_slug="+str(rule_slug)+ " request.REQUEST.keys="+str(dir(request.REQUEST.keys)))
+    #logger.info("views::delete_route(): rule_slug="+str(rule_slug)+ " request.dir="+str(dir(request)))
+    #logger.info("views::delete_route(): rule_slug="+str(rule_slug)+ " request.REQUEST="+str(dir(request.REQUEST)))
+    #logger.info("views::delete_route(): rule_slug="+str(rule_slug)+ " request.REQUEST.keys="+str(dir(request.REQUEST.keys)))
     if request.is_ajax():
         rule = get_object_or_404(Rule, name=rule_slug)
         # get peers of original applier
