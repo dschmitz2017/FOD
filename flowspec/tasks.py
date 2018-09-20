@@ -63,7 +63,8 @@ def add(rule, callback=None):
         else:
           # TODO PR.Applier can't work with multiple routes
           #applier = PR.Applier(rule_object=rule)
-          applier = PR.Applier(rule_object=rule, route_objects=rule.routes.select_related().all())
+          #applier = PR.Applier(rule_object=rule, route_objects=rule.routes.select_related().all())
+          applier = PR.Applier(rule_object=rule, route_objects=rule.get_routes_nondeleted)
           commit, response = applier.apply()
           if commit:
               status = "ACTIVE"
@@ -120,7 +121,8 @@ def edit(rule, callback=None):
 
         #logger.info("edit(): rule="+str(rule)+", rule.dir="+str(dir(rule)))
         #applier = PR.Applier(rule_object=rule)
-        applier = PR.Applier(rule_object=rule, route_objects=rule.routes.select_related().all())
+        #applier = PR.Applier(rule_object=rule, route_objects=rule.routes.select_related().all())
+        applier = PR.Applier(rule_object=rule, route_objects=rule.get_routes_nondeleted)
         commit, response = applier.apply(operation="replace")
         if commit:
             status = "ACTIVE"
