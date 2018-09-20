@@ -474,11 +474,13 @@ def edit_route(request, rule_slug):
 
           try:
             route_reused = source_prefix_to_reused_route__hash[source]
+            route_original = deepcopy(route_reused)
             logger.info("views::edit_route(): source_prefix_list loop: source="+str(source)+" => route_reused="+str(route_reused)+" => route_reused.source="+str(route_reused.source))
           except:
-            route_reused = None
+            route_reused = None            
             logger.info("views::edit_route(): source_prefix_list loop: source="+str(source)+" => route_reused="+str(route_reused))
 
+   
           form = RouteForm(
               request_data,
               #instance=rule_edit.routes.get()
@@ -489,7 +491,7 @@ def edit_route(request, rule_slug):
           critical_changed_values = ['source', 'destination', 'sourceport', 'destinationport', 'port', 'protocol', 'then', 'fragmenttype']
           if form.is_valid():
               form_list.append(form)
-              logger.info("views::edit_route(): source_prefix_list loop: source="+str(source)+" => route_reused="+str(route_reused)+" form valid")
+              logger.info("views::edit_route(): source_prefix_list loop: source="+str(source)+" => route_original="+str(route_original)+" form valid")
 
               changed_data = form.changed_data
               route = form.save(commit=False)
@@ -498,7 +500,6 @@ def edit_route(request, rule_slug):
               route_edit = route_reused
 
               if route_reused!=None:
-                route_original = deepcopy(route_edit)
                 route.name = route_original.name
                 #route.status = rule_original.status
                 route.response = route_original.response
@@ -526,7 +527,7 @@ def edit_route(request, rule_slug):
               #    route.rule.commit_edit()
               #return HttpResponseRedirect(reverse("group-routes"))
           else:
-              logger.info("views::edit_route(): source_prefix_list loop: source="+str(source)+" => route_reused="+str(route_reused)+" => NOT form valid")
+              logger.info("views::edit_route(): source_prefix_list loop: source="+str(source)+" => route_original="+str(route_original)+" => NOT form valid")
               if request.user.is_superuser:
                   form.fields['then'] = forms.ModelMultipleChoiceField(queryset=ThenAction.objects.all().order_by('action'), required=True)
                   form.fields['protocol'] = forms.ModelMultipleChoiceField(queryset=MatchProtocol.objects.all().order_by('protocol'), required=False)
@@ -550,6 +551,9 @@ def edit_route(request, rule_slug):
         #route.rule.save()
         rule_edit.save()
         #route.save()
+        rule_edit.status = "ACTIVE" # ???
+        rule_edit.editing = False
+        rule_edit.save()
   
         for route in new_nondeleted_routes:
           route.deleted = False
@@ -557,16 +561,13 @@ def edit_route(request, rule_slug):
 
         for route in current_routes_to_make_deleted:
           route.deleted = True;
-          #route.save()
+          route.save()
 
         if bool(set(changed_data) & set(critical_changed_values)) or (not rule_original.status == 'ACTIVE'):
             for form in form_list:
               form.save_m2m()
               #route.rule.commit_edit()
 
-        rule_edit.status = "ACTIVE" # ???
-        rule_edit.editing = False
-        rule_edit.save()
         #if rule_edit.status=="ACTIVE":
         rule_edit.commit_edit(current_routes_to_delete=current_routes_to_make_deleted)
 
@@ -638,7 +639,7 @@ def calculate_route_reuse(rule_edit, source_prefix_list):
       prefix = route.source
       if prefix in source_prefix_set:
         source_prefix_to_reused_route__hash[prefix] = route
-        source_prefix_set.delete(prefix)
+        source_prefix_set.remove(prefix)
     
     return (source_prefix_to_reused_route__hash, current_routes_to_make_deleted)
 

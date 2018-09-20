@@ -122,6 +122,7 @@ class RouteSerializer(serializers.HyperlinkedModelSerializer):
             'tcpflag',
             'response',
             'url',
+            'deleted',
         )
         read_only_fields = ('response', 'id')
 
