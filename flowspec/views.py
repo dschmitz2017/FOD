@@ -54,17 +54,17 @@ import os
 
 from flowspec.snmpstats import load_history, get_last_msrm_delay_time
 
-LOG_FILENAME = os.path.join(settings.LOG_FILE_LOCATION, 'celery_jobs.log')
+LOG_FILENAME = os.path.join(settings.LOG_FILE_LOCATION, 'gunicorn_views.log')
 # FORMAT = '%(asctime)s %(levelname)s: %(message)s'
 # logging.basicConfig(format=FORMAT)
-formatter = logging.Formatter('%(asctime)s %(levelname)s %(clientip)s %(user)s: %(message)s')
+#formatter = logging.Formatter('%(asctime)s %(levelname)s %(clientip)s %(user)s: %(message)s') # leads to strange errors on test-lab
+formatter = logging.Formatter('%(asctime)s %(levelname)s: %(message)s') 
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 handler = logging.FileHandler(LOG_FILENAME)
 handler.setFormatter(formatter)
 logger.addHandler(handler)
-
 
 @login_required
 def user_routes(request):
@@ -161,6 +161,7 @@ def group_routes(request):
 @login_required
 @never_cache
 def group_routes_ajax(request):
+    #logger.info("views::group_routes_ajax(): called")
     all_group_rules = []
     try:
         peers = request.user.get_profile().peers.prefetch_related('networks')
@@ -181,6 +182,7 @@ def group_routes_ajax(request):
     jresp = {}
     rules = build_routes_json(all_group_rules)
     jresp['aaData'] = rules
+    #logger.info("views::group_routes_ajax(): before return HttpResponse")
     return HttpResponse(json.dumps(jresp), mimetype='application/json')
 
 
@@ -270,7 +272,8 @@ def helper_calc_applier_peer_networks(request):
 @login_required
 @never_cache
 def add_route(request):
-    logger.info("views::add_route(): request="+str(request))
+    #logger.info("views::add_route(): request="+str(request))
+    logger.info("views::add_route(): called")
     applier = request.user.pk
     #applier_peer_networks = []
     #if request.user.is_superuser:
@@ -392,7 +395,8 @@ def add_route(request):
 @login_required
 @never_cache
 def edit_route(request, rule_slug):
-    logger.info("views::edit_route(): rule_slug="+str(rule_slug)+" request="+str(request))
+    #logger.info("views::edit_route(): rule_slug="+str(rule_slug)+" request="+str(request))
+    logger.info("views::edit_route(): rule_slug="+str(rule_slug))
     applier = request.user.pk
     rule_edit = get_object_or_404(Rule, name=rule_slug)
     
@@ -480,7 +484,6 @@ def edit_route(request, rule_slug):
             route_reused = None            
             logger.info("views::edit_route(): source_prefix_list loop: source="+str(source)+" => route_reused="+str(route_reused))
 
-   
           form = RouteForm(
               request_data,
               #instance=rule_edit.routes.get()
@@ -585,6 +588,11 @@ def edit_route(request, rule_slug):
 
         dictionary = model_to_dict(route_edit, fields=[], exclude=[])
         dictionary.update(model_to_dict(rule_edit, fields=[], exclude=[]))
+
+        all_sources_str = " ".join([route.source for route in route_edit_all])
+        logger.info("views::edit_route(): all_sources_str="+str(all_sources_str))
+        dictionary['source'] = all_sources_str
+
         if request.user.is_superuser:
             dictionary['issuperuser'] = request.user.username
         else:
@@ -593,9 +601,7 @@ def edit_route(request, rule_slug):
             except:
                 pass
         form = RouteForm(dictionary)
-
-        #form.fields['source'] = " ".join([route.source for route in route_edit_all])
-        #logger.info("views::edit_route(): form="+str(form))
+        logger.info("views::edit_route(): form="+str(form))
 
         form.fields['expires'] = forms.DateField()
         form.fields['applier'] = forms.ModelChoiceField(queryset=User.objects.filter(pk=request.user.pk), required=True, empty_label=None)
@@ -646,7 +652,8 @@ def calculate_route_reuse(rule_edit, source_prefix_list):
 @login_required
 @never_cache
 def delete_rule(request, rule_slug):
-    logger.info("views::delete_route(): rule_slug="+str(rule_slug)+ " request="+str(request))
+    logger.info("views::delete_route(): rule_slug="+str(rule_slug))
+    #logger.info("views::delete_route(): rule_slug="+str(rule_slug)+ " request="+str(request))
     #logger.info("views::delete_route(): rule_slug="+str(rule_slug)+ " request.dir="+str(dir(request)))
     #logger.info("views::delete_route(): rule_slug="+str(rule_slug)+ " request.REQUEST="+str(dir(request.REQUEST)))
     #logger.info("views::delete_route(): rule_slug="+str(rule_slug)+ " request.REQUEST.keys="+str(dir(request.REQUEST.keys)))

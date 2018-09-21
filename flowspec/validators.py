@@ -16,6 +16,14 @@ def get_network(ip):
     else:
         return (True, address)
 
+def get_network_list(ip_list):
+    try:
+        list1 = ip_list.split()
+        address_list = [IPNetwork(ip) for ip in list1]
+    except Exception:
+        return (False, _('Invalid network address list format'))
+    else:
+        return (True, address_list)
 
 def clean_ip(address):
     if not hasattr(settings, "PERMIT_PRIVATE_IP_TARGETS"):
@@ -53,22 +61,23 @@ def clean_status(status):
 
 
 def clean_source(user, source):
-    success, address = get_network(source)
+    #success, address = get_network(source)
+    success, address_list = get_network_list(source)
     if not success:
-        return address
-    for net in settings.PROTECTED_SUBNETS:
-        if address in IPNetwork(net):
-            mail_body = "User %s %s attempted to set %s as the source address in a firewall rule" % (user.username, user.email, source)
-            send_mail(
-                settings.EMAIL_SUBJECT_PREFIX + "Caught an attempt to set a protected IP/network as a source address",
-                mail_body,
-                settings.SERVER_EMAIL,
-                settings.NOTIFY_ADMIN_MAILS,
-                fail_silently=True
-            )
-            return _('You have no authority on this subnet')
+        return " ".join([str(ip) for ip in address_list])
+    for address in address_list:
+      for net in settings.PROTECTED_SUBNETS:
+          if address in IPNetwork(net):
+              mail_body = "User %s %s attempted to set %s as the source address in a firewall rule" % (user.username, user.email, source)
+              send_mail(
+                  settings.EMAIL_SUBJECT_PREFIX + "Caught an attempt to set a protected IP/network as a source address",
+                  mail_body,
+                  settings.SERVER_EMAIL,
+                  settings.NOTIFY_ADMIN_MAILS,
+                  fail_silently=True
+              )
+              return _('You have no authority on this subnet')
     return source
-
 
 def clean_destination(user, destination):
     success, address = get_network(destination)

@@ -173,6 +173,12 @@ class RouteForm(forms.ModelForm):
         #    return res
         return destination
 
+    def fmt_ip_addres_list(self, ip_addr_list_str):
+      list1 = ip_addr_list_str.split()
+      list2_ip = [IPNetwork(source).compressed for source in list1]
+      list2 = [str(IPNetwork(source).compressed) for source in list1]
+      return " ".join(list2), list2_ip
+
     def clean(self):
         if self.errors:
             raise forms.ValidationError(_('Errors in form. Please review and fix them: %s' % ", ".join(self.errors)))
@@ -201,8 +207,15 @@ class RouteForm(forms.ModelForm):
         user = self.cleaned_data.get('applier', None)
 
         if source:
-            source = IPNetwork(source).compressed
+            #source = IPNetwork(source).compressed
+            source, source_list = self.fmt_ip_addres_list(source)
             existing_routes = existing_routes.filter(source=source)
+            #existing_routes_old = existing_routes
+            #existing_routes = []
+            #for source_ip in source_list:
+            #  existing_routes2 = existing_routes_old.filter(source=source_ip)
+            #  for existing_route in existing_routes2:
+            #    existing_routes.append(existing_routes)
         else:
             existing_routes = existing_routes.filter(source=None)
         if protocols:
