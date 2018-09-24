@@ -400,15 +400,14 @@ def edit_route(request, rule_slug):
     applier = request.user.pk
     rule_edit = get_object_or_404(Rule, name=rule_slug)
     
-    if rule_edit.routes:
-        if rule_edit.routes.count() > 1:
+    if rule_edit.get_routes_nondeleted:
+        rule_routes_are_compatible = rule_edit.check_if_nondeleted_routes_differ_only_in_source_prefix()
+        #if rule_edit.routes.count() > 1:
+        if len(rule_edit.get_routes_nondeleted) > 1 and not rule_routes_are_compatible:
             if rule_edit.status != "INACTIVE":
-
-                rule_routes_are_compatible = rule_edit.check_if_nondeleted_routes_differ_only_in_source_prefix()
                 logger.info("views::edit_route(): rule_edit="+str(rule_edit)+" rule_routes_are_compatible="+str(rule_routes_are_compatible))
-                if not rule_routes_are_compatible:
-                  #raise Exception("Not implemented editing multiple routes in a single rule.")
-                  raise Exception("Not implemented editing multiple routes in a single rule, if routes differ in more than source prefix.")                
+                #raise Exception("Not implemented editing multiple routes in a single rule.")
+                raise Exception("Not implemented editing multiple routes in a single rule, if routes differ in more than source prefix.")                
             else:
                 rule_edit.status = "PENDING"
                 rule_edit.response = "Applying"
