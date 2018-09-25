@@ -254,27 +254,34 @@ class Rule(models.Model):
         logger.info("model::commit_add(): done rule="+str(self))
 
     def commit_edit(self, *args, **kwargs):
-        logger.info("model::commit_edit(): rule="+str(self))
-        try:
-          current_routes_to_delete = kwargs['current_routes_to_delete']
-        except:
-          current_routes_to_delete = []
-        logger.info("model::commit_edit(): current_routes_to_delete="+str(current_routes_to_delete))
-
+        logger.info("model::commit_edit(): rule="+str(self)+" self.status="+str(self.status))
+        
         peer2 = self.helper_get_matching_peers()
-        msg1 = "[%s] Editing rule %s. Please wait..." % (self.applier.username, self.name)
-        send_message_multiple(msg1, peer2[1])
-        logger.info("model::commit_edit(): "+str(msg1))
 
-        if current_routes_to_delete!=None and len(current_routes_to_delete)>0:
-          response1 = delete_some_routes.delay(self, current_routes_to_delete)
-          logger.info('model::commit_edit(): current_routes_to_delete job id: %s' % response1)
+        if self.status == "ACTIVE":
+          msg1 = "[%s] Editing rule %s. Please wait..." % (self.applier.username, self.name)
+          send_message_multiple(msg1, peer2[1])
+          logger.info("model::commit_edit(): "+str(msg1))
+
+          try:
+            current_routes_to_delete = kwargs['current_routes_to_delete']
+          except:
+            current_routes_to_delete = []
+          logger.info("model::commit_edit(): current_routes_to_delete="+str(current_routes_to_delete))
+          if current_routes_to_delete!=None and len(current_routes_to_delete)>0:
+            response1 = delete_some_routes.delay(self, current_routes_to_delete)
+            logger.info('model::commit_edit(): current_routes_to_delete job id: %s' % response1)
+          else:
+            logger.info('model::commit_edit(): no current_routes_to_delete')
+
+          #response = edit.delay(self, current_routes_to_delete=current_routes_to_delete)
+          response = edit.delay(self)
+          logger.info('model::commit_edit(): Got edit job id: %s' % response)
         else:
-          logger.info('model::commit_edit(): no current_routes_to_delete')
+          msg1 = "[%s] Editing rule (inactively) %s." % (self.applier.username, self.name)
+          send_message_multiple(msg1, peer2[1])
+          logger.info("model::commit_edit(): "+str(msg1))
 
-        #response = edit.delay(self, current_routes_to_delete=current_routes_to_delete)
-        response = edit.delay(self)
-        logger.info('model::commit_edit(): Got edit job id: %s' % response)
         mail_body = self._send_mail(args={
                 'url_path': 'edit-route',
                 'url_id': 'route_slug',
