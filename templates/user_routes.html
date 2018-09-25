@@ -1,86 +1,80 @@
 {% extends "base.html" %}
 {% load i18n %}
+
 {% block extrahead %}
 <link href="{{STATIC_URL}}b3theme/css/plugins/dataTables/dataTables.bootstrap.css" rel="stylesheet">
 {% endblock %}
+
 {% block pagejsbodttom %}
 
 <script type="text/javascript" src="{{STATIC_URL}}js/jquery.dataTables.js"></script>
 <script type="text/javascript" src="{{STATIC_URL}}js/datatables_bootstrap.js"></script>
 
-
 {% endblock %}
+
 {% block title %}{% trans "My rules" %}{% endblock %}
+
 {% block contentplaceholder %}
+
 {% csrf_token %}
-    <div class="row">
-        <div class="col-md-12">
-            <h1 class="page-header">{% trans "My rules" %} </h1>
-        </div>
-        <!-- /.col-lg-12 -->
-    </div>
-
-
 <div class="row">
-        <div class="col-md-10">
-        	<div class="panel panel-primary">
-                <div class="panel-heading"> <i class="fa fa-shield"></i> Firewall Rules
-                </div>
-
-<div class="panel-body">
-
-
-                    <div class="table-responsive">
-                    	<table class="table table-striped table-bordered" id="routes_table">
-<thead>
-<tr>
-	<th>Id</th>
-	<th>{% trans "Name" %}</th>
-	<th>{% trans "Match" %}</th>
-	<th style="text-align: center;">{% trans "Then" %}</th>
-	<th style="text-align: center; ">{% trans "Status" %}</th>
-	<th style="text-align: center;">{% trans "Applier" %}</th>
-	<th style="text-align: center;">{% trans "Expires" %}</th>
-	<th style="text-align: center;">{% trans "Response" %}</th>
-	<th style="text-align: center;">{% trans "Actions" %}</th>
-</tr>
-</thead>
-
-<tbody>
-</tbody>
-</table>
-</div></div>
-</div></div>
-
-
-                   <div class="col-md-2">
-                	<div class="panel panel-default">
-                        <div class="panel-heading">
-                            <i class="fa fa-tags"></i> {% trans "Shortcuts" %}
-                        </div>
-                        <!-- /.panel-heading -->
-<div class="panel-body">
-				<a class="btn btn-sm btn-outline btn-success" id="routebutton" href="{% url add-route %}"><i class="fa fa-plus-circle"></i> {% trans "Add Rule" %}</a>
-				<a class="btn btn-sm btn-outline btn-info"  href="{% url user-profile %}"><i class="fa fa-user"></i> {% trans "My Profile" %}</a>
-                        </div>
-                        <!-- /.panel-body -->
-                    </div>
-                    <!-- /.panel -->
-
-                	<div class="chat-panel panel panel-info">
-                        <div class="panel-heading">
-                            <i class="fa fa-comment fa-fw"></i> Live status
-                        </div>
-                        <!-- /.panel-heading -->
-<div class="panel-body">
-	{% include "polldash.html" %}
-                        </div>
-                        <!-- /.panel-body -->
-                    </div>
-                    <!-- /.panel -->
-                	</div>
+  <div class="col-md-12">
+    <h1 class="page-header">{% trans "My rules" %} </h1>
+  </div> <!-- /.col-lg-12 -->
 </div>
 
+<div class="row">
+  <div class="col-md-10">
+    <div class="panel panel-primary">
+      <div class="panel-heading"> <i class="fa fa-shield"></i> Firewall Rules
+      </div>
+
+      <div class="panel-body">
+        <div class="table-responsive">
+          <table class="table table-striped table-bordered" id="routes_table">
+            <thead>
+              <tr>
+                <th>Id</th>
+                <th style="page-break: break-all;">{% trans "Name" %}</th>
+                <th>{% trans "Match" %}</th>
+                <th style="text-align: center;">{% trans "Then" %}</th>
+                <th style="text-align: center; ">{% trans "Status" %}</th>
+                <th style="text-align: center;">{% trans "Applier" %}</th>
+                <th style="text-align: center;">{% trans "Expires" %}</th>
+                <th style="text-align: center;">{% trans "Response" %}</th>
+                <th style="text-align: center;">{% trans "Actions" %}</th>
+              </tr>
+            </thead>
+
+            <tbody>
+            </tbody>
+          </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<div class="col-md-2">
+  <div class="panel panel-default">
+    <div class="panel-heading">
+      <i class="fa fa-tags"></i> {% trans "Shortcuts" %}
+    </div> <!-- /.panel-heading -->
+    <div class="panel-body">
+      <a class="btn btn-sm btn-outline btn-success" id="routebutton" href="{% url add-route %}"><i class="fa fa-plus-circle"></i> {% trans "Add Rule" %}</a>
+      <a class="btn btn-sm btn-outline btn-info"  href="{% url user-profile %}"><i class="fa fa-user"></i> {% trans "My Profile" %}</a>
+    </div> <!-- /.panel-body -->
+  </div> <!-- /.panel -->
+
+  <div class="chat-panel panel panel-info">
+    <div class="panel-heading">
+      <i class="fa fa-comment fa-fw"></i> Live status
+    </div> <!-- /.panel-heading -->
+    <div class="panel-body">
+      {% include "polldash.html" %}
+    </div> <!-- /.panel-body -->
+  </div> <!-- /.panel -->
+</div>
 
 {% endblock %}
 
@@ -233,17 +227,35 @@ $(document).ready( function(){
           },
         "aoColumns":[
                      {"mData":"id", "bSearchable": false,"bSortable": false, "bvisible":false},
-                     {"mData":"details", "sClass" : "alignCenter","bSearchable": true,"bSortable": true,
-                     "mRender": function (data, type, full) {
-                        if (full.comments !== null) {
-                            if (!full.comments.trim()) {
-                               return '<small>' + data + '</small>';
-                            }
-                            return '<a rel="tooltip" href="#" data-toggle="tooltip" data-placement="top" title='+full.comments+'><small>'+data+'</small>'
-                        } else {
-                            return 'No comments'
-                        }
-                     }
+                     {
+                       "mData":"details", "sClass" : "alignCenter","bSearchable": true,"bSortable": true,
+                       "mRender": function (data, type, full) {
+                          if (full.comments !== null) {
+                              if (!full.comments.trim()) {
+                                 return '<small>' + data + '</small>';
+                              }
+                              var comment_escaped = full.comments;
+                              comment_escaped = comment_escaped.replace(/&/g, "&amp;");
+                              comment_escaped = comment_escaped.replace(/</g, "&lt;");
+                              comment_escaped = comment_escaped.replace(/>/g, "&gt;");
+                              comment_escaped = comment_escaped.replace(/"/g, "&quot;");
+                              comment_escaped = comment_escaped.replace(/'/g, "&apos;");
+                              //alert("test"+comment_escaped)
+                              //alert(data)
+                              //var temp1 = $("<a/>").html(data);
+                              //temp1.attr("href", "#");
+                              //temp1.attr("rel", "tooltip");
+                              //temp1.attr("data-toggle", "tooltip");
+                              //temp1.attr("data-placement", "top");
+                              //temp1.attr("title", comment_escaped);
+                              //alert(temp1.attr("href"))
+                              //temp1.attr("delay", "3000");
+                              return '<a rel="tooltip" data-toggle="tooltip" data-placement="top" title="'+comment_escaped+'"/>'+
+                                     '<small>.'+data+'</small>'
+                          } else {
+                              return 'No comments'
+                          }
+                       }
                      },
                      {"mData":"match", "sClass" : "alignCenter","bSearchable": true,"bSortable": true,
                      "mRender": function (data, type, full) {
@@ -388,13 +400,18 @@ var update_size = function() {
     oTable.fnAdjustColumnSizing();
   }
 
-$("body").tooltip({ selector: '[data-toggle="tooltip"]' });
+  $("body").tooltip("<pre/>", { selector: '[data-toggle="tooltip"]', show:{delay: 5000} });
 });
 </script>
 <style type="text/css">
 
+a { 
+  word-wrap: break-word;
+  display: block;
+  width: 200px; 
+}
 
-	.dl-horizontal dt {
+.dl-horizontal dt {
     width: 70px;
 }
 .dl-horizontal dd {
