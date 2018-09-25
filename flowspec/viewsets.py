@@ -388,7 +388,8 @@ class MatchDscpViewSet(viewsets.ModelViewSet):
 
 # class1's attribute 'id' should be existing and by primary key
 def convert_container_to_queryset(list1, class1):
-         temp1_ids = [obj.id for obj in list1]
+         #temp1_ids = [obj.id for obj in list1]
+         temp1_ids = [obj.id for obj in list1 if obj != None]
          temp2_ids = set(temp1_ids)
          return class1.objects.filter(id__in=temp2_ids)
 

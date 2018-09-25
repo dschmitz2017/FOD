@@ -127,6 +127,7 @@ class Msgs(object):
         return json_response(msg)
 
     def message_updates(self, request, peer_id):
+        logger.info("poller::views::Msgs::message_updates(): called peer_id="+str(peer_id))
         if request.is_ajax():
             cursor = {}
             try:
@@ -144,16 +145,23 @@ class Msgs(object):
                     self.user_cache[user] = []
             except:
                 self.user_cache[user] = []
+
+            logger.info("poller::views::Msgs::message_updates(): before test on waiting peer_id="+str(peer_id))
             if not self.user_cache[user] or cursor[user] == self.user_cache[user][-1]['id']:
+                logger.info("poller::views::Msgs::message_updates(): before waiting peer_id="+str(peer_id))
                 self.new_message_user_event[user].wait(settings.POLL_SESSION_UPDATE)
+            logger.info("poller::views::Msgs::message_updates(): after test on waiting peer_id="+str(peer_id))
             try:
                 for index, m in enumerate(self.user_cache[user]):
                     if m['id'] == cursor[user]:
+                        logger.info("poller::views::Msgs::message_updates(): peer_id="+str(peer_id)+" before return in loop inner")
                         return json_response({'messages': self.user_cache[user][index + 1:]})
+                logger.info("poller::views::Msgs::message_updates(): peer_id="+str(peer_id)+" before return in loop")
                 return json_response({'messages': self.user_cache[user]})
             finally:
                 if self.user_cache[user]:
                     self.user_cursor[user] = self.user_cache[user][-1]['id']
+        logger.info("poller::views::Msgs::message_updates(): peer_id="+str(peer_id)+" before return end")
         return HttpResponseRedirect(reverse('group-routes'))
 
     def monitor_polls(self):
