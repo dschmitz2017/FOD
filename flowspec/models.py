@@ -44,7 +44,7 @@ from peers.models import PeerRange, Peer
 FORMAT = '%(asctime)s %(levelname)s: %(message)s'
 logging.basicConfig(format=FORMAT)
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 FRAGMENT_CODES = (
@@ -772,6 +772,7 @@ def send_message(msg, user):
     b.close()
 
 def send_message_multiple(msg, user_list):
+    logger.info("model::send_message_multiple(): user_list="+str(user_list)+" : "+str(msg))
     for peer in user_list:
       b = beanstalkc.Connection()
       b.use(settings.POLLS_TUBE)
