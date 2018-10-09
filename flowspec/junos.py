@@ -192,8 +192,8 @@ def translate_ports(portstr):
 
 import os
 def get_ports(rule):
-    os.write(2, "rule.port="+str(rule.port))
-    os.write(2, str(type(rule.port)))
+    #os.write(2, "rule.port="+str(rule.port))
+    #os.write(2, str(type(rule.port)))
     if rule.port:
         #result = 'port'+translate_ports(rule.port.all())
         result = 'port'+translate_ports(rule.port)
@@ -207,6 +207,29 @@ def get_ports(rule):
             result += 'srcport' + translate_ports(rule.sourceport)
     return result
 
+def translate_frag(fragment_string): #TODO get number mapping right, order matters!
+    if fragment_string == "dont-fragment":
+      result=":01";
+    elif fragment_string == "first-fragment":
+      result=":04";
+    elif fragment_string == "is-fragment":
+      result=":02";
+    elif fragment_string == "last-fragment":
+      result=":08";
+    elif fragment_string == "not-a-fragment":
+      result="!:02";
+    else:
+      result=":00" # TODO
+    return result
+
+def translate_frag_list(frag_list):
+    result = ",".join([translate_frag(frag) for frag in frag_list]) # needs to be sorted
+
+def get_frag(rule):
+    result=''
+    if rule.fragmenttype:
+      result = ',frag'+translate_frag_list(rule.fragmenttype.all())
+    return result
 
 def create_junos_name(rule):
     name = ''
@@ -218,7 +241,8 @@ def create_junos_name(rule):
     name += get_protocols_numbers(rule.protocol.all())
     # ports
     name += get_ports(rule)
-    frag = ''
+    #frag = ''
+    frag = get_frag(rule)
     name += frag
     if name[-1] == ',':
         name = name[:-1]
