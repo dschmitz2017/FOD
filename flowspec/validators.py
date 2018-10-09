@@ -196,23 +196,23 @@ def check_if_rule_exists(fields, queryset):
     """
 
     if not settings.DISABLE_RULE_OVERLAP_CHECK: 
-	    routes = queryset.filter(
-		source=fields.get('source'),
-		destination=IPNetwork(fields.get('destination')).compressed,
-	    )
-	    if routes:
-		ids = [str(item[0]) for item in routes.values_list('pk')]
-		return (
-		    True, _('Rule(s) regarding those addresses already exist '
-			    'with id(s) {}. Please edit those instead'.format(', '.join(ids))))
-	     
-	    routes = Route.objects.filter(
-		source=fields.get('source'),
-		destination=IPNetwork(fields.get('destination')).compressed,
-	    )
-	    for route in routes:
-		return (
-		    True, _('Rule(s) regarding those addresses already exist '
-			    'but you cannot edit them. Please refer to the '
-			    'application\'s administrators for further clarification'))
+            routes = queryset.filter(
+                source=fields.get('source'),
+                destination=IPNetwork(fields.get('destination')).compressed,
+            )
+            if routes:
+                ids = [str(item[0]) for item in routes.values_list('pk')]
+                return (
+                    True, _('Rule(s) regarding those addresses already exist '
+                            'with id(s) {}. Please edit those instead'.format(', '.join(ids))))
+             
+            routes = Route.objects.filter(
+                source=fields.get('source'),
+                destination=IPNetwork(fields.get('destination')).compressed,
+            )
+            for route in routes:
+                return (
+                    True, _('Rule(s) regarding those addresses already exist '
+                            'but you cannot edit them. Please refer to the '
+                            'application\'s administrators for further clarification'))
     return (False, None)
