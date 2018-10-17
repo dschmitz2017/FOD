@@ -178,7 +178,7 @@ def group_routes_ajax(request):
         query = Q()
         for peer in peers:
             query |= Q(applier__userprofile__in=peer.user_profile.all())
-        all_group_rules = Route.objects.filter(query)
+        all_group_rules = Rule.objects.filter(query)
     jresp = {}
     rules = build_routes_json(all_group_rules)
     jresp['aaData'] = rules
