@@ -29,6 +29,7 @@ from utils import proxy as PR
 from ipaddr import *
 import datetime
 import logging
+import tagging
 
 from junos import create_junos_name
 
@@ -150,6 +151,7 @@ class Rule(models.Model):
     expires = models.DateField(default=days_offset, verbose_name=_("Expires"))
     status = models.CharField(max_length=20, choices=ROUTE_STATES, blank=True, null=True, verbose_name=_("Status"), default="CREATED")
     editing = models.BooleanField(default=True)
+    tags = tagging.fields.TagField()
 
     class Meta:
         db_table = u'flowspec_rule'

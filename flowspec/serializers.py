@@ -63,6 +63,7 @@ class RuleSerializer(serializers.HyperlinkedModelSerializer):
             'expires',
             'editing',
             'status',
+            'tags',
             'requesters_address',
             'url'
         )

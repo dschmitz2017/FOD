@@ -39,6 +39,7 @@ import datetime
 import re
 from django.core.mail import send_mail
 from utils.portrange import parse_portrange
+from tagging.forms import TagField
 
 class PortRangeForm(forms.CharField):
     def clean(self, value):
@@ -87,6 +88,7 @@ class UserProfileForm(forms.ModelForm):
 
 
 class RuleForm(forms.ModelForm):
+    tags = TagField()
     class Meta:
         model = Rule
 
@@ -132,6 +134,7 @@ class RuleForm(forms.ModelForm):
         destination = self.cleaned_data.get('destination', None)
         destinationports = self.cleaned_data.get('destinationport', None)
         user = self.cleaned_data.get('applier', None)
+        tags = self.cleaned_data.get('tags', "")
 
         for route in existing_routes:
             if name != route.name:

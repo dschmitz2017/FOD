@@ -36,6 +36,7 @@
               <tr>
                 <th>Id</th>
                 <th style="page-break: break-all;">{% trans "Name" %}</th>
+                <th style="page-break: break-all;">{% trans "Tag" %}</th>
                 <th>{% trans "Match" %}</th>
                 <th style="text-align: center;">{% trans "Then" %}</th>
                 <th style="text-align: center; ">{% trans "Status" %}</th>
@@ -170,7 +171,7 @@ var refreshUrl = "{% url group-routes-ajax %}";
 $(document).ready( function(){
 
 
-
+    var lasttag = null;
     oTable = $('#routes_table').dataTable( {
         "bPaginate": true,
         "bFilter": true,
@@ -225,8 +226,20 @@ $(document).ready( function(){
 				return false;
 			});
           },
+         "rowCallback": function(row, data) {
+            if (lasttag !== data.tag) {
+               console.log(data)
+               lasttag = data.tag;
+            }
+         },
+         "createdRow": function(row, data, dataIndex) {
+            console.log(lasttag, data.tag);
+            $(row).before('<tr class="odd added"><th>Header tag</th></tr>');
+            //console.log(data);
+         },
         "aoColumns":[
-                     {"mData":"id", "bSearchable": false,"bSortable": false, "bvisible":false},
+                     {"mData":"id", "bSearchable": false,"bSortable": false, "bvisible":false,
+                     },
                      {
                        "mData":"details", "sClass" : "alignCenter","bSearchable": true,"bSortable": true,
                        "mRender": function (data, type, full) {
@@ -256,6 +269,11 @@ $(document).ready( function(){
                               return 'No comments'
                           }
                        }
+                     },
+                     {"mData":"tag", "sClass" : "alignCenter","bSearchable": true,"bSortable": true,
+                     "mRender": function (data, type, full) {
+                     	return '<small>'+data+'</small>';
+                     }
                      },
                      {"mData":"match", "sClass" : "alignCenter","bSearchable": true,"bSortable": true,
                      "mRender": function (data, type, full) {

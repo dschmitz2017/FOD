@@ -51,6 +51,7 @@ from django.template.defaultfilters import slugify
 from flowspec.helpers import send_new_mail, get_peer_techc_mails
 import datetime
 import os
+from tagging.models import Tag, TaggedItem
 
 from flowspec.snmpstats import load_history, get_last_msrm_delay_time
 
@@ -179,8 +180,19 @@ def group_routes_ajax(request):
         for peer in peers:
             query |= Q(applier__userprofile__in=peer.user_profile.all())
         all_group_rules = Rule.objects.filter(query)
+
     jresp = {}
-    rules = build_routes_json(all_group_rules)
+
+    rules = []
+    untaggedrules = build_routes_json(all_group_rules.filter(tags= ""))
+    if untaggedrules:
+        rules.extend(untaggedrules)
+
+    for tag in Tag.objects.exclude(name='nsharp'):
+        taggedrules = build_routes_json(TaggedItem.objects.get_by_model(all_group_rules, tag), str(tag))
+        if taggedrules:
+            rules.extend(taggedrules)
+
     jresp['aaData'] = rules
     #logger.info("views::group_routes_ajax(): before return HttpResponse")
     return HttpResponse(json.dumps(jresp), mimetype='application/json')
@@ -203,12 +215,22 @@ def overview_routes_ajax(request):
             query |= Q(applier__userprofile__in=peer.user_profile.all())
         all_group_rules = Rule.objects.filter(query)
     jresp = {}
-    rules = build_routes_json(all_group_rules)
+
+    rules = []
+    untaggedrules = build_routes_json(all_group_rules.filter(tags= ""))
+    if untaggedrules:
+        rules.append(untaggedrules)
+
+    for tag in Tag.objects.exclude(name='nsharp'):
+        taggedrules = build_routes_json(TaggedItem.objects.get_by_model(all_group_rules, tag))
+        if taggedrules:
+            rules.append(taggedrules)
+        
     jresp['aaData'] = rules
     return HttpResponse(json.dumps(jresp), mimetype='application/json')
 
 
-def build_routes_json(grules):
+def build_routes_json(grules, tag=""):
     routes = []
     for r in grules.prefetch_related(
             'applier',
@@ -237,6 +259,7 @@ def build_routes_json(grules):
         rd['response'] = r.get_responses()
         rd['then'] = r.get_then()
         rd['status'] = r.status
+        rd['tag'] = tag
         # in case there is no applier (this should not occur)
         try:
             rd['applier'] = r.applier.username
