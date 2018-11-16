@@ -481,6 +481,7 @@ def edit_route(request, rule_slug):
             logger.info("views::edit_route(): source_prefix_list loop: source="+str(source)+" => route_reused="+str(route_reused)+" => route_reused.source="+str(route_reused.source))
           except:
             route_reused = None            
+            route_original = None
             logger.info("views::edit_route(): source_prefix_list loop: source="+str(source)+" => route_reused="+str(route_reused))
 
           form = RouteForm(
@@ -511,6 +512,8 @@ def edit_route(request, rule_slug):
                 route.rule.applier = request.user # TODO: check whether this makes still sense and is secure
 
               if bool(set(changed_data) & set(critical_changed_values)) or (not rule_original.status == 'ACTIVE'):
+                  rule_original.status = "PENDING"
+                  rule_original.response = "Applying"
                   route.status = "PENDING"
                   route.response = "Applying"
                   route.source = IPNetwork('%s/%s' % (IPNetwork(route.source).network.compressed, IPNetwork(route.source).prefixlen)).compressed
@@ -553,7 +556,8 @@ def edit_route(request, rule_slug):
         #route.rule.save()
         rule_edit.save()
         #route.save()
-        rule_edit.status = "ACTIVE" # ???
+        #rule_edit.status = "ACTIVE" # ???
+        rule_edit.status = "PENDING" # ???
         rule_edit.editing = False
         rule_edit.save()
   

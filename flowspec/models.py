@@ -150,6 +150,7 @@ class Rule(models.Model):
     expires = models.DateField(default=days_offset, verbose_name=_("Expires"))
     status = models.CharField(max_length=20, choices=ROUTE_STATES, blank=True, null=True, verbose_name=_("Status"), default="CREATED")
     editing = models.BooleanField(default=True)
+    response = models.CharField(max_length=512, blank=True, null=True, verbose_name=_("Response"))
 
     class Meta:
         db_table = u'flowspec_rule'
@@ -258,7 +259,8 @@ class Rule(models.Model):
         
         peer2 = self.helper_get_matching_peers()
 
-        if self.status == "ACTIVE":
+        #if self.status == "ACTIVE":
+        if not self.status == "INACTIVE":
           msg1 = "[%s] Editing rule %s. Please wait..." % (self.applier.username, self.name)
           send_message_multiple(msg1, peer2[1])
           logger.info("model::commit_edit(): "+str(msg1))
@@ -364,12 +366,17 @@ class Rule(models.Model):
     get_match.short_description = 'Match statement'
     get_match.allow_tags = True
 
-    def get_responses(self):
-        if self.routes:
-            #return ', '.join([str(r.response) for r in self.routes.all()])
-            return ', '.join([str(r.response) for r in self.get_routes_nondeleted])
+    def get_responses(self): # not useful to have single responses per rule, response is for all routes as they are handled in one netconf action
+        ##if self.routes:
+        #if self.get_routes_nondeleted:
+        #    #return ', '.join([str(r.response) for r in self.routes.all()])
+        #    return ', '.join([str(r.response) for r in self.get_routes_nondeleted])
+        #else:
+        #    return ''
+        if self.response==None:
+          return ""
         else:
-            return ''
+          return self.response
 
     @property 
     def get_routes_nondeleted(self):

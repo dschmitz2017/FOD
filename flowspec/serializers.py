@@ -64,9 +64,10 @@ class RuleSerializer(serializers.HyperlinkedModelSerializer):
             'editing',
             'status',
             'requesters_address',
-            'url'
+            'url',
+            'response'
         )
-        read_only_fields = ('requesters_address', )
+        read_only_fields = ('requesters_address', 'response', 'filed', 'last_updated')
 
 class RouteSerializer(serializers.HyperlinkedModelSerializer):
     """

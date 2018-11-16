@@ -289,7 +289,7 @@ $(document).ready( function(){
                      			return '<span class="label label-success">'+status+'</span>';
                      		}
                      		else{
-                     			if (status == 'PENDING'){
+                     			if (status == 'PENDING' || status == 'CREATED'){
                      				return '<span class="label label-info">'+status+'</span>';
                      			}
                      			else{
@@ -312,8 +312,8 @@ $(document).ready( function(){
                      "mRender": function (data, type, full) {
                      	status = full.status;
                      	toolt = '<a rel="tooltip" href="#" data-toggle="tooltip" data-placement="top"';
-   	                     	if (status == "EXPIRED" ||status == "ADMININACTIVE" || status == "INACTIVE" || status == "OUTOFSYNC"){
-	                     		if (status == "INACTIVE" ){
+   	                     	if (status == "EXPIRED" ||status == "ADMININACTIVE" || (status == "INACTIVE" && (full.response=="" || full.response=="Successfully committed")) || status == "OUTOFSYNC"){
+	                     		if (status == "INACTIVE"){
 	                     			title = "{% trans 'Deactivated by user' %}";
 	                     		}
 	                     		if (status == "ADMININACTIVE" ){
@@ -327,7 +327,7 @@ $(document).ready( function(){
 	                     		}
 	                     		return toolt+" title=\""+title+"\">"+"<small>{% trans 'Rule expired' %}</small>"+"</a>";
 	                     	}
-                     		if (status == "PENDING"){
+                     		if (status == "PENDING" || status == "CREATED"){
                      				return '<img src="{{STATIC_URL}}dots.gif">';
                      			}
                      		return "<small>"+full.response+"</small>";
@@ -343,7 +343,10 @@ $(document).ready( function(){
                      	btn = '<a href="'+editurl+'" class="btn-info btn btn-sm btn-outline">{% trans "Edit" %}</a>';
         				btn = btn + ' <button class="del_buttonpre btn-warning btn btn-sm btn-outline" id="'+full.name+'" data-routename="'+full.name+'">{% trans "Deactivate" %}</button>';
                      }
-                     if (status == 'EXPIRED' || status == 'ADMININACTIVE' || status == 'INACTIVE' ){
+
+                     if (status == 'INACTIVE' && (full.response!="" && full.response!="Successfully committed")) {
+                     	btn = '<a href="'+editurl+'" class="btn-info btn btn-sm btn-outline" id="edit_button_{{route.pk}}">{% trans "Activate" %}</a>';
+                     } else if (status == 'EXPIRED' || status == 'ADMININACTIVE' || status == 'INACTIVE' ){
                      	btn = '<a href="'+editurl+'" class="btn-info btn btn-sm btn-outline" id="edit_button_{{route.pk}}">{% trans "Reactivate" %}</a>';
                      }
                      if (status == "OUTOFSYNC" ){

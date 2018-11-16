@@ -99,6 +99,11 @@ class RuleViewSet(viewsets.ModelViewSet):
 
     def retrieve(self, request, pk=None):
         rule = get_object_or_404(self.get_queryset(), pk=pk)
+
+        #rule.status_orig = rule.status
+        #logger.info("RuleViewSet::retrieve(): "+str(self)+", obj="+str(rule) + " status="+str(rule.status))
+        #logger.info("RuleViewSet::retrieve(): "+str(self)+", obj="+str(rule) + " status_orig="+str(rule.status_orig))
+
         serializer = RuleSerializer(rule)
         return Response(serializer.data)
 
@@ -114,9 +119,24 @@ class RuleViewSet(viewsets.ModelViewSet):
                 raise PermissionDenied('User is not Authenticated')
         else:
             obj.applier = self.request.user
+        #obj.status_orig = obj.status
+        #logger.info("RuleViewSet::pre_save(): "+str(self)+", obj="+str(obj) + " status="+str(obj.status))
+        #logger.info("RuleViewSet::pre_save(): "+str(self)+", obj="+str(obj) + " status_orig="+str(obj.status_orig))
 
     def post_save(self, obj, created):
         logger.info("RuleViewSet::post_save(): "+str(self)+", obj="+str(obj) + " created=" + str(created))
+        logger.info("RuleViewSet::post_save(): "+str(self)+", obj="+str(obj) + " status="+str(obj.status))
+        try:
+          status_orig = self.status_orig # should be set in self.update
+        except Exception, exc:
+          status_orig = None
+        logger.info("RuleViewSet::post_save(): "+str(self)+", obj="+str(obj) + " self.status_orig="+str(status_orig))
+
+        if (status_orig=="CREATED" or status_orig==None) and obj.status=="INACTIVE" and not obj.editing:
+            logger.info("RuleViewSet::post_save(): rule seems to be newly created INACTIVE")
+            obj.response = "Created inactively"
+            obj.save()
+
         if created and obj.editing == False:
             obj.commit_add()
         else:
@@ -124,12 +144,17 @@ class RuleViewSet(viewsets.ModelViewSet):
             if obj.status == "CREATED" and obj.editing == False:
                 obj.status = "INACTIVE"
                 obj.save()
-                logger.info("RuleViewSet::post_save(): changed from CREATED to INACTIVE "+str(self)+", obj="+str(obj))
+                logger.info("RuleViewSet::post_save(): sttus overriden from CREATED to INACTIVE "+str(self)+", obj="+str(obj))
                 obj.commit_add()
             elif obj.status not in ['EXPIRED', 'INACTIVE', 'ADMININACTIVE'] and obj.editing == False:
                 obj.commit_edit()
             elif obj.status in ['INACTIVE'] and obj.editing == False:
-                obj.commit_edit()
+                if status_orig == "ACTIVE":
+                  logger.info("RuleViewSet::post_save(): status from ACTIVE to INACTIVE, calling delete")
+                  #obj.commit_delete()
+                  self.delete(obj, delete_really=False)
+                else:
+                  obj.commit_edit()
 
     def pre_delete(self, obj):
         logger.info("RuleViewSet::pre_delete(): called "+str(self)+", obj="+str(obj))
@@ -153,6 +178,10 @@ class RuleViewSet(viewsets.ModelViewSet):
         
         # maybe not necsessary:
         obj = get_object_or_404(self.queryset, pk=pk)
+
+        self.status_orig = obj.status
+        logger.info("RuleViewSet::update(): "+str(self)+", obj="+str(obj) + " status="+str(obj.status))
+        logger.info("RuleViewSet::update(): "+str(self)+", obj="+str(obj) + " self.status_orig="+str(self.status_orig))
 
         logger.info("RuleViewSet::update(): called request="+str(request))
         if request.META.has_key('HTTP_X_METHODOVERRIDE'):

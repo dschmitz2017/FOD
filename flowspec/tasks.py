@@ -54,10 +54,11 @@ def add(rule, callback=None):
     try:
         status_initial = rule.status
         logger.info("tasks::add(): route="+str(rule)+", status_initial="+str(status_initial))
+        #if status_initial == "INACTIVE" or status_initial == "CREATED":
         if status_initial == "INACTIVE":
-          rule.response = "None yet"
+          rule.response = "Created INACTIVE"
           rule.save()
-          msg1 = "[%s] Rule add inactive: %s - Result: %s" % (rule.applier, rule.name, "No response yet")
+          msg1 = "[%s] Rule add inactive: %s - Result: %s" % (rule.applier, rule.name, "Created INACTIVE")
           logger.info("tasks::add(): return inactive msg="+str(msg1))
           announce(msg1, rule.applier, rule)
         else:
