@@ -104,6 +104,7 @@ END
    )
 
 
+   echo "To set environment to English, run: export LC_ALL=en_US"
    echo "To activate virualenv: source ~vagrant/venv/bin/activate"
    echo "To create a user run: cd ~vagrant/sync; ./manage.py createsuperuser"
    echo "To start flowspy server: cd ~vagrant/sync; ./manage.py runserver 0.0.0.0:8000"
