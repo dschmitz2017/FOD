@@ -239,7 +239,14 @@ def build_routes_json(grules):
         rd['status'] = r.status
         # in case there is no applier (this should not occur)
         try:
-            rd['applier'] = r.applier.username
+            if r.applier.first_name or r.applier.last_name:
+                fn = r.applier.first_name if r.applier.first_name else ""
+                ln = r.applier.last_name if r.applier.last_name else ""
+                rd['applier'] = "{0} {1}".format(fn, ln).strip()
+            elif r.applier.email:
+                rd['applier'] = r.applier.email
+            else:
+                rd['applier'] = r.applier.username
         except:
             rd['applier'] = 'unknown'
             rd['peer'] = ''
