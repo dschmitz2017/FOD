@@ -4,11 +4,10 @@ celery==2.5.3
 cl==0.0.3
 django-celery==2.5.5
 django-admin==1.0.2
-django-form-utils==1.0.3
 django-picklefield==0.2.1
 django-registration==0.8
 djangorestframework==2.3.14
-django-tinymce
+django-tinymce==2.6.0
 Django==1.4.5
 gevent==0.13.6
 git+https://code.grnet.gr/git/nxpy
