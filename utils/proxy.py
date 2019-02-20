@@ -363,6 +363,11 @@ class Applier(object):
                           logger.error("proxy::apply(): not calling discard_changes")
                           edit_is_successful = True
                           #return True, cause
+                        elif "No configuration was supplied" in str(e.message): 
+                          cause = "Ignoring: "+cause
+                          logger.error("proxy::apply(): not calling discard_changes")
+                          edit_is_successful = True
+                          #return True, cause
                         else:
                           logger.error("proxy::apply(): calling discard_changes, to revert changes")
                           m.discard_changes()
