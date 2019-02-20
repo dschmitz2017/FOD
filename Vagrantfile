@@ -74,29 +74,9 @@ SCRIPT
       )
       pip install -r requirements.txt
 
-      sed -i 's/from django.forms.util import smart_unicode/from django.utils.encoding import smart_unicode/' ~vagrant/venv/lib/python2.7/site-packages/tinymce/widgets.py
-
-      sed -i 's/if base_lang(lang) in \[base_lang(trans) for trans in _translations\]:/if res and base_lang(lang) in [base_lang(trans) for trans in _translations]:/' ~vagrant/venv/lib/python2.7/site-packages/django/utils/translation/trans_real.py
+      ./patch-dependencies.sh
 
       touch flowspy/settings_local.py
-
-      patch ~vagrant/venv/lib/python2.7/site-packages/tinymce/widgets.py <<END
---- /tmp/widgets.py.orig	2018-11-12 16:46:37.006000000 -0500
-+++ /home/vagrant/venv2/lib/python2.7/site-packages/tinymce/widgets.py	2018-11-12 16:46:58.576000000 -0500
-@@ -13,7 +13,11 @@
- from django import forms
- from django.conf import settings
- from django.contrib.admin import widgets as admin_widgets
--from django.forms.utils import flatatt
-+try:
-+    from django.forms.utils import flatatt
-+except ImportError:
-+    from django.forms.util import flatatt   # Django <1.9
-+
- from django.utils.encoding import force_text
- from django.utils.html import escape
- from django.utils.safestring import mark_safe
-END
 
       ./manage.py syncdb --noinput
       ./manage.py migrate
