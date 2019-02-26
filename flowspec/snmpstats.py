@@ -210,6 +210,16 @@ def helper_rule_ts_parse(ts_string):
   except Exception as e:
     logger.info("helper_rule_ts_parse(): ts_string="+str(ts_string)+": got exception "+str(e))
     ts = None
+
+  if ts==None: # other db may hav other time fmt:
+    logger.info("helper_rule_ts_parse(): trying with milli seconds fmt")
+    try:
+      ts = datetime.strptime(ts_string, '%Y-%m-%d %H:%M:%S.%f+00:00') # TODO TZ offset assumed to be 00:00
+    except Exception as e:
+      logger.info("helper_rule_ts_parse(): ts_string="+str(ts_string)+": got exception "+str(e))
+      ts = None
+    
+  logger.info("helper_rule_ts_parse(): => ts="+str(ts))
   return ts
 
 def process_new_snmp_measurements__low_level(nowstr, samplecount, newdata, history):

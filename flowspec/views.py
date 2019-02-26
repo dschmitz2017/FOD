@@ -58,7 +58,8 @@ LOG_FILENAME = os.path.join(settings.LOG_FILE_LOCATION, 'gunicorn_views.log')
 # FORMAT = '%(asctime)s %(levelname)s: %(message)s'
 # logging.basicConfig(format=FORMAT)
 #formatter = logging.Formatter('%(asctime)s %(levelname)s %(clientip)s %(user)s: %(message)s') # leads to strange errors on test-lab
-formatter = logging.Formatter('%(asctime)s %(levelname)s: %(message)s') 
+#formatter = logging.Formatter('%(asctime)s %(levelname)s %(user)s: %(message)s')
+formatter = logging.Formatter('%(asctime)s %(levelname)s: %(message)s')
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)

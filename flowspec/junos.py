@@ -229,11 +229,9 @@ def translate_frag_list(frag_list):
 def get_frag(rule):
     result=''
     if rule.fragmenttype:
-      tmp1 = translate_frag_list(rule.fragmenttype.all())
-      if tmp1!="":
-        result = ',frag'+tmp1
-      else:
-        result = ''
+      tmp = translate_frag_list(rule.fragmenttype.all())
+      if tmp != "":
+        result = ',frag'+tmp
     return result
 
 def create_junos_name(rule):
