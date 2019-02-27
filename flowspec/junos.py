@@ -205,6 +205,8 @@ def get_ports(rule):
             if result != '':
               result += ','
             result += 'srcport' + translate_ports(rule.sourceport)
+    if result != '':
+       result += ','
     return result
 
 def translate_frag(fragment_string): #TODO get number mapping right, order matters!
@@ -219,11 +221,12 @@ def translate_frag(fragment_string): #TODO get number mapping right, order matte
     elif fragment_string == "not-a-fragment":
       result="!:02";
     else:
-      result=":00" # TODO
+      #result="00" # TODO
+      result=str(fragment_string) # TODO
     return result
 
 def translate_frag_list(frag_list):
-    result = ",".join([translate_frag(frag) for frag in frag_list]) # needs to be sorted
+    result = ",".join([translate_frag(str(frag)) for frag in frag_list]) # needs to be sorted
     return result
 
 def get_frag(rule):
@@ -231,7 +234,7 @@ def get_frag(rule):
     if rule.fragmenttype:
       tmp = translate_frag_list(rule.fragmenttype.all())
       if tmp != "":
-        result = ',frag'+tmp
+        result = 'frag'+tmp+','
     return result
 
 def create_junos_name(rule):
@@ -245,8 +248,7 @@ def create_junos_name(rule):
     # ports
     name += get_ports(rule)
     #frag = ''
-    frag = get_frag(rule)
-    name += frag
+    name += get_frag(rule)
     if name[-1] == ',':
         name = name[:-1]
     return name

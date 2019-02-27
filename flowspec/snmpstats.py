@@ -207,19 +207,18 @@ def helper_stats_store_parse_ts(ts_string):
 def helper_rule_ts_parse(ts_string):
   try:
     ts = datetime.strptime(ts_string, '%Y-%m-%d %H:%M:%S+00:00') # TODO TZ offset assumed to be 00:00
-  except Exception as e:
-    logger.info("helper_rule_ts_parse(): ts_string="+str(ts_string)+": got exception "+str(e))
-    ts = None
-
-  if ts==None: # other db may hav other time fmt:
-    logger.info("helper_rule_ts_parse(): trying with milli seconds fmt")
+  except ValueError as e:
+    #logger.info("helper_rule_ts_parse(): trying with milli seconds fmt")
     try:
       ts = datetime.strptime(ts_string, '%Y-%m-%d %H:%M:%S.%f+00:00') # TODO TZ offset assumed to be 00:00
     except Exception as e:
-      logger.info("helper_rule_ts_parse(): ts_string="+str(ts_string)+": got exception "+str(e))
+      logger.info("helper_rule_ts_parse(): ts_string="+str(ts_string)+": got exception "+str(type(e))+": "+str(e))
       ts = None
-    
-  logger.info("helper_rule_ts_parse(): => ts="+str(ts))
+  except Exception as e:
+    logger.info("helper_rule_ts_parse(): ts_string="+str(ts_string)+": got exception "+str(type(e))+": "+str(e))
+    ts = None
+
+  #logger.info("helper_rule_ts_parse(): => ts="+str(ts))
   return ts
 
 def process_new_snmp_measurements__low_level(nowstr, samplecount, newdata, history):
