@@ -724,6 +724,34 @@ def user_profile(request):
         },
     )
 
+def get_shibboleth_attrib_info_from_settings(attrib_key, add_long_info):
+  try:
+    attrib_name = getattr(settings, attrib_key).get[0]
+  except:
+    attrib_key = attrib_key
+  try:
+    attrib_display_name = getattr(settings, attrib_key+"_DISPLAY_NAME")
+  except:
+    attrib_display_name = None
+  try:
+    attrib_display_addinfo = getattr(settings, attrib_key+"_DISPLAY_ADDINFO")
+  except:
+      attrib_display_addinfo = None
+
+  attrib_info = ""
+  if attrib_display_name != None and attrib_display_name!="":
+    attrib_info = attrib_display_name
+  else:
+    attrib_info = attrib_key # remove ^HTTP_ and then ^SHIB_
+    if attrib_info.startswith("HTTP_"):
+      attrib_info[len("HTTP_"):]
+    if attrib_info.startswith("SHIB_"):
+      attrib_info[len("SHIB_"):]
+
+  if add_long_info and attrib_display_addinfo != None and attrib_display_addinfo!="":
+    attrib_info = attrib_info+" ("+attrib_display_addinfo+")"
+
+  return attrib_info
 
 @never_cache
 def user_login(request):
@@ -742,6 +770,22 @@ def user_login(request):
         mail = lookupShibAttr(settings.SHIB_MAIL, request.META)
         entitlement = lookupShibAttr(settings.SHIB_ENTITLEMENT, request.META)
 
+        username__attrib_info1 = get_shibboleth_attrib_info_from_settings("SHIB_USERNAME", False)
+        entitlement__attrib_info1 = get_shibboleth_attrib_info_from_settings("SHIB_ENTITLEMENT", False)
+        mail__attrib_info1 = get_shibboleth_attrib_info_from_settings("SHIB_MAIL", False)
+        username__attrib_info = get_shibboleth_attrib_info_from_settings("SHIB_USERNAME", True)
+        entitlement__attrib_info = get_shibboleth_attrib_info_from_settings("SHIB_ENTITLEMENT", True)
+        mail__attrib_info = get_shibboleth_attrib_info_from_settings("SHIB_MAIL", True)
+        givenname__attrib_info = get_shibboleth_attrib_info_from_settings("SHIB_FIRSTNAME", True)
+        surname__attrib_info = get_shibboleth_attrib_info_from_settings("SHIB_LASTNAME", True)
+
+        if settings.SHIB_AUTH_ENTITLEMENT != "":
+          required_attributes_attribute_info__list = [ username__attrib_info, mail__attrib_info, entitlement__attrib_info ]
+        else:
+          required_attributes_attribute_info__list = [ username__attrib_info, mail__attrib_info ]
+
+        optional_attributes_attribute_info__list = [ givenname__attrib_info, surname__attrib_info ]
+
         if settings.SHIB_AUTH_ENTITLEMENT in entitlement.split(";"):
             has_entitlement = True
         if not has_entitlement:
@@ -749,18 +793,23 @@ def user_login(request):
         if not mail:
             error_mail = True
         if error_username:
-            error = _("Your idP should release the HTTP_EPPN attribute towards this service<br>")
+            #error = _("Your idP should release the HTTP_EPPN attribute towards this service<br>")
+            error = _("Your idP should release the "+username__attrib_info1+" attribute towards this service<br>")
         if error_entitlement:
-            error = error + _("Your idP should release an appropriate HTTP_SHIB_EP_ENTITLEMENT attribute towards this service<br>")
+            #error = error + _("Your idP should release an appropriate HTTP_SHIB_EP_ENTITLEMENT attribute towards this service<br>")
+            error = error + _("Your idP should release an appropriate "+entitlement__attrib_info1+" attribute towards this service<br>")
         if error_mail:
-            error = error + _("Your idP should release the HTTP_SHIB_INETORGPERSON_MAIL attribute towards this service")
+            #error = error + _("Your idP should release the HTTP_SHIB_INETORGPERSON_MAIL attribute towards this service")
+            error = error + _("Your idP should release the "+mail__attrib_info1+" attribute towards this service")
         if error_username or error_orgname or error_entitlement or error_mail:
             return render(
                 request,
                 'error.html',
                 {
                     'error': error,
-                    "missing_attributes": True
+                    "missing_attributes": True,
+                    "required_attributes_attribute_info__list" : required_attributes_attribute_info__list,
+                    "optional_attributes_attribute_info__list" : optional_attributes_attribute_info__list
                 },
             )
         try:

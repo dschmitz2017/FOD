@@ -49,16 +49,27 @@
 						{% if missing_attributes %}
 						<p>
 						{% trans "Required shibboleth attributes" %}:<br>
-						TODO:
 						<ul>
+              {% if required_attributes_attribute_info__list %}
+                {% for attribute_info in required_attributes_attribute_info__list %}
+            <li>{{ attribute_info }}</li>
+                {% endfor %}
+              {% else %}
 						<li>eduPersonPrincipalName</li>
 						<li>mail</li>
 						<li>eduPersonEntitlement</li>
+              {% endif %}
 						</ul>
 						{% trans "Optional" %}:
 						<ul>
+              {% if optional_attributes_attribute_info__list %}
+                {% for attribute_info in optional_attributes_attribute_info__list %}
+            <li>{{ attribute_info }}</li>
+                {% endfor %}
+              {% else %}
 						<li>givenName</li>
 						<li>sn</li>
+              {% endif %}
 						</ul>
 						</p>
 						{% endif %}
