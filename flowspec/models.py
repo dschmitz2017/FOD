@@ -170,6 +170,21 @@ class Route(models.Model):
         else:
             return None
 
+    @property
+    def applier_username_nice(self):
+        if self.applier:
+            if self.applier.first_name or self.applier.last_name:
+                fn = self.applier.first_name if self.applier.first_name else ""
+                ln = self.applier.last_name if self.applier.last_name else ""
+                ret = "{0} {1}".format(fn, ln).strip()
+            elif self.applier.email:
+                ret = self.applier.email
+            else:
+                ret = self.applier.username
+            return ret
+        else:
+            return None
+
     def __unicode__(self):
         return self.name
 
@@ -214,7 +229,7 @@ class Route(models.Model):
             peer = username.peer_tag
         else:
             peer = None
-        send_message("[%s] Adding rule %s. Please wait..." % (self.applier.username, self.name), peer)
+        send_message("[%s] Adding rule %s. Please wait..." % (self.applier_username_nice, self.name), peer)
         response = add.delay(self)
         logger.info('Got add job id: %s' % response)
         fqdn = Site.objects.get_current().domain
@@ -235,7 +250,7 @@ class Route(models.Model):
         user_mail = '%s' % self.applier.email
         user_mail = user_mail.split(';')
         send_new_mail(
-            settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier.username),
+            settings.EMAIL_SUBJECT_PREFIX + 'Rule %s creation request submitted by %s' % (self.name, self.applier_username_nice),
             mail_body,
             settings.SERVER_EMAIL, user_mail,
             get_peer_techc_mails(self.applier, username)
@@ -264,7 +279,7 @@ class Route(models.Model):
         send_message(
             '[%s] Editing rule %s. Please wait...' %
             (
-                self.applier.username,
+                self.applier_username_nice,
                 self.name
             ), peer
         )
@@ -291,7 +306,7 @@ class Route(models.Model):
         user_mail = '%s' % self.applier.email
         user_mail = user_mail.split(';')
         send_new_mail(
-            settings.EMAIL_SUBJECT_PREFIX + 'Rule %s edit request submitted by %s' % (self.name, self.applier.username),
+            settings.EMAIL_SUBJECT_PREFIX + 'Rule %s edit request submitted by %s' % (self.name, self.applier_username_nice),
             mail_body, settings.SERVER_EMAIL, user_mail,
             get_peer_techc_mails(self.applier, username)
         )
@@ -323,7 +338,7 @@ class Route(models.Model):
             peer = None
         send_message(
             '[%s] Suspending rule %s. %sPlease wait...' % (
-                self.applier.username,
+                self.applier_username_nice,
                 self.name,
                 reason_text
             ), peer
@@ -351,7 +366,7 @@ class Route(models.Model):
         user_mail = '%s' % self.applier.email
         user_mail = user_mail.split(';')
         send_new_mail(
-            settings.EMAIL_SUBJECT_PREFIX + 'Rule %s removal request submitted by %s' % (self.name, self.applier.username),
+            settings.EMAIL_SUBJECT_PREFIX + 'Rule %s removal request submitted by %s' % (self.name, self.applier_username_nice),
             mail_body,
             settings.SERVER_EMAIL,
             user_mail,

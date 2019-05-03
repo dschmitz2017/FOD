@@ -61,22 +61,22 @@ def add(route, callback=None):
         route.status = status
         route.response = response
         route.save()
-        announce("[%s] Rule add: %s - Result: %s" % (route.applier, route.name, response), route.applier, route)
+        announce("[%s] Rule add: %s - Result: %s" % (route.applier_username_nice, route.name, response), route.applier, route)
     except TimeLimitExceeded:
         route.status = "ERROR"
         route.response = "Task timeout"
         route.save()
-        announce("[%s] Rule add: %s - Result: %s" % (route.applier, route.name, route.response), route.applier, route)
+        announce("[%s] Rule add: %s - Result: %s" % (route.applier_username_nice, route.name, route.response), route.applier, route)
     except SoftTimeLimitExceeded:
         route.status = "ERROR"
         route.response = "Task timeout"
         route.save()
-        announce("[%s] Rule add: %s - Result: %s" % (route.applier, route.name, route.response), route.applier, route)
+        announce("[%s] Rule add: %s - Result: %s" % (route.applier_username_nice, route.name, route.response), route.applier, route)
     except Exception:
         route.status = "ERROR"
         route.response = "Error"
         route.save()
-        announce("[%s] Rule add: %s - Result: %s" % (route.applier, route.name, route.response), route.applier, route)
+        announce("[%s] Rule add: %s - Result: %s" % (route.applier_username_nice, route.name, route.response), route.applier, route)
 
 
 @task(ignore_result=True)
@@ -95,22 +95,22 @@ def edit(route, callback=None):
         route.status = status
         route.response = response
         route.save()
-        announce("[%s] Rule edit: %s - Result: %s" % (route.applier, route.name, response), route.applier, route)
+        announce("[%s] Rule edit: %s - Result: %s" % (route.applier_username_nice, route.name, response), route.applier, route)
     except TimeLimitExceeded:
         route.status = "ERROR"
         route.response = "Task timeout"
         route.save()
-        announce("[%s] Rule edit: %s - Result: %s" % (route.applier, route.name, route.response), route.applier, route)
+        announce("[%s] Rule edit: %s - Result: %s" % (route.applier_username_nice, route.name, route.response), route.applier, route)
     except SoftTimeLimitExceeded:
         route.status = "ERROR"
         route.response = "Task timeout"
         route.save()
-        announce("[%s] Rule edit: %s - Result: %s" % (route.applier, route.name, route.response), route.applier, route)
+        announce("[%s] Rule edit: %s - Result: %s" % (route.applier_username_nice, route.name, route.response), route.applier, route)
     except Exception:
         route.status = "ERROR"
         route.response = "Error"
         route.save()
-        announce("[%s] Rule edit: %s - Result: %s" % (route.applier, route.name, route.response), route.applier, route)
+        announce("[%s] Rule edit: %s - Result: %s" % (route.applier_username_nice, route.name, route.response), route.applier, route)
 
 
 @task(ignore_result=True)
@@ -133,22 +133,22 @@ def delete(route, **kwargs):
         route.status = status
         route.response = response
         route.save()
-        announce("[%s] Suspending rule : %s%s- Result %s" % (route.applier, route.name, reason_text, response), route.applier, route)
+        announce("[%s] Suspending rule : %s%s- Result %s" % (route.applier_username_nice, route.name, reason_text, response), route.applier, route)
     except TimeLimitExceeded:
         route.status = "ERROR"
         route.response = "Task timeout"
         route.save()
-        announce("[%s] Suspending rule : %s - Result: %s" % (route.applier, route.name, route.response), route.applier, route)
+        announce("[%s] Suspending rule : %s - Result: %s" % (route.applier_username_nice, route.name, route.response), route.applier, route)
     except SoftTimeLimitExceeded:
         route.status = "ERROR"
         route.response = "Task timeout"
         route.save()
-        announce("[%s] Suspending rule : %s - Result: %s" % (route.applier, route.name, route.response), route.applier, route)
+        announce("[%s] Suspending rule : %s - Result: %s" % (route.applier_username_nice, route.name, route.response), route.applier, route)
     except Exception:
         route.status = "ERROR"
         route.response = "Error"
         route.save()
-        announce("[%s] Suspending rule : %s - Result: %s" % (route.applier, route.name, route.response), route.applier, route)
+        announce("[%s] Suspending rule : %s - Result: %s" % (route.applier_username_nice, route.name, route.response), route.applier, route)
 
 
 # May not work in the first place... proxy is not aware of Route models
@@ -176,7 +176,7 @@ def batch_delete(routes, **kwargs):
             route.response = response
             route.expires = datetime.date.today()
             route.save()
-            announce("[%s] Rule removal: %s%s- Result %s" % (route.applier, route.name, reason_text, response), route.applier, route)
+            announce("[%s] Rule removal: %s%s- Result %s" % (route.applier_username_nice, route.name, reason_text, response), route.applier, route)
     else:
         return False
 

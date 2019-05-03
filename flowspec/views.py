@@ -177,7 +177,7 @@ def group_routes_ajax(request):
             query |= Q(applier__userprofile__in=peer.user_profile.all())
         all_group_routes = Route.objects.filter(query)
     jresp = {}
-    routes = build_routes_json(all_group_routes)
+    routes = build_routes_json(all_group_routes, request.user.is_superuser)
     jresp['aaData'] = routes
     return HttpResponse(json.dumps(jresp), mimetype='application/json')
 
@@ -198,12 +198,12 @@ def overview_routes_ajax(request):
     if request.user.is_superuser or request.user.has_perm('accounts.overview'):
         all_group_routes = Route.objects.all()
     jresp = {}
-    routes = build_routes_json(all_group_routes)
+    routes = build_routes_json(all_group_routes, request.user.is_superuser)
     jresp['aaData'] = routes
     return HttpResponse(json.dumps(jresp), mimetype='application/json')
 
 
-def build_routes_json(groutes):
+def build_routes_json(groutes, is_superuser):
     routes = []
     for r in groutes.prefetch_related(
             'applier',
@@ -228,14 +228,13 @@ def build_routes_json(groutes):
         rd['status'] = r.status
         # in case there is no applier (this should not occur)
         try:
-            if r.applier.first_name or r.applier.last_name:
-                fn = r.applier.first_name if r.applier.first_name else ""
-                ln = r.applier.last_name if r.applier.last_name else ""
-                rd['applier'] = "{0} {1}".format(fn, ln).strip()
-            elif r.applier.email:
-                rd['applier'] = r.applier.email
-            else:
-                rd['applier'] = r.applier.username
+            #rd['applier'] = r.applier.username
+            userinfo = r.applier_username_nice
+            #if is_superuser:
+            #  applier_username = r.applier.username
+            #  if applier_username != userinfo:
+            #    userinfo += " ("+applier_username+")"
+            rd['applier'] = userinfo
         except:
             rd['applier'] = 'unknown'
             rd['peer'] = ''
@@ -835,6 +834,7 @@ def routedetails(request, route_slug):
       'route': route, 
       'mytime': now, 
       'tz' : settings.TIME_ZONE,
+      'is_superuser' : request.user.is_superuser,
       'route_comments_len' : len(str(route.comments))
       })
 

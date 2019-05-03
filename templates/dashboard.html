@@ -66,7 +66,7 @@
                                         <div class="timeline-heading">
                                             <h4 class="timeline-title"><a href="{{ route.get_absolute_url }}">{{route.name}}</a></h4>
                                             <p>
-                                                <small class="text-muted"><i class="fa fa-pencil-square-o"></i> {% trans "Last update" %}: {{route.last_updated}} {% trans "by" %} {{route.applier}}</small>
+                                                <small class="text-muted"><i class="fa fa-pencil-square-o"></i> {% trans "Last update" %}: {{route.last_updated}} {% trans "by" %} {{route.applier_username_nice}}</small>
                                             </p>
                                             <p>
                                                 <small class="text-muted"><i class="fa fa-clock-o"></i> {% trans "Expires" %}: {{ route.expires|date:"d M y" }}</small>

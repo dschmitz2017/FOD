@@ -25,7 +25,9 @@ function myreloadPage() {
     </div>
      <div class="col-md-12">
         <div>
-            <i class="fa fa-pencil-square-o"></i> {% trans "Last rule edit" %}: {{route.last_updated}} {% trans "by" %} {{route.applier}}
+            <i class="fa fa-pencil-square-o"></i> {% trans "Last rule edit" %}: {{route.last_updated}} {% trans "by" %} {{route.applier_username_nice}} 
+            {% if is_superuser %} ({{route.applier}}) {% endif %}
+
         </div>
         <div>
             <h2>{% trans 'About' %}</h2>
