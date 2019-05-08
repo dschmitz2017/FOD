@@ -90,6 +90,30 @@ ROUTE_STATES = (
     ("ADMININACTIVE", "ADMININACTIVE"),
 )
 
+#from .managers import PersonManager
+
+def global_username_nice(applier):
+        if applier:
+            if applier.first_name or applier.last_name:
+                fn = applier.first_name if applier.first_name else ""
+                ln = applier.last_name if applier.last_name else ""
+                ret = "{0} {1}".format(fn, ln).strip()
+            elif applier.email:
+                ret = applier.email
+            else:
+                ret = applier.username
+            return ret
+        else:
+            return None
+
+class User2(User):
+    #objects = PersonManager()
+    def __unicode__(self):
+        #return self.username
+        return global_username_nice(self)
+
+    class Meta:
+        proxy = True
 
 #def days_offset(): return datetime.date.today() + datetime.timedelta(days = settings.EXPIRATION_DAYS_OFFSET)
 def days_offset(): return datetime.date.today() + datetime.timedelta(days = settings.EXPIRATION_DAYS_OFFSET-1)
@@ -139,6 +163,7 @@ class ThenAction(models.Model):
 class Route(models.Model):
     name = models.SlugField(max_length=128, verbose_name=_("Name"))
     applier = models.ForeignKey(User, blank=True, null=True)
+    #applier = models.ForeignKey(User2, blank=True, null=True)
     source = models.CharField(max_length=32, help_text=_("Network address. Use address/CIDR notation"), verbose_name=_("Source Address"))
     sourceport = models.CharField(max_length=65535, blank=True, null=True, verbose_name=_("Source Port"))
     destination = models.CharField(max_length=32, help_text=_("Network address. Use address/CIDR notation"), verbose_name=_("Destination Address"))
@@ -173,15 +198,8 @@ class Route(models.Model):
     @property
     def applier_username_nice(self):
         if self.applier:
-            if self.applier.first_name or self.applier.last_name:
-                fn = self.applier.first_name if self.applier.first_name else ""
-                ln = self.applier.last_name if self.applier.last_name else ""
-                ret = "{0} {1}".format(fn, ln).strip()
-            elif self.applier.email:
-                ret = self.applier.email
-            else:
-                ret = self.applier.username
-            return ret
+            return global_username_nice(self.applier)
+            #return self.applier.__unicode__
         else:
             return None
 
