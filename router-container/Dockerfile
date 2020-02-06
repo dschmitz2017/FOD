@@ -52,7 +52,7 @@ RUN \
 
 # sysrepo
 RUN \
-      git clone https://github.com/sysrepo/sysrepo.git && \
+      git clone -b legacy https://github.com/sysrepo/sysrepo.git && \
       cd sysrepo && mkdir build && cd build && \
       cmake -DCMAKE_BUILD_TYPE:String="Debug" -DREQUEST_TIMEOUT=60 -DENABLE_TESTS=OFF -DREPOSITORY_LOC:PATH=/etc/sysrepo .. && \
       make -j2 && \
@@ -61,7 +61,7 @@ RUN \
 
 # libnetconf2
 RUN \
-      git clone https://github.com/CESNET/libnetconf2.git && \
+      git clone -b legacy https://github.com/CESNET/libnetconf2.git && \
       cd libnetconf2 && mkdir build && cd build && \
       cmake -DCMAKE_BUILD_TYPE:String="Debug" -DENABLE_BUILD_TESTS=OFF .. && \
       make -j2 && \
@@ -71,7 +71,7 @@ RUN \
 # netopeer2
 RUN \
       cd /opt/dev && \
-      git clone https://github.com/CESNET/Netopeer2.git && \
+      git clone -b legacy https://github.com/CESNET/Netopeer2.git && \
       cd Netopeer2/server && mkdir build && cd build && \
       cmake -DCMAKE_BUILD_TYPE:String="Debug" .. && \
       make -j2 && \
