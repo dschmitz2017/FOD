@@ -1,0 +1,59 @@
+{
+	"info": {
+		"_postman_id": "ae711792-7a06-49a1-b5b5-62a8b96a513d",
+		"name": "elasticsearch",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "mapping snmp data",
+			"protocolProfileBehavior": {
+				"disabledSystemHeaders": {},
+				"maxRedirects": 10000
+			},
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "elastic",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "RZu1Et3ipGBzwOkGmley",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"settings\": {\r\n    \"number_of_shards\": 1\r\n    },\r\n        \"mappings\": {\r\n            \"properties\": \r\n                {\r\n                    \"RuleId\" : \r\n                        {\r\n                            \"type\" : \"integer\" \r\n                        },\r\n                    \"Rule\" : \r\n                        {\r\n                            \"type\" : \"keyword\" \r\n                        },\r\n                    \"Value\" : \r\n                        {   \r\n                            \"type\" : \"keyword\" \r\n                        },\r\n                    \"log_date\" : \r\n                        {\r\n                            \"type\" : \"date\"\r\n                        },\r\n                    \"nren\" : \r\n                        {\r\n                            \"type\" : \"keyword\"\r\n                        },\r\n                    \"client\" : \r\n                        {\r\n                            \"type\" : \"keyword\"\r\n                        }\r\n                }\r\n            }\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "el.fod.demo.renam.md:9200/snmpdata",
+					"host": [
+						"el",
+						"fod",
+						"demo",
+						"renam",
+						"md"
+					],
+					"port": "9200",
+					"path": [
+						"snmpdata"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
