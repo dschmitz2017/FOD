@@ -1,0 +1,1 @@
+rule model: expire max infinity explicitly, e.g. expired=never
