@@ -1,0 +1,1 @@
+setlang button functionality django.views.i18n.set_language) broken, at least on fodlab, maybe related to urls.py
