@@ -206,6 +206,26 @@ class RouteViewSet(viewsets.ModelViewSet):
         obj = get_object_or_404(self.queryset, pk=pk)
         old_status = obj.status
 
+        #
+
+        no_unneeded_redeploy=False
+        if 'no_unneeded_redeploy' in request.data:
+            logger.info("RouteViewSet::update(): no_unneeded_redeploy")
+            request.data['no_unneeded_redeploy']=None
+            no_unneeded_redeploy=True
+
+            expires=request.data['expires']
+            logger.info("RouteViewSet::update(): no_unneeded_redeploy: ignoring all other attributes except only using expires="+str(expires))
+            #request.data.pop('no_unneeded_redeploy', None)
+            key_list1 = list(request.data.keys())
+            for key1 in key_list1:
+              if key1 != 'expires' and key1 != 'status':
+                request.data.pop(key1, None)
+
+            partial = True    
+
+        #
+
         serializer = RouteSerializer(
             obj, context={'request': request},
             #data=request.DATA, partial=partial)
@@ -225,7 +245,11 @@ class RouteViewSet(viewsets.ModelViewSet):
             logger.info("RouteViewSet::update(): obj="+str(obj))
             logger.info("RouteViewSet::update(): old_status="+str(old_status)+", new_status="+str(new_status))
             super(RouteViewSet, self).update(request, pk, partial=partial)
-            if old_status == 'ACTIVE':
+            if no_unneeded_redeploy:
+                logger.info("RouteViewSet::update(): just updating expires")
+                obj.expires = expires
+                obj.save()
+            elif old_status == 'ACTIVE':
                 work_on_active_object(obj, new_status)
             elif old_status in ['INACTIVE', 'ERROR']:
                 work_on_inactive_object(obj, new_status)
