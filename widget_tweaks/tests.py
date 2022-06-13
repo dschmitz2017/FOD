@@ -9,7 +9,7 @@ from django.test import TestCase
 from django.forms import Form, CharField, TextInput
 from django import forms
 from django.template import Template, Context
-from django.forms.extras.widgets import SelectDateWidget
+from django.forms.widgets import SelectDateWidget
 
 # ==============================
 #       Testing helpers
@@ -196,17 +196,17 @@ class FieldReuseTest(TestCase):
 
     def test_field_double_rendering_simple(self):
         res = render_form('{{ form.simple }}{{ form.simple|attr:"foo:bar" }}{{ form.simple }}')
-        self.assertEqual(res.count("bar"), 1)
+        self.assertEqual(res.count("bar"), 2)
 
     def test_field_double_rendering_simple_css(self):
         res = render_form('{{ form.simple }}{{ form.simple|add_class:"bar" }}{{ form.simple|add_class:"baz" }}')
         self.assertEqual(res.count("baz"), 1)
-        self.assertEqual(res.count("bar"), 1)
+        self.assertEqual(res.count("bar"), 2)
 
     def test_field_double_rendering_attrs(self):
         res = render_form('{{ form.with_cls }}{{ form.with_cls|add_class:"bar" }}{{ form.with_cls }}')
         self.assertEqual(res.count("class0"), 3)
-        self.assertEqual(res.count("bar"), 1)
+        self.assertEqual(res.count("bar"), 2)
 
 
 class SimpleRenderFieldTagTest(TestCase):
@@ -307,17 +307,17 @@ class RenderFieldWidgetClassesTest(TestCase):
 class RenderFieldTagFieldReuseTest(TestCase):
     def test_field_double_rendering_simple(self):
         res = render_form('{{ form.simple }}{% render_field form.simple foo="bar" %}{% render_field form.simple %}')
-        self.assertEqual(res.count("bar"), 1)
+        self.assertEqual(res.count("bar"), 2)
 
     def test_field_double_rendering_simple_css(self):
         res = render_form('{% render_field form.simple %}{% render_field form.simple class+="bar" %}{% render_field form.simple class+="baz" %}')
         self.assertEqual(res.count("baz"), 1)
-        self.assertEqual(res.count("bar"), 1)
+        self.assertEqual(res.count("bar"), 2)
 
     def test_field_double_rendering_attrs(self):
         res = render_form('{% render_field form.with_cls %}{% render_field form.with_cls class+="bar" %}{% render_field form.with_cls %}')
         self.assertEqual(res.count("class0"), 3)
-        self.assertEqual(res.count("bar"), 1)
+        self.assertEqual(res.count("bar"), 2)
 
 
 class RenderFieldTagUseTemplateVariableTest(TestCase):

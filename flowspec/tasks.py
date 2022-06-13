@@ -29,7 +29,7 @@ from django.template.loader import render_to_string
 import os
 from celery.exceptions import TimeLimitExceeded, SoftTimeLimitExceeded
 from ipaddress import *
-from os import fork,_exit
+#from os import fork,_exit
 from sys import exit
 import time
 import redis
