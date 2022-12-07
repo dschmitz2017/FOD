@@ -74,7 +74,7 @@ RUN apt-get -qqy install exabgp bird2
 # 3. copy yang config
 RUN mkdir -p /opt/dev
 WORKDIR /opt/dev
-COPY vnet_router/configuration.yang /opt/dev/
+COPY vnet_router/*.yang /opt/dev/
 
 COPY vnet_router/fod_vnet_router /
 COPY vnet_router/snmp/pass_persisttest_bgpflowspec /

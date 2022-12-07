@@ -1,0 +1,14 @@
+module flowspec {
+  namespace "urn:ietf:params:xml:ns:yang:ietf-flowspec";
+  prefix fcc;
+
+  organization
+    "Juniper Networks, Inc.";
+  description
+    "Junos YANG module for a subset of configuration hierarchies - it represents a route rules that are used by Firewall on Demand";
+
+  revision 2021-10-06 {
+    description "Adapted configuration module in progress.";
+  }
+
+}

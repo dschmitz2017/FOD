@@ -64,7 +64,7 @@ RUN DEBIAN_FRONTEND="noninteractive" apt-get -qqy install mininet iptables iprou
 RUN DEBIAN_FRONTEND="noninteractive" apt-get -qqy install netconfd yangcli socat openssh-server rsyslog
 
 # 3. copy vnet_router management script + snmp feeder pass_persisttest_bgpflowspec (+ pass_persisttest only for testing/demonstration)
-COPY vnet_router/configuration.yang /opt/dev/
+COPY vnet_router/*.yang /opt/dev/
 
 COPY vnet_router/fod_vnet_router /
 COPY vnet_router/snmp/pass_persisttest_bgpflowspec /

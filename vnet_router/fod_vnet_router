@@ -197,11 +197,11 @@ elif [ "$1" = "--init.netconfserver.netconfd" ]; then #arg # alternative to neto
     #nohup netconfd --modpath "/usr/share/yuma/modules/:." --module configuration --superuser=netconf --log-level=info &> netconfd.log &
     ip -4 address show eth0 | grep inet 1>&2
     echo 1>&2
-    nohup netconfd --module configuration --superuser=netconf --log-level=info &> netconfd.log &
+    nohup netconfd --module configuration --module flowspec --superuser=netconf --log-level=info &> netconfd.log &
   else
     ip -4 address show eth0 | grep inet 1>&2
     echo 1>&2
-    exec netconfd --module configuration --superuser=netconf --log-level=info #&> netconfd.log
+    exec netconfd --module configuration --module flowspec --superuser=netconf --log-level=info #&> netconfd.log
   fi
 
 ##############################################################################
