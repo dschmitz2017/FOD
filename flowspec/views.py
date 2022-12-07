@@ -518,7 +518,8 @@ def edit_route(request, route_slug):
     else:
         if (not route_original.status == 'ACTIVE'):
             route_edit.expires = datetime.date.today() + datetime.timedelta(days=settings.EXPIRATION_DAYS_OFFSET-1)
-        dictionary = model_to_dict(route_edit, fields=[], exclude=[])
+        #dictionary = model_to_dict(route_edit, fields=[], exclude=[])
+        dictionary = model_to_dict(route_edit, exclude=[])
         dictionary["name"] = route_edit.name_visible
         if request.user.is_superuser:
             dictionary['issuperuser'] = request.user.username

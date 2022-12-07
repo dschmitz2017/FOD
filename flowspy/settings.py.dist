@@ -189,7 +189,10 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 'django_settings_export.settings_export',
                 'django.contrib.messages.context_processors.messages'
-            ]
+            ],
+            'libraries': { # Adding this section should work around the issue.
+                'staticfiles' : 'django.templatetags.static',
+            }
         },
     },
 ]
