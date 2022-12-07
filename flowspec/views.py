@@ -763,10 +763,8 @@ def user_login(request):
         mail = lookupShibAttr(settings.SHIB_MAIL, request.META)
         entitlement = lookupShibAttr(settings.SHIB_ENTITLEMENT, request.META)
 
-        ##
-
         logger.info("view::user_login(): firstname='"+str(firstname)+"'")
-      
+
         ##
 
         try:
@@ -1115,7 +1113,22 @@ def lookupShibAttr(attrmap, requestMeta):
     for attr in attrmap:
         if (attr in requestMeta.keys()):
             if len(requestMeta[attr]) > 0:
-                return requestMeta[attr]
+                
+                # workaround for wrong encoding of Shibboleth attributes
+                #
+                # compare similar code of dist-packages/requests/sessions.py (requests 2.22.0) : SessionRedirectMixin::get_redirect_target
+                # cite:
+                # "Currently the underlying http module on py3 decode headers
+                # in latin1, but empirical evidence suggests that latin1 is very
+                # rarely used with non-ASCII characters in HTTP headers.
+                # It is more likely to get UTF8 header rather than latin1.
+                # This causes incorrect handling of UTF8 encoded location headers.
+                # To solve this, we re-encode the location in latin1.
+                # "
+                ret = requestMeta[attr]
+                ret = ret.encode('latin-1').decode('utf-8')
+                return ret
+
     return ''
 
 
