@@ -467,17 +467,23 @@ class Route(models.Model):
           self.save()
 
 
-    def check_sync(self):
-        if not self.is_synced():
+    def check_sync(self, netconf_device_queried=None):
+        if not self.is_synced(netconf_device_queried=netconf_device_queried):
             #self.status = "OUTOFSYNC"
             #self.save()
             self.update_status("OUTOFSYNC")
 
-    def is_synced(self):
+    def is_synced(self, netconf_device_queried=None):
         found = False
         try:
-            get_device = PR.Retriever()
-            device = get_device.fetch_device()
+            # allows for caching of NETCONF GetConfig query, e.g., during tasks::check_sync
+            if netconf_device_queried==None:
+              logger.info("models::is_synced(): querying routes newly from NETCONF router")
+              get_device = PR.Retriever()
+              device = get_device.fetch_device()
+            else:
+              logger.info("models::is_synced(): reusing cached query from NETCONF router")
+              device = netconf_device_queried
             routes = device.routing_options[0].routes
         except Exception as e:
             #self.status = "EXPIRED"
