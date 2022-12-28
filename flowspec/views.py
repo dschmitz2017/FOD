@@ -90,6 +90,8 @@ from urllib.parse import urlencode
 import flowspec.logging_utils
 logger = flowspec.logging_utils.logger_init_default(__name__, "flowspec_views.log", False)
 rule_changelog_logger = flowspec.logging_utils.logger_init_default(__name__ + "__rule_changelog", "rule_changelog.log", False)
+import logging
+rule_changelog_logger.setLevel(logging.INFO)
 
 #############################################################################
 #############################################################################
