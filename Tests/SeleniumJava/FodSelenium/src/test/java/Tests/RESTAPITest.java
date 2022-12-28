@@ -161,185 +161,185 @@ public class RESTAPITest {
 			}
 	}
 	
-	@Test
-	public static void CheckAllItemsAPI() 
-        {
-		
-		try(FileWriter fileWriter = new FileWriter(".\\logs\\RESTAPIReport.txt", true)) {
-			BufferedWriter buffer = new BufferedWriter(fileWriter);  
-			buffer.newLine();
-			buffer.append("CheckAllItemsAPI");
-			buffer.newLine();
-			String searchQueryApi = url + "/api/thenactions/";
-					try {
-						JsonNode body = Unirest.get(searchQueryApi)
-								.header("Authorization", "Token "+configFileReader.getAPIToken())
-		                        .asJson()
-		                        .getBody();
-						buffer.append((CharSequence) body);         // gives the full json response
-						buffer.newLine();
-						buffer.append((char) ((CharSequence) body).length());  // gives the no of items
-						buffer.newLine();
-						}catch(IOException exc) {
-							buffer.append(exc.getMessage());
-							buffer.newLine();
-						}
-						
-					
-					 buffer.close(); 
-			}
-			catch(Exception e) {
-				try(FileWriter fileWriter = new FileWriter(".\\logs\\log.txt")) {
-				    fileWriter.write(e.getMessage());
-				    fileWriter.close();
-				} catch (IOException ex) {
-				    // Cxception handling
-				}
-				         
-			}
-	}
-	
-	@Test
-	public static void CheckAnItemAPI() 
-        {
-		
-		try(FileWriter fileWriter = new FileWriter(".\\logs\\RESTAPIReport.txt", true)) {
-			BufferedWriter buffer = new BufferedWriter(fileWriter);  
-			buffer.newLine();
-			buffer.append("CheckAnItemAPI");
-			buffer.newLine();
-			String searchQueryApi = url + "/api/thenactions/"+configFileReader.getSpecificItemIdForRESTAPI();
-					try {
-						JsonNode body = Unirest.get(searchQueryApi)
-								.header("Authorization", "Token "+configFileReader.getAPIToken())
-		                        .asJson()
-		                        .getBody();
-						buffer.append((CharSequence) body);         // gives the full json response
-						buffer.newLine();
-						buffer.append((char) ((CharSequence) body).length());  // gives the no of items
-						buffer.newLine();
-						}catch(IOException exc) {
-							buffer.append(exc.getMessage());
-							buffer.newLine();
-						}
-						
-					
-					 buffer.close(); 
-			}
-			catch(Exception e) {
-				try(FileWriter fileWriter = new FileWriter(".\\logs\\log.txt")) {
-				    fileWriter.write(e.getMessage());
-				    fileWriter.close();
-				} catch (IOException ex) {
-				    // Cxception handling
-				}
-				         
-			}
-	}
-	
-	@Test
-	public static void PostActionAPI() throws IOException 
-        {
-		
-		try(FileWriter fileWriter = new FileWriter(".\\logs\\RESTAPIReport.txt", true)) {
-			BufferedWriter buffer = new BufferedWriter(fileWriter);  
-			buffer.newLine();
-			buffer.append("PostActionAPI");
-			buffer.newLine();
-			JtwigTemplate template = JtwigTemplate.classpathTemplate("action.json");
-			JtwigModel model = JtwigModel.newModel()
-			                            .with("action", "rate-limit")
-			                            .with("action_value", "10k");
-
-			template.render(model);
-			String postApi = url + "/api/thenactions/";
-					Unirest.post(postApi)
-							.header("Authorization", "Token "+configFileReader.getAPIToken())
-					        .header("accept", "application/json")
-					        .header("Content-Type", "application/json")
-					        .body(template.render(model))
-					        .asJson();
-						
-					
-					 buffer.close(); 
-			}
-			catch(Exception e) {
-				try(FileWriter fileWriter = new FileWriter(".\\logs\\log.txt")) {
-				    fileWriter.write(e.getMessage());
-				    fileWriter.close();
-				} catch (IOException ex) {
-				    // Cxception handling
-				}
-				         
-			}
-	}
-	
-	@Test
-	public static void PutActionAPI() throws IOException 
-        {
-		
-		try(FileWriter fileWriter = new FileWriter(".\\logs\\RESTAPIReport.txt", true)) {
-			BufferedWriter buffer = new BufferedWriter(fileWriter);  
-			buffer.newLine();
-			buffer.append("PutActionAPI");
-			buffer.newLine();
-			JtwigTemplate template = JtwigTemplate.classpathTemplate("action.json");
-			JtwigModel model = JtwigModel.newModel()
-			                            .with("action", "rate-limit")
-			                            .with("action_value", "10k");
-
-			template.render(model);
-			String postApi = url + "/api/thenactions/"+configFileReader.getSpecificItemIdForRESTAPI();
-					Unirest.put(postApi)
-						.routeParam("action_value", "4k")
-							.header("Authorization", "Token "+configFileReader.getAPIToken())
-					        .header("accept", "application/json")
-					        .header("Content-Type", "application/json")
-					        .body(template.render(model))
-					        .asJson();
-						
-					
-					 buffer.close(); 
-			}
-			catch(Exception e) {
-				try(FileWriter fileWriter = new FileWriter(".\\logs\\log.txt")) {
-				    fileWriter.write(e.getMessage());
-				    fileWriter.close();
-				} catch (IOException ex) {
-				    // Cxception handling
-				}
-				         
-			}
-	}
-	
-	@Test
-	public static void DeleteActionAPI() throws IOException 
-        {
-		
-		try(FileWriter fileWriter = new FileWriter(".\\logs\\RESTAPIReport.txt", true)) {
-			BufferedWriter buffer = new BufferedWriter(fileWriter);  
-			buffer.newLine();
-			buffer.append("DeleteActionAPI");
-			buffer.newLine();
-	
-			String postApi = url + "/api/routes/"+configFileReader.getSpecificItemIdForRESTAPI();
-					Unirest.delete(postApi)
-							.header("Authorization", "Token "+configFileReader.getAPIToken())
-							.routeParam("id", configFileReader.getSpecificItemIdForRESTAPI())
-					        .asJson();
-					
-					 buffer.close(); 
-			}
-			catch(Exception e) {
-				try(FileWriter fileWriter = new FileWriter(".\\logs\\log.txt")) {
-				    fileWriter.write(e.getMessage());
-				    fileWriter.close();
-				} catch (IOException ex) {
-				    // Cxception handling
-				}
-				         
-			}
-		}
+//	@Test
+//	public static void CheckAllItemsAPI() 
+//        {
+//		
+//		try(FileWriter fileWriter = new FileWriter(".\\logs\\RESTAPIReport.txt", true)) {
+//			BufferedWriter buffer = new BufferedWriter(fileWriter);  
+//			buffer.newLine();
+//			buffer.append("CheckAllItemsAPI");
+//			buffer.newLine();
+//			String searchQueryApi = url + "/api/thenactions/";
+//					try {
+//						JsonNode body = Unirest.get(searchQueryApi)
+//								.header("Authorization", "Token "+configFileReader.getAPIToken())
+//		                        .asJson()
+//		                        .getBody();
+//						buffer.append((CharSequence) body);         // gives the full json response
+//						buffer.newLine();
+//						buffer.append((char) ((CharSequence) body).length());  // gives the no of items
+//						buffer.newLine();
+//						}catch(IOException exc) {
+//							buffer.append(exc.getMessage());
+//							buffer.newLine();
+//						}
+//						
+//					
+//					 buffer.close(); 
+//			}
+//			catch(Exception e) {
+//				try(FileWriter fileWriter = new FileWriter(".\\logs\\log.txt")) {
+//				    fileWriter.write(e.getMessage());
+//				    fileWriter.close();
+//				} catch (IOException ex) {
+//				    // Cxception handling
+//				}
+//				         
+//			}
+//	}
+//	
+//	@Test
+//	public static void CheckAnItemAPI() 
+//        {
+//		
+//		try(FileWriter fileWriter = new FileWriter(".\\logs\\RESTAPIReport.txt", true)) {
+//			BufferedWriter buffer = new BufferedWriter(fileWriter);  
+//			buffer.newLine();
+//			buffer.append("CheckAnItemAPI");
+//			buffer.newLine();
+//			String searchQueryApi = url + "/api/thenactions/"+configFileReader.getSpecificItemIdForRESTAPI();
+//					try {
+//						JsonNode body = Unirest.get(searchQueryApi)
+//								.header("Authorization", "Token "+configFileReader.getAPIToken())
+//		                        .asJson()
+//		                        .getBody();
+//						buffer.append((CharSequence) body);         // gives the full json response
+//						buffer.newLine();
+//						buffer.append((char) ((CharSequence) body).length());  // gives the no of items
+//						buffer.newLine();
+//						}catch(IOException exc) {
+//							buffer.append(exc.getMessage());
+//							buffer.newLine();
+//						}
+//						
+//					
+//					 buffer.close(); 
+//			}
+//			catch(Exception e) {
+//				try(FileWriter fileWriter = new FileWriter(".\\logs\\log.txt")) {
+//				    fileWriter.write(e.getMessage());
+//				    fileWriter.close();
+//				} catch (IOException ex) {
+//				    // Cxception handling
+//				}
+//				         
+//			}
+//	}
+//	
+//	@Test
+//	public static void PostActionAPI() throws IOException 
+//        {
+//		
+//		try(FileWriter fileWriter = new FileWriter(".\\logs\\RESTAPIReport.txt", true)) {
+//			BufferedWriter buffer = new BufferedWriter(fileWriter);  
+//			buffer.newLine();
+//			buffer.append("PostActionAPI");
+//			buffer.newLine();
+//			JtwigTemplate template = JtwigTemplate.classpathTemplate("action.json");
+//			JtwigModel model = JtwigModel.newModel()
+//			                            .with("action", "rate-limit")
+//			                            .with("action_value", "10k");
+//
+//			template.render(model);
+//			String postApi = url + "/api/thenactions/";
+//					Unirest.post(postApi)
+//							.header("Authorization", "Token "+configFileReader.getAPIToken())
+//					        .header("accept", "application/json")
+//					        .header("Content-Type", "application/json")
+//					        .body(template.render(model))
+//					        .asJson();
+//						
+//					
+//					 buffer.close(); 
+//			}
+//			catch(Exception e) {
+//				try(FileWriter fileWriter = new FileWriter(".\\logs\\log.txt")) {
+//				    fileWriter.write(e.getMessage());
+//				    fileWriter.close();
+//				} catch (IOException ex) {
+//				    // Cxception handling
+//				}
+//				         
+//			}
+//	}
+//	
+//	@Test
+//	public static void PutActionAPI() throws IOException 
+//        {
+//		
+//		try(FileWriter fileWriter = new FileWriter(".\\logs\\RESTAPIReport.txt", true)) {
+//			BufferedWriter buffer = new BufferedWriter(fileWriter);  
+//			buffer.newLine();
+//			buffer.append("PutActionAPI");
+//			buffer.newLine();
+//			JtwigTemplate template = JtwigTemplate.classpathTemplate("action.json");
+//			JtwigModel model = JtwigModel.newModel()
+//			                            .with("action", "rate-limit")
+//			                            .with("action_value", "10k");
+//
+//			template.render(model);
+//			String postApi = url + "/api/thenactions/"+configFileReader.getSpecificItemIdForRESTAPI();
+//					Unirest.put(postApi)
+//						.routeParam("action_value", "4k")
+//							.header("Authorization", "Token "+configFileReader.getAPIToken())
+//					        .header("accept", "application/json")
+//					        .header("Content-Type", "application/json")
+//					        .body(template.render(model))
+//					        .asJson();
+//						
+//					
+//					 buffer.close(); 
+//			}
+//			catch(Exception e) {
+//				try(FileWriter fileWriter = new FileWriter(".\\logs\\log.txt")) {
+//				    fileWriter.write(e.getMessage());
+//				    fileWriter.close();
+//				} catch (IOException ex) {
+//				    // Cxception handling
+//				}
+//				         
+//			}
+//	}
+//	
+//	@Test
+//	public static void DeleteActionAPI() throws IOException 
+//        {
+//		
+//		try(FileWriter fileWriter = new FileWriter(".\\logs\\RESTAPIReport.txt", true)) {
+//			BufferedWriter buffer = new BufferedWriter(fileWriter);  
+//			buffer.newLine();
+//			buffer.append("DeleteActionAPI");
+//			buffer.newLine();
+//	
+//			String postApi = url + "/api/routes/"+configFileReader.getSpecificItemIdForRESTAPI();
+//					Unirest.delete(postApi)
+//							.header("Authorization", "Token "+configFileReader.getAPIToken())
+//							.routeParam("id", configFileReader.getSpecificItemIdForRESTAPI())
+//					        .asJson();
+//					
+//					 buffer.close(); 
+//			}
+//			catch(Exception e) {
+//				try(FileWriter fileWriter = new FileWriter(".\\logs\\log.txt")) {
+//				    fileWriter.write(e.getMessage());
+//				    fileWriter.close();
+//				} catch (IOException ex) {
+//				    // Cxception handling
+//				}
+//				         
+//			}
+//		}
 		
 //		@Test
 //		public static void DeleteAllAPI() throws IOException 
