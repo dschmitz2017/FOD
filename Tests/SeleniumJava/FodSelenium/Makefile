@@ -193,8 +193,15 @@ updateconf:
 
 updateclasses2: updateconf
 
+echoinfo:
+	@echo "settings used: FOD_IP=$(FOD_IP) FOD_PORT=$(FOD_PORT) FOD_USER=$(FOD_USER) FOD_PWD=$(FOD_PWD), waiting 10 seconds" 1>&2
+	sleep 10
+
+runtest1: echoinfo runtest0
+	@true
+
 # use mvn for running all tests
-runtest1: ensurechromedriver ensuretestuser1 updateclasses2
+runtest0: echoinfo ensurechromedriver ensuretestuser1 updateclasses2
 	#make chg_src_login_url1 LOGIN_URL1='http:\/\/172.17.0.2:8000' LOGIN_USER1='XXXX' LOGIN_PWD1='YYYYYY' CLASS1="$(CLASS1)"
 	#make updateclass-LoginTest
 	echo "FOD_IP=$(FOD_IP)" 1>&2
