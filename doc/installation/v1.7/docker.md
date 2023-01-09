@@ -149,13 +149,13 @@ Connection closed.
 
 # Misc
 
-You may access the containerised FoD UI after the password of the admin user has been reset via `http://127.0.0.1:8000/altlogin`.
+You may access the containerised Web GUI after the password of the admin user has been reset via `http://127.0.0.1:8000/altlogin`.
 
 > Do not try to use the Shibboleth login via `/altlogin` as it will not work without a fully configured Shibboleth SP
 
 # Persistent storage
 
-The configuration of Flowspy will only last as long as the docker container itself; if the container is stopped or the host OS rebooted then the configuration will be lost.
+The configuration will only last as long as the docker container itself; if the container is stopped or the host OS rebooted then the configuration will be lost.
 
 You can use [Docker volumes](https://docs.docker.com/storage/volumes/) for persistent storage;
 
@@ -175,8 +175,8 @@ Flowspy-srv
 ]
 ```
 
-Then use the Docker CLI argument `-v` (Volume) to mount the container at runtime;
+Then use the Docker CLI argument `-v` (**v**olume) to mount the container at runtime;
 
 ```
-docker run -d -p 80:8000  -v FoD-srv:/srv fod-centos
+docker run -d -p 80:8000  -v Flowspy-srv:/srv fod-centos
 ```
