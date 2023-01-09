@@ -1,105 +1,182 @@
 # Installing Flowspy v1.7 with Docker
 
-This guide provides general information about the installation of Flowspy. In case you use Debian Wheezy or Red Hat Linux, we provide detailed instructions for the installation.
+Flowspy users may wish to test Flowspy in a container rather than directly onto a server or virtual host; this document shows how to build and deploy Flowspy in a Docker container.
 
-Also it assumes that installation is carried out in `/srv/flowspy`
-directory. If other directory is to be used, please change the
-corresponding configuration files. It is also assumed that the `root` user
-will perform every action.
+Flowspy installs into `/srv/flowspy` by default; if you wish to use a different directory then you will need to update several configuration files. It is also assumed that the `root` user will perform every action.
 
-TO UPDATE
+# Requirements
 
-## Requirements
+Docker must be installed on your target OS; the installation of Docker is outside the scope of this document.
 
-docker
+Docker images require disk space on the host OS; approximately 2 GB for Flowspy and approximately 200 MB for CentOS 7 which is the default OS used.
 
-### System Requirements
+Although the default `Dockerfile` is for CentOS, several Dockerfiles for both CentOS and Debian can be found in the `Dockerfiles.d` directory. These are meant **for testing only** and are _not_ production-ready.
 
-disk space
+The containers run `gunicorn`, `celeryd` and Redis - and use a SQLite database (`/srv/flowspy/example-data`) to hold resources. They also make a web server available on port 8000.
 
-### FoD test installation docker containers
+# Building the Flowspy container
 
-Currently, either a CENTOS-based on DEBIAN-based FoD container is available.
+First build your Flowspy container. The default (`Dockerfile`) is a container which uses CentOS 7 and `systemd`, but there are other options; one uses `supervisord` and the other is a 2-step build which may suit developers by allowing for faster rebuilds when code changes.
 
-Both are meant for test and reference installation.
-Not necessarily to be production-ready.
-They are provided as running reference installation.
-Currently default is the CENTOS-based container.
+> Although the examples below use CentOS, just replace `Dockerfile.centos` with `Dockerfile.debian` if you wish to use Debian instead.
 
-In the FoD container gunicorn, celeryd and Redis will be running comprising the main part of FoD.
-Inside container file system FoD is residing in directory /srv/flowspy.
-As database a sqlite DB will be used per default.
-gunicorn will be accessible from outside the container by port 8000.
+## CentOS with `systemd`
 
-
-#### Installation and starting of CENTOS docker container
-
-building docker container:
 ```
 docker build -f Dockerfile -t fod-centos .
-or 
-docker build -f ./Dockerfiles.d/Dockerfile.centos.supervisord -t fod-centos . # for using supervisord inside container
-or 
-docker build -f ./Dockerfiles.d/Dockerfile.centos.base -t fodpy3_centos_base . && docker build -f ./Dockerfiles.d/Dockerfile.centos.step2 -t fod-centos . # for using a 2-step docker build (for faster rebuild on changes in the code, mainly useful for developers)
+```
+
+## CentOS with `supervisord`
+
+```
+docker build -f ./Dockerfiles.d/Dockerfile.centos.supervisord -t fod-centos .
+```
+
+## CentOS with 2-step build
+
+For `systemd`;
+``` 
+docker build -f ./Dockerfiles.d/Dockerfile.centos.base -t fodpy3_centos_base .
+docker build -f ./Dockerfiles.d/Dockerfile.centos.step2 -t fod-centos .
+```
+
+For `supervisord`;
+```
+docker build -f ./Dockerfiles.d/Dockerfile.centos.supervisord.base -t fodpy3_centos_svzd_base .
+docker build -f ./Dockerfiles.d/Dockerfile.centos.supervisord.step2 -t fod-centos
+```
+
+# Running Flowspy
+
+You should now be able to see relevant images for Flowspy in your Docker environment;
+
+```
+[user@host-os ~]$ docker images
+REPOSITORY          TAG                 IMAGE ID            CREATED             SIZE
+fod-centos          latest              42da1eb2b4a5        3 minutes ago       1.73 GB
+```
+
+Although the web server listens on port 8000 by default you can map this to a different port on the Docker command line. Our examples map port 8000 on the docker container to port 80 on the host OS.
+
+```
+docker run -p 80:8000 fod-centos # run in foreground
 or
-docker build -f ./Dockerfiles.d/Dockerfile.centos.supervisord.base -t fodpy3_centos_svzd_base . && docker build -f ./Dockerfiles.d/Dockerfile.centos.supervisord.step2 -t fod-centos . # for using supervisord inside container + using a 2-step docker build (for faster rebuild on changes in the code, mainly useful for developers)
+docker run -d -p 80:8000 fod-centos # run in background
 ```
 
-starting built docker container:
-```
-docker run -p 8000:8000 fod-centos # run in foregrund
+If you are using the Debian container then replace `fod-centos` with `fod-debian`.
 
-docker run -d -p 8000:8000 fod-centos # run in background
-```
+You can confirm that the docker container is running with `docker ps` - this will also give you the autogenerated name of the container and show you port mappings if any;
 
-#### Installation and starting of UBUNTU docker container
-
-building docker container:
 ```
-docker build -f ./Dockerfiles.d/Dockerfile.debian -t fod-debian .
-or
-docker build -f ./Dockerfiles.d/Dockerfile.debian.supervisord -t fod-debian . # for using supervisord inside container
-or 
-docker build -f ./Dockerfiles.d/Dockerfile.debian.base -t fodpy3_debian_base . && docker build -f ./Dockerfiles.d/Dockerfile.debian.step2 -t fod-debian . # for using a 2-step docker build (for faster rebuild on changes in the code, mainly useful for developers)
-or 
-docker build -f ./Dockerfiles.d/Dockerfile.debian.supervisord.base -t fodpy3_debian_svzd_base . && docker build -f ./Dockerfiles.d/Dockerfile.debian.supervisord.step2 -t fod-debian . # for using supervisord inside container + using a 2-step docker build (for faster rebuild on changes in the code, mainly useful for developers)
+[user@host-os Dockerfiles.d]$ docker ps
+CONTAINER ID        IMAGE               COMMAND                    CREATED             STATUS              PORTS                  NAMES
+5b125f76470d        fod-centos          "/srv/flowspy/runfod.sh"   1 month ago         Up 2 days           0.0.0.0:80->8000/tcp   lucid_mcnulty
 ```
 
-starting built docker container:
+You can connect the container directly and start a shell using either the `CONTAINER ID` or the `NAME` and the `docker exec -it` command;
+
 ```
-docker run -p 8000:8000 fod-debian # run in foreground
-
-docker run -d -p 8000:8000 fod-debian # run in background
+[user@host-os Dockerfiles.d]$ docker exec -ti lucid_mcnulty bash
+[root@5b125f76470d /]#
 ```
 
-#### Configuring NETCONF in a running container 
+# Initial setup of Flowspy
 
-admin user password and NETCONF connection has to be setup, 
-either by
+You need to set a couple of options once the container is running; the password for the `admin` user and the details of the NETCONF-enabled router which Flowspy will use to inject FLOWSPEC routes.
 
-A) via the setup page of FoD in container: 
+- NETCONF_DEVICE
+- NETCONF_PORT
+- NETCONF_USER
+- NETCONF_PASS
 
-http://127.0.0.1:8001/setup/
+## via Web GUI
 
-or alternatively
+Access the Flowspy web server at `http://127.0.0.1:8000/setup/` (if you are connecting from _inside_ the container) or `http://your.host-os.ipaddress/` if you are connecting from _outside_ the container (and have mapped port 8000 to port 80).
 
-B) manually
+Once you hit "Save", the config will be saved **in the container** as `/srv/flowspy/flowspy/settings_local.py`.
 
-in by entering the running container and editing
-docker exec -ti "$DOCKERID" bash # find out DOCKERID of running container with "docker ps"
+You will need to restart the container for Flowspy to pick up this config; from the Host OS
 
-in docker: vi /srv/flowspy/flowspy/settings.py : settings NETCONF_DEVICE, NETCONF_PORT, NETCONF_USER, NETCONF_PASS
+```
+docker restart lucid_mcnulty
+```
 
-make sure docker container has IP connectivity to NETCONF_DEVICE
+You can now access the Flowspy web server using your new credentials.
 
-in docker: cd /srv/flowspy; ./pythonenv ./manage.py createsuperuser ...
+## via manual configuration
 
-in docker: cd /srv/flowspy; ./pythonenv ./manage.py changepassword ...
+> This needs to be done from **inside** the container.
 
-#### Accessing the FoD UI running in container after setup of admin user (password)
+The relevant file is `/srv/flowspy/flowspy/settings.py`; the relevant variables are
 
-http://127.0.0.1:8000/altlogin
+- NETCONF_DEVICE
+- NETCONF_PORT
+- NETCONF_USER
+- NETCONF_PASS
 
-(do not try to use the Shibboleth login via /login, as it is not working without a set-up Shibboleth SP)
+You will then need to use the `manage.py` script to change the admin password;
 
+```
+cd /srv/flowspy; ./pythonenv ./manage.py changepassword admin
+```
 
+You will need to restart the container for Flowspy to pick up this config; from the Host OS
+
+```
+docker restart lucid_mcnulty
+```
+
+You can now access the Flowspy web server using your new credentials.
+
+## Testing NETCONF connectivity
+
+**Please** make sure that the docker container has IP connectivity to your NETCONF device!
+
+If you wish to confirm this, then use `yum install telnet` to install telnet in your container and telnet to whichever port on which your NETCONF device is listening (`netconf-ssh`/830 by default);
+
+```
+[root@5b125f76470d flowspy]# telnet 192.0.2.1 netconf-ssh
+Trying 192.0.2.1...
+Connected to 192.0.2.1.
+Escape character is '^]'.
+SSH-2.0-OpenSSH_7.5
+^]
+telnet> close
+Connection closed.
+[root@5b125f76470d flowspy]#
+```
+
+# Misc
+
+You may access the containerised FoD UI after the password of the admin user has been reset via `http://127.0.0.1:8000/altlogin`.
+
+> Do not try to use the Shibboleth login via `/altlogin` as it will not work without a fully configured Shibboleth SP
+
+# Persistent storage
+
+The configuration of Flowspy will only last as long as the docker container itself; if the container is stopped or the host OS rebooted then the configuration will be lost.
+
+You can use [Docker volumes](https://docs.docker.com/storage/volumes/) for persistent storage;
+
+```
+[user@host-os]$ docker volume create Flowspy-srv
+Flowspy-srv
+[user@host-os]$ docker volume inspect Flowspy-srv
+[
+    {
+        "Driver": "local",
+        "Labels": {},
+        "Mountpoint": "/var/lib/docker/volumes/Flowspy-srv/_data",
+        "Name": "Flowspy-srv",
+        "Options": {},
+        "Scope": "local"
+    }
+]
+```
+
+Then use the Docker CLI argument `-v` (Volume) to mount the container at runtime;
+
+```
+docker run -d -p 80:8000  -v FoD-srv:/srv fod-centos
+```

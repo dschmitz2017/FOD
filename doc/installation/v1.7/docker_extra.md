@@ -3,18 +3,17 @@
 
 ### NETCONF test server docker container
 
-When no real NETCONF-enabled router supporting BGP FlowSpec is available, just for 
-testing the NETCONF test server docker container can be used:
+When no real NETCONF-enabled router supporting BGP FlowSpec is available, just for testing the NETCONF test server Docker container can be used:
 
-In FoD-cloned installation dir, e.g., residing in /srv/flowspy,
-got to sub directory ./router-container/
-there:
+In FoD-cloned installation dir, e.g., residing in /srv/flowspy, go to sub directory `router-container`
 
+```
 docker build -t juniper .
 
 docker run -it --name juniper -p 830:830 --rm juniper:latest
+```
 
-for more information, e.g., how to manually test NETCONF access to the test server, check ./router-container/run.txt
+To manually test NETCONF access to the test server, see `/router-container/run.txt`.
 
 Now, find out IP address of the running test server container, e.g., by
 docker inspect "$DOCKERID_NETCONF" | grep IPAddress # find out DOCKERID_NETCONF, e.g. by "docker ps"
@@ -51,5 +50,4 @@ Yields a more complete simulation of a router for FoD.
 - ./Dockerfiles.d/Dockerfile.vnet_router2.debian.exabgp2.topo2: extending ./Dockerfiles.d/Dockerfile.vnet_router2 to simple BGP testing vnet based on exabgp and bird2
 
 (find instructions how to build and run inside the Dockerfiles)
-
 
