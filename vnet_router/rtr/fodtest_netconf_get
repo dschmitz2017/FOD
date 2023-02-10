@@ -47,6 +47,7 @@ from django.conf import settings;
 
 # override flowspy settings to enable debugging 
 settings.LEVEL = logging.DEBUG; # override flowspy/settings.py
+settings.LOG_FILE_LOCATION = "." #
 
 # override flowspy NETCONF parameters with local values
 # check further NETCONF_* variables in flowspec/settings.py, if needed

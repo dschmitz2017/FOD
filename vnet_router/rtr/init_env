@@ -1,0 +1,22 @@
+#!/bin/bash
+
+##
+
+virtualenv --python=python3 ./venv
+
+. venv/bin/activate
+
+pip install -r requirements.txt
+
+##
+
+if [ ! -f flowspy/settings.py ]; then
+  cp -v flowspy/settings.py.dist flowspy/settings.py
+fi
+
+if [ ! -f flowspy/settings_local.py ]; then
+  touch flowspy/settings_local.py
+fi
+
+##
+
