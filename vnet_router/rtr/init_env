@@ -8,6 +8,8 @@ virtualenv --python=python3 ./venv
 
 pip install -r requirements.txt
 
+patch -p1 < ./vnet_router/rtr/patches/ncclient-debug.patch
+
 ##
 
 if [ ! -f flowspy/settings.py ]; then

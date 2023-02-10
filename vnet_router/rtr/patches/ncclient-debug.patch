@@ -1,0 +1,100 @@
+Binary files FoD2/venv/lib/python3.8/site-packages/ncclient/devices/__pycache__/alu.cpython-38.pyc and FoD/venv/lib/python3.8/site-packages/ncclient/devices/__pycache__/alu.cpython-38.pyc differ
+Binary files FoD2/venv/lib/python3.8/site-packages/ncclient/devices/__pycache__/csr.cpython-38.pyc and FoD/venv/lib/python3.8/site-packages/ncclient/devices/__pycache__/csr.cpython-38.pyc differ
+Binary files FoD2/venv/lib/python3.8/site-packages/ncclient/devices/__pycache__/default.cpython-38.pyc and FoD/venv/lib/python3.8/site-packages/ncclient/devices/__pycache__/default.cpython-38.pyc differ
+Binary files FoD2/venv/lib/python3.8/site-packages/ncclient/devices/__pycache__/ericsson.cpython-38.pyc and FoD/venv/lib/python3.8/site-packages/ncclient/devices/__pycache__/ericsson.cpython-38.pyc differ
+Binary files FoD2/venv/lib/python3.8/site-packages/ncclient/devices/__pycache__/h3c.cpython-38.pyc and FoD/venv/lib/python3.8/site-packages/ncclient/devices/__pycache__/h3c.cpython-38.pyc differ
+Binary files FoD2/venv/lib/python3.8/site-packages/ncclient/devices/__pycache__/hpcomware.cpython-38.pyc and FoD/venv/lib/python3.8/site-packages/ncclient/devices/__pycache__/hpcomware.cpython-38.pyc differ
+Binary files FoD2/venv/lib/python3.8/site-packages/ncclient/devices/__pycache__/huawei.cpython-38.pyc and FoD/venv/lib/python3.8/site-packages/ncclient/devices/__pycache__/huawei.cpython-38.pyc differ
+Binary files FoD2/venv/lib/python3.8/site-packages/ncclient/devices/__pycache__/huaweiyang.cpython-38.pyc and FoD/venv/lib/python3.8/site-packages/ncclient/devices/__pycache__/huaweiyang.cpython-38.pyc differ
+Binary files FoD2/venv/lib/python3.8/site-packages/ncclient/devices/__pycache__/__init__.cpython-38.pyc and FoD/venv/lib/python3.8/site-packages/ncclient/devices/__pycache__/__init__.cpython-38.pyc differ
+Binary files FoD2/venv/lib/python3.8/site-packages/ncclient/devices/__pycache__/iosxe.cpython-38.pyc and FoD/venv/lib/python3.8/site-packages/ncclient/devices/__pycache__/iosxe.cpython-38.pyc differ
+Binary files FoD2/venv/lib/python3.8/site-packages/ncclient/devices/__pycache__/iosxr.cpython-38.pyc and FoD/venv/lib/python3.8/site-packages/ncclient/devices/__pycache__/iosxr.cpython-38.pyc differ
+Binary files FoD2/venv/lib/python3.8/site-packages/ncclient/devices/__pycache__/junos.cpython-38.pyc and FoD/venv/lib/python3.8/site-packages/ncclient/devices/__pycache__/junos.cpython-38.pyc differ
+Binary files FoD2/venv/lib/python3.8/site-packages/ncclient/devices/__pycache__/nexus.cpython-38.pyc and FoD/venv/lib/python3.8/site-packages/ncclient/devices/__pycache__/nexus.cpython-38.pyc differ
+Binary files FoD2/venv/lib/python3.8/site-packages/ncclient/devices/__pycache__/sros.cpython-38.pyc and FoD/venv/lib/python3.8/site-packages/ncclient/devices/__pycache__/sros.cpython-38.pyc differ
+Binary files FoD2/venv/lib/python3.8/site-packages/ncclient/operations/__pycache__/edit.cpython-38.pyc and FoD/venv/lib/python3.8/site-packages/ncclient/operations/__pycache__/edit.cpython-38.pyc differ
+Binary files FoD2/venv/lib/python3.8/site-packages/ncclient/operations/__pycache__/errors.cpython-38.pyc and FoD/venv/lib/python3.8/site-packages/ncclient/operations/__pycache__/errors.cpython-38.pyc differ
+Binary files FoD2/venv/lib/python3.8/site-packages/ncclient/operations/__pycache__/flowmon.cpython-38.pyc and FoD/venv/lib/python3.8/site-packages/ncclient/operations/__pycache__/flowmon.cpython-38.pyc differ
+Binary files FoD2/venv/lib/python3.8/site-packages/ncclient/operations/__pycache__/__init__.cpython-38.pyc and FoD/venv/lib/python3.8/site-packages/ncclient/operations/__pycache__/__init__.cpython-38.pyc differ
+Binary files FoD2/venv/lib/python3.8/site-packages/ncclient/operations/__pycache__/lock.cpython-38.pyc and FoD/venv/lib/python3.8/site-packages/ncclient/operations/__pycache__/lock.cpython-38.pyc differ
+Binary files FoD2/venv/lib/python3.8/site-packages/ncclient/operations/__pycache__/retrieve.cpython-38.pyc and FoD/venv/lib/python3.8/site-packages/ncclient/operations/__pycache__/retrieve.cpython-38.pyc differ
+Binary files FoD2/venv/lib/python3.8/site-packages/ncclient/operations/__pycache__/rpc.cpython-38.pyc and FoD/venv/lib/python3.8/site-packages/ncclient/operations/__pycache__/rpc.cpython-38.pyc differ
+Binary files FoD2/venv/lib/python3.8/site-packages/ncclient/operations/__pycache__/session.cpython-38.pyc and FoD/venv/lib/python3.8/site-packages/ncclient/operations/__pycache__/session.cpython-38.pyc differ
+Binary files FoD2/venv/lib/python3.8/site-packages/ncclient/operations/__pycache__/subscribe.cpython-38.pyc and FoD/venv/lib/python3.8/site-packages/ncclient/operations/__pycache__/subscribe.cpython-38.pyc differ
+Binary files FoD2/venv/lib/python3.8/site-packages/ncclient/operations/__pycache__/util.cpython-38.pyc and FoD/venv/lib/python3.8/site-packages/ncclient/operations/__pycache__/util.cpython-38.pyc differ
+diff -u -r FoD2/venv/lib/python3.8/site-packages/ncclient/operations/rpc.py FoD/venv/lib/python3.8/site-packages/ncclient/operations/rpc.py
+--- FoD2/venv/lib/python3.8/site-packages/ncclient/operations/rpc.py	2023-02-10 08:32:14.827675342 +0000
++++ FoD/venv/lib/python3.8/site-packages/ncclient/operations/rpc.py	2023-02-09 15:22:28.705520285 +0000
+@@ -240,8 +240,10 @@
+             self._id2rpc[id] = rpc
+ 
+     def callback(self, root, raw):
++        logger.debug("callback(): raw"+str(type(raw)))
+         tag, attrs = root
+         if self._device_handler.perform_qualify_check():
++            logger.debug("callback(): not an rpc reply")
+             if tag != qualify("rpc-reply"):
+                 return
+         if "message-id" not in attrs:
+@@ -249,6 +251,7 @@
+             raise OperationError("Could not find 'message-id' attribute in <rpc-reply>")
+         else:
+             id = attrs["message-id"]  # get the msgid
++            logger.debug("callback(): id="+str(id))
+             with self._lock:
+                 try:
+                     rpc = self._id2rpc[id]  # the corresponding rpc
+@@ -358,6 +361,7 @@
+         else:
+             self.logger.debug('Sync request, will wait for timeout=%r', self._timeout)
+             self._event.wait(self._timeout)
++            self.logger.debug('event1 received')
+             if self._event.isSet():
+                 if self._error:
+                     # Error that prevented reply delivery
+Binary files FoD2/venv/lib/python3.8/site-packages/ncclient/operations/third_party/alu/__pycache__/__init__.cpython-38.pyc and FoD/venv/lib/python3.8/site-packages/ncclient/operations/third_party/alu/__pycache__/__init__.cpython-38.pyc differ
+Binary files FoD2/venv/lib/python3.8/site-packages/ncclient/operations/third_party/alu/__pycache__/rpc.cpython-38.pyc and FoD/venv/lib/python3.8/site-packages/ncclient/operations/third_party/alu/__pycache__/rpc.cpython-38.pyc differ
+Binary files FoD2/venv/lib/python3.8/site-packages/ncclient/operations/third_party/h3c/__pycache__/__init__.cpython-38.pyc and FoD/venv/lib/python3.8/site-packages/ncclient/operations/third_party/h3c/__pycache__/__init__.cpython-38.pyc differ
+Binary files FoD2/venv/lib/python3.8/site-packages/ncclient/operations/third_party/h3c/__pycache__/rpc.cpython-38.pyc and FoD/venv/lib/python3.8/site-packages/ncclient/operations/third_party/h3c/__pycache__/rpc.cpython-38.pyc differ
+Binary files FoD2/venv/lib/python3.8/site-packages/ncclient/operations/third_party/hpcomware/__pycache__/__init__.cpython-38.pyc and FoD/venv/lib/python3.8/site-packages/ncclient/operations/third_party/hpcomware/__pycache__/__init__.cpython-38.pyc differ
+Binary files FoD2/venv/lib/python3.8/site-packages/ncclient/operations/third_party/hpcomware/__pycache__/rpc.cpython-38.pyc and FoD/venv/lib/python3.8/site-packages/ncclient/operations/third_party/hpcomware/__pycache__/rpc.cpython-38.pyc differ
+Binary files FoD2/venv/lib/python3.8/site-packages/ncclient/operations/third_party/huawei/__pycache__/__init__.cpython-38.pyc and FoD/venv/lib/python3.8/site-packages/ncclient/operations/third_party/huawei/__pycache__/__init__.cpython-38.pyc differ
+Binary files FoD2/venv/lib/python3.8/site-packages/ncclient/operations/third_party/huawei/__pycache__/rpc.cpython-38.pyc and FoD/venv/lib/python3.8/site-packages/ncclient/operations/third_party/huawei/__pycache__/rpc.cpython-38.pyc differ
+Binary files FoD2/venv/lib/python3.8/site-packages/ncclient/operations/third_party/iosxe/__pycache__/__init__.cpython-38.pyc and FoD/venv/lib/python3.8/site-packages/ncclient/operations/third_party/iosxe/__pycache__/__init__.cpython-38.pyc differ
+Binary files FoD2/venv/lib/python3.8/site-packages/ncclient/operations/third_party/iosxe/__pycache__/rpc.cpython-38.pyc and FoD/venv/lib/python3.8/site-packages/ncclient/operations/third_party/iosxe/__pycache__/rpc.cpython-38.pyc differ
+Binary files FoD2/venv/lib/python3.8/site-packages/ncclient/operations/third_party/juniper/__pycache__/__init__.cpython-38.pyc and FoD/venv/lib/python3.8/site-packages/ncclient/operations/third_party/juniper/__pycache__/__init__.cpython-38.pyc differ
+Binary files FoD2/venv/lib/python3.8/site-packages/ncclient/operations/third_party/juniper/__pycache__/rpc.cpython-38.pyc and FoD/venv/lib/python3.8/site-packages/ncclient/operations/third_party/juniper/__pycache__/rpc.cpython-38.pyc differ
+Binary files FoD2/venv/lib/python3.8/site-packages/ncclient/operations/third_party/nexus/__pycache__/__init__.cpython-38.pyc and FoD/venv/lib/python3.8/site-packages/ncclient/operations/third_party/nexus/__pycache__/__init__.cpython-38.pyc differ
+Binary files FoD2/venv/lib/python3.8/site-packages/ncclient/operations/third_party/nexus/__pycache__/rpc.cpython-38.pyc and FoD/venv/lib/python3.8/site-packages/ncclient/operations/third_party/nexus/__pycache__/rpc.cpython-38.pyc differ
+Binary files FoD2/venv/lib/python3.8/site-packages/ncclient/operations/third_party/__pycache__/__init__.cpython-38.pyc and FoD/venv/lib/python3.8/site-packages/ncclient/operations/third_party/__pycache__/__init__.cpython-38.pyc differ
+Binary files FoD2/venv/lib/python3.8/site-packages/ncclient/operations/third_party/sros/__pycache__/__init__.cpython-38.pyc and FoD/venv/lib/python3.8/site-packages/ncclient/operations/third_party/sros/__pycache__/__init__.cpython-38.pyc differ
+Binary files FoD2/venv/lib/python3.8/site-packages/ncclient/operations/third_party/sros/__pycache__/rpc.cpython-38.pyc and FoD/venv/lib/python3.8/site-packages/ncclient/operations/third_party/sros/__pycache__/rpc.cpython-38.pyc differ
+Binary files FoD2/venv/lib/python3.8/site-packages/ncclient/__pycache__/capabilities.cpython-38.pyc and FoD/venv/lib/python3.8/site-packages/ncclient/__pycache__/capabilities.cpython-38.pyc differ
+Binary files FoD2/venv/lib/python3.8/site-packages/ncclient/__pycache__/debug.cpython-38.pyc and FoD/venv/lib/python3.8/site-packages/ncclient/__pycache__/debug.cpython-38.pyc differ
+Binary files FoD2/venv/lib/python3.8/site-packages/ncclient/__pycache__/__init__.cpython-38.pyc and FoD/venv/lib/python3.8/site-packages/ncclient/__pycache__/__init__.cpython-38.pyc differ
+Binary files FoD2/venv/lib/python3.8/site-packages/ncclient/__pycache__/logging_.cpython-38.pyc and FoD/venv/lib/python3.8/site-packages/ncclient/__pycache__/logging_.cpython-38.pyc differ
+Binary files FoD2/venv/lib/python3.8/site-packages/ncclient/__pycache__/manager.cpython-38.pyc and FoD/venv/lib/python3.8/site-packages/ncclient/__pycache__/manager.cpython-38.pyc differ
+Binary files FoD2/venv/lib/python3.8/site-packages/ncclient/__pycache__/_version.cpython-38.pyc and FoD/venv/lib/python3.8/site-packages/ncclient/__pycache__/_version.cpython-38.pyc differ
+Binary files FoD2/venv/lib/python3.8/site-packages/ncclient/__pycache__/xml_.cpython-38.pyc and FoD/venv/lib/python3.8/site-packages/ncclient/__pycache__/xml_.cpython-38.pyc differ
+Binary files FoD2/venv/lib/python3.8/site-packages/ncclient/transport/__pycache__/errors.cpython-38.pyc and FoD/venv/lib/python3.8/site-packages/ncclient/transport/__pycache__/errors.cpython-38.pyc differ
+Binary files FoD2/venv/lib/python3.8/site-packages/ncclient/transport/__pycache__/__init__.cpython-38.pyc and FoD/venv/lib/python3.8/site-packages/ncclient/transport/__pycache__/__init__.cpython-38.pyc differ
+Binary files FoD2/venv/lib/python3.8/site-packages/ncclient/transport/__pycache__/notify.cpython-38.pyc and FoD/venv/lib/python3.8/site-packages/ncclient/transport/__pycache__/notify.cpython-38.pyc differ
+Binary files FoD2/venv/lib/python3.8/site-packages/ncclient/transport/__pycache__/parser.cpython-38.pyc and FoD/venv/lib/python3.8/site-packages/ncclient/transport/__pycache__/parser.cpython-38.pyc differ
+Binary files FoD2/venv/lib/python3.8/site-packages/ncclient/transport/__pycache__/session.cpython-38.pyc and FoD/venv/lib/python3.8/site-packages/ncclient/transport/__pycache__/session.cpython-38.pyc differ
+Binary files FoD2/venv/lib/python3.8/site-packages/ncclient/transport/__pycache__/ssh.cpython-38.pyc and FoD/venv/lib/python3.8/site-packages/ncclient/transport/__pycache__/ssh.cpython-38.pyc differ
+diff -u -r FoD2/venv/lib/python3.8/site-packages/ncclient/transport/session.py FoD/venv/lib/python3.8/site-packages/ncclient/transport/session.py
+--- FoD2/venv/lib/python3.8/site-packages/ncclient/transport/session.py	2023-02-10 08:32:14.831675529 +0000
++++ FoD/venv/lib/python3.8/site-packages/ncclient/transport/session.py	2023-02-09 15:16:41.644293327 +0000
+@@ -58,6 +58,7 @@
+         self._device_handler = None # Should be set by child class
+ 
+     def _dispatch_message(self, raw):
++        logger.info("_dispatch_message(): called raw="+str(type(raw)))
+         try:
+             root = parse_root(raw)
+         except Exception as e:
+Only in FoD/venv/lib/python3.8/site-packages/ncclient/transport: session.py.old
+Binary files FoD2/venv/lib/python3.8/site-packages/ncclient/transport/third_party/junos/__pycache__/__init__.cpython-38.pyc and FoD/venv/lib/python3.8/site-packages/ncclient/transport/third_party/junos/__pycache__/__init__.cpython-38.pyc differ
+Binary files FoD2/venv/lib/python3.8/site-packages/ncclient/transport/third_party/junos/__pycache__/ioproc.cpython-38.pyc and FoD/venv/lib/python3.8/site-packages/ncclient/transport/third_party/junos/__pycache__/ioproc.cpython-38.pyc differ
+Binary files FoD2/venv/lib/python3.8/site-packages/ncclient/transport/third_party/junos/__pycache__/parser.cpython-38.pyc and FoD/venv/lib/python3.8/site-packages/ncclient/transport/third_party/junos/__pycache__/parser.cpython-38.pyc differ
+Binary files FoD2/venv/lib/python3.8/site-packages/ncclient/transport/third_party/__pycache__/__init__.cpython-38.pyc and FoD/venv/lib/python3.8/site-packages/ncclient/transport/third_party/__pycache__/__init__.cpython-38.pyc differ
