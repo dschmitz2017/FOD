@@ -54,8 +54,24 @@ class Retriever(object):
             self.filter = settings.ROUTE_FILTER.replace("%s", route_name) # allow for varying number-of, multiple instances of %s
 
     def fetch_xml(self):
-        with manager.connect(host=self.device, port=self.port, username=self.username, password=self.password, hostkey_verify=False) as m:
-            xmlconfig = m.get_config(source='running', filter=('subtree',self.filter)).data_xml
+        try:
+          logger.debug("proxy::fetch_xml(): before trying to connect to netconf server for fetching configuration data")
+          #import logging; logger = logging.getLogger("ncclient.transport.ssh").setLevel(logging.DEBUG);
+          #import logging; logger = logging.getLogger("ncclient.operations.rpc").setLevel(logging.DEBUG);
+          with manager.connect(host=self.device, port=self.port, username=self.username, password=self.password, hostkey_verify=False) as m:
+              logger.debug("proxy::fetch_xml(): connect done, trying to fetch configuration data")
+              if hasattr(settings, 'NETCONF__TESTWISE_TRY_TO_FETCH_WITHOUT_FILTER') and str(settings.NETCONF__TESTWISE_TRY_TO_FETCH_WITHOUT_FILTER)=="1":
+                logger.debug("proxy::fetch_xml(): using NO filter")
+                tmp1 = m.get_config(source='running')
+                logger.debug("proxy::fetch_xml(): got reponse, trying to convert to xml obj")
+                xmlconfig = tmp1.data_xml
+              else:
+                logger.debug("proxy::fetch_xml(): using filter")
+                xmlconfig = m.get_config(source='running', filter=('subtree', self.filter)).data_xml
+              logger.debug("proxy::fetch_xml(): fetching configuration data done")
+        except Exception as e:
+            logger.error("proxy::fetch_xml(): got exception "+str(e))
+            xmlconfig=""
         return xmlconfig
 
     def get_xml(self):
@@ -244,7 +260,8 @@ class Applier(object):
 
     def get_existing_config_xml(self):
         route_name = self.get_route_name()
-        logger.info("get_existing_config_xml(): route_name="+str(route_name))
+        if route_name!=None:
+          logger.info("get_existing_config_xml(): route_name="+str(route_name))
         retriever0 = Retriever(xml=None, route_name=route_name)
         config_xml_running = retriever0.fetch_xml()
         #logger.info("proxy::get_existing_config(): config_xml_running="+str(config_xml_running))
