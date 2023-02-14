@@ -1,4 +1,6 @@
 
+# usage: docker build -f vnet_router/rtr/Dockerfile.fod_netconf_get -t netconfget1 . && docker run -ti -e=NETCONF_HOST=10.10.10.10 -e NETCONF_PORT=830 -e NETCONF_USER=netconf -e NETCONF_PASS=netconf netconfget1
+
 FROM debian:bullseye
 
 ENV LC_ALL en_US.utf8
