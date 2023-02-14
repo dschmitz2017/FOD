@@ -1,0 +1,37 @@
+
+FROM debian:bullseye
+
+ENV LC_ALL en_US.utf8
+
+#
+
+RUN apt-get -yy update
+
+#RUN DEBIAN_FRONTEND="noninteractive" apt-get -yy install python3 python3-virtualenv yangcli netconfd
+RUN DEBIAN_FRONTEND="noninteractive" apt-get -yy install python3 python3-virtualenv libmariadb-dev
+
+#
+
+RUN mkdir -p /srv/flowspy/vnet_router/rtr/patches /srv/flowspy/flowspy
+
+COPY requirements.txt /srv/flowspy/
+COPY flowspy/settings.py.dist /srv/flowspy/flowspy/
+COPY vnet_router/rtr/init_env /srv/flowspy/vnet_router/rtr/
+COPY vnet_router/rtr/fodtest_netconf_get /srv/flowspy/vnet_router/rtr/
+COPY vnet_router/rtr/patches/ncclient-debug.patch /srv/flowspy/vnet_router/rtr/patches/
+
+#
+
+WORKDIR /srv/flowspy/
+
+RUN ./vnet_router/rtr/init_env
+
+COPY flowspec /srv/flowspy/flowspec
+COPY utils /srv/flowspy/utils
+COPY _version.py /srv/flowspy/
+
+#
+
+CMD sh -c '. ./venv/bin/activate && "/srv/flowspy/vnet_router/rtr/fodtest_netconf_get" "$NETCONF_HOST" "$NETCONF_PORT" "$NETCONF_USER" "$NETCONF_PASS"'
+
+
