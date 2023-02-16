@@ -404,6 +404,23 @@ def add_route(request):
             route.response = "Applying"
             net_route_source1 = ip_network(route.source, strict=False)
             net_route_destination1 = ip_network(route.destination, strict=False)
+
+            if net_route_source1.version != net_route_destination1.version:
+              messages.add_message(
+                request,
+                messages.WARNING,
+                 ('address familiy (IP version) of source and destination have to be equal')
+              )
+              return render(
+                request,
+                'apply.html',
+                {
+                    'form': form,
+                   'applier': applier,
+                    'maxexpires': settings.MAX_RULE_EXPIRE_DAYS
+                }
+              )
+
             route.source = ip_network('%s/%s' % (net_route_source1.network_address.compressed, net_route_source1.prefixlen)).compressed
             route.destination = ip_network('%s/%s' % (net_route_destination1.network_address.compressed, net_route_destination1.prefixlen)).compressed
             try:
@@ -479,12 +496,53 @@ def edit_route(request, route_slug):
         if form.is_valid():
             changed_data = form.changed_data
             route = form.save(commit=False)
+
             route.name = route_original.name
             route.status = route_original.status
             route.response = route_original.response
 
             net_route_source=ip_network(route.source, strict=False)
             net_route_destination=ip_network(route.destination, strict=False)
+            net_route_source__edit=ip_network(route_original.source, strict=False)
+            net_route_destination__edit=ip_network(route_original.destination, strict=False)
+            logger.info("net_route_source__edit="+str(net_route_source__edit))
+            logger.info("net_route_destination__edit="+str(net_route_destination__edit))
+            logger.info("net_route_source="+str(net_route_source))
+            logger.info("net_route_destination="+str(net_route_destination))
+
+            if net_route_source__edit.version != net_route_source.version:
+              messages.add_message(
+                request,
+                messages.WARNING,
+                ('address family (IP version) of source prefix of an existing rule cannot be changed')
+              )
+              return render(
+                request,
+                'apply.html',
+                {
+                    'form': form,
+                    'applier': applier,
+                    'maxexpires': settings.MAX_RULE_EXPIRE_DAYS
+                }
+              )
+            if net_route_destination__edit.version != net_route_destination.version:
+              messages.add_message(
+                request,
+                messages.WARNING,
+                ('address family (IP version) of destination prefix of an existing rule cannot be changed')
+              )
+              return render(
+                request,
+                'apply.html',
+                {
+                    'form': form,
+                    'applier': applier,
+                    'maxexpires': settings.MAX_RULE_EXPIRE_DAYS
+                }
+              )
+
+            #
+
             if not request.user.is_superuser:
                 route.applier = request.user
             if bool(set(changed_data) & set(critical_changed_values)) or (not route_original.status == 'ACTIVE'):
