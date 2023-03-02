@@ -123,7 +123,7 @@ When logged into FoD UI via
 http(s)://SERVERNAME:SERVERPORT/altlogin
 (or via https://SERVERNAME:SERVERPORT/login for use with Shibboleth enrolled/registered users, see 2.1.2)
 with a FoD user account which has assigned 1 or more peers with appropriate peer ranges (see 2.1.1)
-the normal usage can be started.
+the normal usage can start.
 
 ##### Rules dashboard
 
@@ -151,11 +151,11 @@ TODO
 
 ##### User Profile
 
-TODO: create REST API token (see ../api/api-v1.7.md)
+TODO: create REST API token (see [API v1.7](/static/site/api/api-v1.7/index.md))
 
 #### 2.2.2 usage via REST API
 
-TODO: see ../api/api-v1.7.md
+TODO: see [API v1.7](/static/site/api/api-v1.7/index.md)
 
 #### 3. Further/Regular administration
 
