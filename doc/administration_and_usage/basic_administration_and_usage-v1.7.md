@@ -151,11 +151,11 @@ TODO
 
 ##### User Profile
 
-TODO: create REST API token (see [API v1.7](/static/site/api/api-v1.7/index.md))
+TODO: create REST API token (see [API v1.7](/doc/api/api-v1.7/index.md))
 
 #### 2.2.2 usage via REST API
 
-TODO: see [API v1.7](/static/site/api/api-v1.7/index.md)
+TODO: see [API v1.7](/doc/api/api-v1.7/index.md)
 
 #### 3. Further/Regular administration
 
