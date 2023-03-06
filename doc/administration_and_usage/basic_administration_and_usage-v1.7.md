@@ -1,5 +1,7 @@
 # Basic Administration and Usage
 
+Early steps for administration and usage that can be done after FoD has been installed.
+
 ## 1: Setup NETCONF + FoD admin user 
 
 ### 1 (local): Setup NETCONF + FoD admin user (FoD running locally)
@@ -125,21 +127,27 @@ http(s)://SERVERNAME:SERVERPORT/altlogin
 with a FoD user account which has assigned 1 or more peers with appropriate peer ranges (see 2.1.1)
 the normal usage can start.
 
-##### Rules dashboard
-
-TODO
-
 ##### Rules list/table page
 
-TODO
+Provides a list/table of of all rule for all peers of the user.
+BGP FlowSpec rule can have either status inactive (stored only in FoD database),
+or active (stored in FoD database + installed on the router via NETCONF)
+
+##### Rules dashboard
+
+Provides a history of rule changes for all peers of the user.
 
 ##### Add New Rule
 
-TODO
+Allows to add a new rule, i.e., one not yet stored in the FoD database,
+to FoD database and transfer it via NETCONF to the router(s).
 
 ##### Edit Existing Rule
 
-TODO
+Reachable from rules list page or dashboard page for all existing (active or inactive) displayed rules
+for all peers of the user.
+An edited route is changed in the FoD data base as well as updated on the router,
+i.e., will be in active status after the edit operation.
 
 ##### Overview (for admin users)
 
@@ -147,19 +155,19 @@ TODO
 
 ##### Admin (only for admin users, see 2.1)
 
-TODO
+For admin users only, allows to perform (Django) admin actions (see 2.1)
 
 ##### User Profile
 
-TODO: create REST API token (see [API v1.7](/doc/api/api-v1.7.md))
+overview of the own user account, showing first/last name etc.
+
+create REST API token (see [API v1.7](../api/api-v1.7.md))
 
 #### 2.2.2 usage via REST API
 
-TODO: see [API v1.7](/doc/api/api-v1.7.md)
+see [API v1.7](../api/api-v1.7.md)
 
-#### 3. Further/Regular administration
-
-TODO
+#### 3. Further/Regular Administration
 
 ### FoD run-time status 
 
