@@ -98,7 +98,7 @@
       endDate: '+{{maxexpires|add:-1}}d',
       autoclose: true
     });
-    $('#setFromAll').click(function(){
+    /*$('#setFromAll').click(function(){
       source = $("#id_source").val();
       destination = $("#id_destination").val();
       console.log("source="+source+" destination="+destination);
@@ -116,7 +116,7 @@
         console.log("is unknown type of destination="+destination);
         set_source_any__ipv4();
       }
-    });
+    });*/
     $('#setFromAllv4').click(function(){
       set_source_any__ipv4();
     });
@@ -146,12 +146,30 @@
       source = $("#id_source").val();
       destination = $("#id_destination").val();
       console.log("src change source="+source+" destination="+destination);
-      if (is_ip_v4_address(destination) || is_ip_v6_address(destination) || is_ip_v4_address(source) || is_ip_v6_address(source)) {
-        $("#setFromAll").show()
-        $("#setFromAllv4").hide();
+
+      
+      is_v4 = false
+      is_v6 = false
+      if (is_ip_v4_address(destination)) { 
+        is_v4 = true
+      } else if (is_ip_v6_address(destination)) { 
+        is_v6 = true
+      } else if (is_ip_v4_address(source)) { 
+        is_v4 = true
+      } else if (is_ip_v6_address(source)) { 
+        is_v6 = true
+      } 
+
+      if (is_v4) {
+        //$("#setFromAll").show()
+        $("#setFromAllv4").show();
         $("#setFromAllv6").hide();
+      } else if (is_v6) {
+        //$("#setFromAll").hide();
+        $("#setFromAllv4").hide();
+        $("#setFromAllv6").show();
       } else {
-        $("#setFromAll").hide();
+        //$("#setFromAll").hide();
         $("#setFromAllv4").show();
         $("#setFromAllv6").show();
       }
@@ -305,7 +323,7 @@
                   <img src="{% static 'threat_source.png' %}" style="height: 30px;"/>
                   <button type="button" class="btn btn-md btn-info btn-outline" id="setFromAllv4">Any v4</button>
                   <button type="button" class="btn btn-md btn-info btn-outline" id="setFromAllv6">Any v6</button>
-                  <button type="button" class="btn btn-md btn-info btn-outline" id="setFromAll" hidden>Any</button>
+		  <!--<button type="button" class="btn btn-md btn-info btn-outline" id="setFromAll" hidden>Any</button>-->
             </div>
             </div>
 
