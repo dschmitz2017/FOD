@@ -521,6 +521,7 @@ def edit_route(request, route_slug):
                 'apply.html',
                 {
                     'form': form,
+                    'edit': True,
                     'applier': applier,
                     'maxexpires': settings.MAX_RULE_EXPIRE_DAYS
                 }
@@ -536,6 +537,7 @@ def edit_route(request, route_slug):
                 'apply.html',
                 {
                     'form': form,
+                    'edit': True,
                     'applier': applier,
                     'maxexpires': settings.MAX_RULE_EXPIRE_DAYS
                 }
