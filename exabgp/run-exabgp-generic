@@ -1,0 +1,106 @@
+#!/bin/bash
+
+if [ "$1" = "--conf" ]; then
+  shift 1
+
+  myrouter_id="$1"
+  shift 1
+  myas="$1"
+  shift 1
+  
+  shift_count=2 # used as global var
+ 
+  ##
+  
+  [ -n "$myrouter_id" ] || myrouter_id="10.0.0.1" # defaults for own myrouter_id
+   
+  [ -n "$myas" ] || myas="9991" # defaults for myas
+  
+  ##
+
+  myrouter_ip="$myrouter_id"
+  
+  echo "$0: conf: myrouter_id=$myrouter_id myrouter_ip=$myrouter_ip myas=$myas" 1>&2
+  
+  ##
+  
+  [ $# -gt 0 ] || set -- "10.0.0.3" "9993" # defaults for neighbor_ip and neighbor_as
+  
+  echo "$0: loop args: $*" 1>&2
+  
+  while [ $# -gt 0 ]; do
+    neighbor_id="$1"
+    shift 1
+    shift_count=$(( $shift_count + 1 ))
+  
+    [ "$neighbor_id" != "--" ] || break
+  
+    neighbor_as="$1"
+    shift 1
+    shift_count=$(( $shift_count + 1 ))
+
+    neighbor_ip="$neighbor_id"
+  
+  #cat >> /etc/exabgp/exabgp.conf <<EOF
+  cat <<EOF
+neighbor $neighbor_ip {
+	#router-id 10.0.0.1;
+	router-id $myrouter_id;
+	#local-address 10.0.0.1;
+	local-address $myrouter_ip;
+	#local-as 9991;
+	local-as $myas;
+
+	#peer-as 9993;
+	peer-as $neighbor_as;
+
+	#family {
+	#    ipv4 unicast;
+        #    #ipv4 multicast;
+        #    #ipv4 nlri-mpls;
+        #    #ipv4 mpls-vpn;
+        #    #ipv4 flow;
+        #    #ipv4 flow-vpn;
+        #    #ipv6 unicast;
+        #    #ipv6 flow;
+        #    #ipv6 flow-vpn;
+	#}
+
+	#static {
+        #	route 10.10.0.0/32 next-hop self;
+	#	route 10.100.0.0/32 next-hop self;
+	#}
+}
+EOF
+
+  done
+
+else
+
+  conf_filename="/etc/exabgp/exabgp.conf"
+
+  shift_count=0 # global var changed by ". $0 --conf"
+  . "$0" --conf "$@" > "$conf_filename"
+  shift "${shift_count}"
+
+  ##
+
+  mkfifo /run/exabgp.{in,out}
+
+  if id exabgp > /dev/null; then
+    chmod 0666 /run/exabgp.{in,out}
+    chown exabgp: /run/exabgp.{in,out}
+  fi
+
+  ##
+
+  if [ "$1" = "--bg" ]; then
+    shift 1
+    nohup exabgp --debug "$conf_filename" "$@" > exbgp.log 1>&2 &
+  else
+    #/fod_vnet_router --mnexec h1 exabgp --debug /etc/exabgp/exabgp.conf
+    exec exabgp --debug "$conf_filename" "$@"
+  fi
+
+fi
+

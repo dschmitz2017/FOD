@@ -25,7 +25,7 @@ import os
 import time
 
 from flowspec.models import Route
-from flowspec.junos import create_junos_name
+from utils.rule_spec_utils import create_junos_name
 
 import flowspec.logging_utils
 logger = flowspec.logging_utils.logger_init_default(__name__, "celery_snmpstats.log", False)

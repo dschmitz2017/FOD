@@ -21,7 +21,7 @@ from django.contrib import admin
 from flowspec.models import MatchPort, MatchDscp, MatchProtocol, FragmentType, ThenAction, Route
 from flowspec.forms import *
 from accounts.models import UserProfile
-from utils import proxy as PR
+from utils.proxy import PR0 as PR
 from django.contrib.auth.models import User
 from django.contrib.auth.admin import UserAdmin
 from peers.models import *

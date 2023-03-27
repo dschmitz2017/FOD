@@ -18,7 +18,7 @@
 #
 
 import pytest
-from utils import proxy as PR
+from utils.proxy import PR0 as PR
 from celery import shared_task, subtask
 import json
 from django.conf import settings
@@ -29,10 +29,13 @@ from celery.exceptions import TimeLimitExceeded, SoftTimeLimitExceeded
 from ipaddress import *
 from os import fork,_exit
 import os
+import io
 from sys import exit
 import time
 import redis
 from django.forms.models import model_to_dict
+
+#from flowspec.serializers import RouteSerializer
 
 from peers.models import *
 
@@ -48,8 +51,9 @@ rule_changelog_logger.setLevel(logging.INFO)
 def add(routepk, callback=None):
     from flowspec.models import Route
     route = Route.objects.get(pk=routepk)
-    applier = PR.Applier(route_object=route)
-    commit, response = applier.apply()
+    #applier = PR.Applier(route_object=route)
+    applier = PR.Applier(route_object=route, route_objects_all=Route.objects.all())
+    commit, response, response_lowlevel = applier.apply()
     if commit:
         route.status = "ACTIVE"
         #snmp_add_initial_zero_value.delay(str(route.id), True)
@@ -67,13 +71,33 @@ def add(routepk, callback=None):
 
 
 @shared_task(ignore_result=True, autoretry_for=(TimeLimitExceeded, SoftTimeLimitExceeded), retry_backoff=True, retry_kwargs={'max_retries': settings.NETCONF_MAX_RETRY_BEFORE_ERROR})
-def edit(routepk, callback=None):
+def edit(routepk, route_original__data, callback=None):
     from flowspec.models import Route
     route = Route.objects.get(pk=routepk)
     status_pre = route.status
     logger.info("tasks::edit(): route="+str(route)+", status_pre="+str(status_pre))
-    applier = PR.Applier(route_object=route)
-    commit, response = applier.apply(operation="replace")
+    logger.info("tasks::edit(): route_original__data_type="+str(type(route_original__data))+" route_original__data="+str(route_original__data))
+
+    from flowspec.serializers import RouteSerializer
+
+    ##data = json.loads(route_original__data)
+    #logger.info("data="+str(route_original__data))
+    ##route_original__serializer = RouteSerializer(data=route_original__data, context={'request': request})
+    #route_original__serializer = RouteSerializer(data=route_original__data)
+    #logger.info("route_original__serializer="+str(route_original__serializer))
+    #route_original__serializer.is_valid()
+    #logger.info("route_original__serializer.is_valid="+str(route_original__serializer.is_valid()))
+    ##route_original__object = route_original__serializer.validated_data;
+    #route_original__object = route_original__serializer.create(route_original__serializer.validated_data);
+    #logger.info("route_original__object="+str(route_original__object))
+    #logger.info("route_original__serializer=.dir="+str(dir(route_original__serializer)))
+
+    #route_original__object = route_original__serializer.deserialize("json", route_original__data)
+    #logger.info("tasks::edit(): route_original__object_type="+str(type(route_original__object))+" route_original__object="+str(route_original__object))
+
+    #applier = PR.Applier(route_object=route)
+    applier = PR.Applier(route_object=route, route_objects_all=Route.objects.all(), route_object_original=route_original__data)
+    commit, response, response_lowlevel = applier.apply(operation="replace")
     if commit:
         route.status = "ACTIVE"
         try:
@@ -112,9 +136,10 @@ def deactivate_route(routepk, **kwargs):
         
     announce("[%s] Suspending rule : %s. %sPlease wait..." % (route.applier_username_nice, route.name_visible, reason_text), route.applier, route)
 
-    applier = PR.Applier(route_object=route)
+    #applier = PR.Applier(route_object=route)
+    applier = PR.Applier(route_object=route, route_objects_all=Route.objects.all())
     # Delete from router via NETCONF
-    commit, response = applier.apply(operation="delete")
+    commit, response, response_lowlevel = applier.apply(operation="delete")
     #reason_text = ''
     logger.info("tasks::deactivate_route(): commit="+str(commit))
     if commit:
@@ -190,9 +215,10 @@ def batch_delete(routes, **kwargs):
     if routes:
         for route in routes:
             route.status = 'PENDING';route.save()
-        applier = PR.Applier(route_objects=routes)
+        #applier = PR.Applier(route_objects=routes)
+        applier = PR.Applier(route_objects=routes, route_objects_all=Route.objects.all())
         conf = applier.delete_routes()
-        commit, response = applier.apply(configuration=conf)
+        commit, response, response_lowlevel = applier.apply(configuration=conf)
         reason_text = ''
         if commit:
             status = "INACTIVE"

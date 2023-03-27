@@ -85,23 +85,30 @@ class RouteSerializer(serializers.HyperlinkedModelSerializer):
 
     #def validate_source(self, attrs, source):
     def validate_source(self, source):
-        user = self.context.get('request').user
-        source_ip = source #attrs.get('source')
-        res = clean_source(user, source_ip)
-        if res != source_ip:
-            raise serializers.ValidationError(res)
-        #return attrs
-        return res
+        request = self.context.get('request')
+        if request==None:
+          return source
+        else:
+          user = request.user
+          res = clean_source(user, source)
+          if res != source:
+              raise serializers.ValidationError(res)
+          #return attrs
+          return res
 
     #def validate_destination(self, attrs, source):
     def validate_destination(self, destination):
-        user = self.context.get('request').user
-        #destination = attrs.get('destination')
-        res = clean_destination(user, destination)
-        if res != destination:
+        request = self.context.get('request')
+        if request==None:
+          return destination
+        else:
+          user = request.user
+          #destination = attrs.get('destination')
+          res = clean_destination(user, destination)
+          if res != destination:
             raise serializers.ValidationError(res)
-        #return attrs
-        return res
+          #return attrs
+          return res
 
     #def validate_expires(self, attrs, source):
     def validate_expires(self, expires):

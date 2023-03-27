@@ -26,14 +26,14 @@ from django.urls import reverse
 from flowspec.tasks import *
 
 from flowspec.helpers import send_new_mail, get_peer_techc_mails
-from utils import proxy as PR
+from utils.proxy import PR0 as PR
 from ipaddress import *
 from ipaddress import ip_network
 import datetime
 import json
 from peers.models import PeerRange, Peer
 
-from flowspec.junos import create_junos_name
+from utils.rule_spec_utils import create_junos_name
 
 #import flowspec.iprange_match
 from flowspec.iprange_match import find_matching_peer_by_ipprefix__simple
@@ -327,6 +327,9 @@ class Route(models.Model):
     def commit_edit(self, *args, **kwargs):
         peers = self.applier.userprofile.peers.all()
 
+        route_original = kwargs['route_original']
+        logger.info("models::commit_edit(): self="+str(self)+" route_original="+str(route_original)+" kwargs="+str(kwargs))
+
         #username = None
         #for peer in peers:
         #    if username:
@@ -344,7 +347,7 @@ class Route(models.Model):
             peer = None
 
         send_message('[%s] Editing rule %s. Please wait...' % (self.applier_username_nice, self.name_visible), peer, self)
-        response = edit.delay(self.pk)
+        response = edit.delay(self.pk, route_original)
         logger.info('Got edit job id: %s' % response)
         if not settings.DISABLE_EMAIL_NOTIFICATION:
             fqdn = Site.objects.get_current().domain

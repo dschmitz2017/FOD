@@ -2,7 +2,7 @@
 from django.conf import settings
 
 import flowspec.logging_utils
-logger = flowspec.logging_utils.logger_init_default(__name__, "celery_junos.log", False)
+logger = flowspec.logging_utils.logger_init_default(__name__, "celery_flow_spec_utils.log", False)
 
 PROTOCOL_NUMBERS = {
     'HOPOPT': '0',
@@ -146,17 +146,17 @@ PROTOCOL_NUMBERS = {
     'ROHC': '142'
 }
 
-def get_protocols_numbers(protocols_set, ip_version):
+def get_protocols_numbers(protocols_set, ip_version, output_separator=","):
     if protocols_set:
         protocols = 'proto'
         for protocol in protocols_set:
             protoNo = PROTOCOL_NUMBERS.get(protocol.protocol.upper())
             if ip_version==6 and (protoNo==1 or protocol.protocol=="icmp"):
-                protocols += '=%s,' % PROTOCOL_NUMBERS.get("IPv6-ICMP")
+                protocols += '=%s'+output_separator % PROTOCOL_NUMBERS.get("IPv6-ICMP")
             elif protoNo:
-                protocols += '=%s,' % PROTOCOL_NUMBERS.get(protocol.protocol.upper())
+                protocols += '=%s'+output_separator % PROTOCOL_NUMBERS.get(protocol.protocol.upper())
             else:
-                protocols += '=%s,' % protocol.protocol
+                protocols += '=%s'+output_separator % protocol.protocol
         return protocols
     else:
         return ''
@@ -188,7 +188,7 @@ def get_range(addr_range):
                 addr_range += '/%s' % mask
     return addr_range + ','
 
-def translate_ports(portstr):
+def translate_ports(portstr, output_separator=","):
     res = []
     if portstr:
         for p in portstr.split(","):
@@ -198,7 +198,7 @@ def translate_ports(portstr):
                 res.append(">=" + boundary[0] + "&<=" + boundary[1])
             else:
                 res.append("=" + p)
-        return ",".join(res)
+        return output_separator.join(res)
     else:
         return ""
 
