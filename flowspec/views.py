@@ -41,6 +41,8 @@ from flowspec.forms import *
 from flowspec.models import *
 from flowspec.model_utils import convert_container_to_queryset
 
+from flowspec.serializers import RouteSerializer
+
 from peers.models import *
 
 from django_registration.backends.activation.views import RegistrationView
@@ -57,6 +59,7 @@ import datetime
 import flowspec.iprange_match
 
 from urllib.parse import urlencode
+
 #############################################################################
 #############################################################################
 
@@ -505,7 +508,11 @@ def edit_route(request, route_slug):
             route.save()
             if bool(set(changed_data) & set(critical_changed_values)) or (not route_original.status == 'ACTIVE'):
                 form.save_m2m()
-                route.commit_edit()
+
+                route_original__serializer = RouteSerializer(route_original)
+                logger.info("views::edit(): route_original="+str(route_original))
+                route.commit_edit(route_original=route_original__serializer.data)
+
             return HttpResponseRedirect(reverse("group-routes"))
         else:
             if not request.user.is_superuser:
@@ -1161,7 +1168,7 @@ def routedetails(request, route_slug):
 @login_required
 def routestats(request, route_slug):
     route = get_object_or_404(Route, name=route_slug)
-    import flowspec.junos
+    import utils.rule_spec_utils 
     import time
     res = {}
     try:
