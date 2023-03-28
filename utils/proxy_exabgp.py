@@ -101,7 +101,7 @@ class Retriever(object):
 
     # e.g., 4 source-ipv6 ::/0/0 protocol [ =tcp =udp ] destination-port [ >=2&<=900 ] source-port [ >=1&<=100 ] fragment [ dont-fragment last-fragment ]
     def parse_exabgp_route__str(self, route_exabgp__str):
-      re1 = re.compile('^(?P<version>[46]) +((source-ipv[46]) +(?P<source>\S+) +)?((destination-ipv[46]) +(?P<destination>\S+) +)?(protocol +(?P<protocol>(\[[^\[\]]+\])|\S+) +)?(source-port +(?P<source_port>(\[[^\[\]]+\])|\S+) +)?(destination-port +(?P<destination_port>(\[[^\[\]]+\])|\S+) +)?(fragment +(?P<fragment>(\[[^\[\]]+\])|\S+) +)?')
+      re1 = re.compile('^(?P<version>[46]) +((destination-ipv[46]) +(?P<destination>\S+) +)?((source-ipv[46]) +(?P<source>\S+) +)?(protocol +(?P<protocol>(\[[^\[\]]+\])|\S+) +)?(destination-port +(?P<destination_port>(\[[^\[\]]+\])|\S+) +)?(source-port +(?P<source_port>(\[[^\[\]]+\])|\S+) +)?(fragment +(?P<fragment>(\[[^\[\]]+\])|\S+) +)?')
       key_is_singlevalued = {
         'version': 1,
         #'source': 1,
@@ -112,6 +112,12 @@ class Retriever(object):
           route = {}
           for groupname in re1.groupindex:
             val = m.group(groupname)
+
+            # special case
+            if groupname=='source' or groupname=='destination' and route['version']=='6':
+              if val!=None:
+                val = re.sub('(/[0-9]+)/0$', '\\1', val)
+
             groupname2 = groupname.translate({ '_' : '-' })
             if groupname in key_is_singlevalued or val==None:
               route[groupname] = self.parse_exabgp_list_elem__str(val)
