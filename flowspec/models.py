@@ -33,7 +33,7 @@ import datetime
 import json
 from peers.models import PeerRange, Peer
 
-from utils.rule_spec_utils import create_junos_name
+from utils.route_spec_utils import create_junos_name
 
 #import flowspec.iprange_match
 from flowspec.iprange_match import find_matching_peer_by_ipprefix__simple
