@@ -1,5 +1,11 @@
 #!/bin/bash
 
+parsed=1
+if [ "$1" = "--raw" ]; then 
+  shift 1
+  parsed=0
+fi
+
 NETCONF_DEVICE="$1" 
 shift 1
 NETCONF_PORT="$1"
@@ -68,8 +74,13 @@ from utils.proxy import *;
 #xml = proxy.get_existing_config_xml();
 
 retriever = PR0.Retriever(); 
-result = retriever.retrieve_current_routes();
-print(result);
+
+if $parsed:
+  result = retriever.retrieve_current_routes();
+  print(result);
+else:
+  result = retriever.fetch_raw();
+  print(result);
 
 EOF
 

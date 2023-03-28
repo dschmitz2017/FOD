@@ -114,7 +114,7 @@ class Retriever(object):
             val = m.group(groupname)
             groupname2 = groupname.translate({ '_' : '-' })
             if groupname in key_is_singlevalued or val==None:
-              route[groupname] = val
+              route[groupname] = self.parse_exabgp_list_elem__str(val)
             else:
               route[groupname] = self.parse_exabgp_list__str(val)
       else:
@@ -129,7 +129,17 @@ class Retriever(object):
         list = inner__str.split()
       else:
         list = [list__str.strip()]
+
+      list = [self.parse_exabgp_list_elem__str(x) for x in list]
+
       return list
+
+    def parse_exabgp_list_elem__str(self, s):
+       if s!=None:
+         if s[0:1]=="=":
+           s = s[1:]
+       #logger.info("parse_exabgp_list_elem__str() => s:"+str(s))
+       return s    
 
     def retrieve_current_routes(self):
       logger.info("proxy_exabgp::Retriever::retrieve_current_routes(): called")
@@ -151,7 +161,8 @@ class Retriever(object):
                 logger.info("[CACHE] miss, setting current_routes")
                 return current_routes
             else:
-                return False
+                # do not cache empty result, might be a failure
+                return current_routes
 
 class Applier(object):
   def __init__(self, route_objects=[], route_object=None, route_object_original=None, route_objects_all=[]):

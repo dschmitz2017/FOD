@@ -469,7 +469,6 @@ class Route(models.Model):
           self.status = new_status
           self.save()
 
-
     def check_sync(self, cached_routes=None):
         if not self.is_synced(cached_routes=cached_routes):
             #self.status = "OUTOFSYNC"
@@ -494,11 +493,14 @@ class Route(models.Model):
             self.update_status("EXPIRED")
             logger.error('models::is_synced(): no routing options on device. Exception: %s' % e)
             return True
+        
+        #logger.info("models::is_synced(): routes="+str(routes))
 
         retriever_supports__named_routes = retriever.supports__named_routes()
         logger.info("models::is_synced(): retriever_supports__named_routes="+str(retriever_supports__named_routes))
 
-        for route in routes:
+        if routes:
+          for route in routes:
             if not retriever_supports__named_routes or route.name == self.name:
                 found = True
                 logger.debug('models::is_synced(): Found a matching rule name')

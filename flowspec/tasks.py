@@ -309,17 +309,19 @@ def check_sync(route_name=None, selected_routes=[]):
       logger.info("tasks::check_sync(): making single query whose result is to be used during loop processing")
       retriever = PR.Retriever()
       cached_routes = retriever.retrieve_current_routes__globally_cached()
+      logger.info("tasks::check_sync(): cached_routes="+str(cached_routes))
     except Exception as e:
       logger.info("tasks::check_sync(): exception occured during get active routes on router: "+str(e))
       return
 
     for route in routes:
-        if route.has_expired() and (route.status != 'EXPIRED' and route.status != 'ADMININACTIVE' and route.status != 'INACTIVE' and route.status != 'INACTIVE_TODELETE' and route.status != 'PENDING_TODELETE'):
+        route_is_not_inactive = route.status != 'EXPIRED' and route.status != 'ADMININACTIVE' and route.status != 'INACTIVE' and route.status != 'INACTIVE_TODELETE' and route.status != 'PENDING_TODELETE'
+        if route.has_expired() and route_is_not_inactive:
             if route.status != 'ERROR':
                 logger.info('Expiring %s route %s' %(route.status, route.name))
                 subtask(deactivate_route).delay(str(route.id), reason="EXPIRED")
         else:
-            if route.status != 'EXPIRED':
+            if route_is_not_inactive:
                 old_status = route.status
                 route.check_sync(cached_routes=cached_routes)
                 new_status = route.status
