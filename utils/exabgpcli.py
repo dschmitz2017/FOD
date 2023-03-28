@@ -301,6 +301,7 @@ def exabgp_interaction(command_argv):
         return 0, "reset done"
 
     string_all=""
+    error_occurred=0
 
     waited = 0.0
     buf = b''
@@ -370,14 +371,24 @@ def exabgp_interaction(command_argv):
                 break
             if string == Answer.shutdown:
                 logger.warn('ExaBGP is shutting down, command aborted\n')
-                sys.stderr.flush()
+                #sys.stderr.flush()
+                error_occurred = 1
                 done = True
+                if string_all=="":
+                  string_all = string 
+                else:
+                  string_all = string_all+"\n"+string
                 break
             if string == Answer.error:
                 done = True
                 logger.warn('ExaBGP returns an error (see ExaBGP\'s logs for more information)\n')
                 logger.warn('use help for a list of available commands\n')
-                sys.stderr.flush()
+                error_occurred = 1
+                if string_all=="":
+                  string_all = string 
+                else:
+                  string_all = string_all+"\n"+string
+                #sys.stderr.flush()
                 break
 
             logger.info('exabgp output: %s' % string)
@@ -401,7 +412,7 @@ def exabgp_interaction(command_argv):
         pass
 
     #sys.exit(0)
-    return 0, string_all
+    return error_occurred, string_all
 
  except Exception as e:
    logger.error("exabgpcli::exabgp_interaction(): got exception="+str(e), exc_info=True)

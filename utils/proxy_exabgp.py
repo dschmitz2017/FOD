@@ -8,7 +8,7 @@
 
 from django.conf import settings
 from utils.exabgpcli import exabgp_interaction
-import utils.rule_spec_utils as route_spec_utils
+import utils.route_spec_utils as route_spec_utils
 
 from . import jncdevice as np
 from ncclient import manager
@@ -110,7 +110,7 @@ class Applier(object):
       #logger.info("helper_get_active_exabgp__route_parameter_string(): route2="+str(route2))
       if (include_route_self or route2!=route) and route2.status=="ACTIVE":
           if self.helper_get_exabgp__route_parameter_string(route2)==route_par_str:
-              ret.add(route2)
+              ret.append(route2)
 
     return ret
 
@@ -146,7 +146,7 @@ class Applier(object):
 
     ##
 
-    ret1 = route_spec_utils.get_protocols_numbers(protocols, ip_version, output_separator=" ")
+    ret1 = route_spec_utils.get_protocols_numbers(protocols, ip_version, output_separator=" ", output_prefix="")
     if ret1 != "":
       ret = ret + " protocol [ " + ret1 + " ]" 
 
