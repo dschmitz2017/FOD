@@ -173,14 +173,14 @@ def exabgp_interaction(command_argv):
     recv = pipes[0] + pipename + '.out'
 
     if not check_fifo(send):
-        msg1 = 'could not find write named pipe to connect to ExaBGP'
+        msg1 = 'could not find write named pipe to connect to ExaBGP: '+str(send)
         logger.error(msg1)
         #sys.stdout.flush()
         #sys.exit(1)
         return 1, msg1
 
     if not check_fifo(recv):
-        msg1 = 'could not find read named pipe to connect to ExaBGP'
+        msg1 = 'could not find read named pipe to connect to ExaBGP: '+str(recv)
         logger.error(msg1)
         #sys.stdout.flush()
         #sys.exit(1)

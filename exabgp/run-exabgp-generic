@@ -88,8 +88,9 @@ else
   mkfifo /run/exabgp.{in,out}
 
   if id exabgp > /dev/null; then
-    chmod 0666 /run/exabgp.{in,out}
-    chown exabgp: /run/exabgp.{in,out}
+    chmod 0600 /run/exabgp.{in,out}
+    #chown exabgp: /run/exabgp.{in,out}
+    chown fod: /run/exabgp.{in,out}
   fi
 
   ##
