@@ -307,8 +307,8 @@ def check_sync(route_name=None, selected_routes=[]):
 
     try:
       logger.info("tasks::check_sync(): making single query whose result is to be used during loop processing")
-      get_device = PR.Retriever()
-      device = get_device.fetch_device()
+      retriever = PR.Retriever()
+      cached_routes = retriever.retrieve_current_routes__globally_cached()
     except Exception as e:
       logger.info("tasks::check_sync(): exception occured during get active routes on router: "+str(e))
       return
@@ -321,7 +321,7 @@ def check_sync(route_name=None, selected_routes=[]):
         else:
             if route.status != 'EXPIRED':
                 old_status = route.status
-                route.check_sync(netconf_device_queried=device)
+                route.check_sync(cached_routes=cached_routes)
                 new_status = route.status
                 if old_status != new_status:
                   logger.info('status of rule changed during check_sync %s : %s -> %s' % (route.name, old_status, new_status))

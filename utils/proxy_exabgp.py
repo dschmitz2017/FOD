@@ -24,6 +24,7 @@ from .portrange import parse_portrange
 import traceback
 from ipaddress import ip_network
 import xml.etree.ElementTree as ET
+import re
 
 import flowspec.logging_utils
 logger = flowspec.logging_utils.logger_init_default(__name__, "celery_exabpg.log", False)
@@ -73,11 +74,84 @@ class Retriever(object):
             #self.filter = settings.ROUTE_FILTER%route_name
             self.filter = settings.ROUTE_FILTER.replace("%s", route_name) # allow for varying number-of, multiple instances of %s
 
-    def fetch_xml(self):
-      logger.info("proxy_exabgp::Retriever::fetch_xml(): called")
+    def supports__named_routes(self):
+        return False
+
+    # specific method for fetching raw NETCONF XML data
+    # +
+    # generic method for returning raw data string (here NETCONF XML)
+    def fetch_raw(self):
+      logger.info("proxy_exabgp::Retriever::fetch_raw(): called")
       ret, msg = do_exabgp_interaction(["show adj-rib out"])
-      logger.info("proxy_exabgp::Retriever::fetch_xml(): ret="+str(ret))
+      logger.info("proxy_exabgp::Retriever::fetch_raw(): ret="+str(ret))
+      #logger.info("proxy_exabgp::Retriever::fetch_raw(): msg="+str(msg))
       return msg
+
+    # specific method for parsing the NETCONF XML to route objects
+    # +
+    # generic method for parsing the raw data (here NETCONF XML) to routes
+    # e.g., neighbor 127.0.0.3 ipv6 flow flow source-ipv6 ::/0/0 protocol [ =tcp =udp ] destination-port [ >=2&<=900 ] source-port [ >=1&<=100 ] fragment [ dont-fragment last-fragment ]
+    def parse_exabgp__routes_output(self, msg):
+       lines = msg.split("\n")
+       #logger.info("proxy_exabgp::Retriever::parse_exabgp__routes_output(): => lines="+str(lines))
+       re1 = re.compile('^neighbor +\S+ +ipv([46]) +flow +flow +(.*)$')
+       route_exabgp__str__list = [re1.match(line).group(1)+" "+re1.match(line).group(2) for line in lines if re1.match(line)]
+       routes = [self.parse_exabgp_route__str(route_exabgp__str) for route_exabgp__str in route_exabgp__str__list]
+       return routes
+
+    # e.g., 4 source-ipv6 ::/0/0 protocol [ =tcp =udp ] destination-port [ >=2&<=900 ] source-port [ >=1&<=100 ] fragment [ dont-fragment last-fragment ]
+    def parse_exabgp_route__str(self, route_exabgp__str):
+      re1 = re.compile('^(?P<version>[46]) +((source-ipv[46]) +(?P<source>\S+) +)?((destination-ipv[46]) +(?P<destination>\S+) +)?(protocol +(?P<protocol>(\[[^\[\]]+\])|\S+) +)?(source-port +(?P<source_port>(\[[^\[\]]+\])|\S+) +)?(destination-port +(?P<destination_port>(\[[^\[\]]+\])|\S+) +)?(fragment +(?P<fragment>(\[[^\[\]]+\])|\S+) +)?')
+      key_is_singlevalued = {
+        'version': 1,
+        #'source': 1,
+        #'destination': 1
+      }
+      m = re1.match(route_exabgp__str+" ")
+      if m:
+          route = {}
+          for groupname in re1.groupindex:
+            val = m.group(groupname)
+            groupname2 = groupname.translate({ '_' : '-' })
+            if groupname in key_is_singlevalued or val==None:
+              route[groupname] = val
+            else:
+              route[groupname] = self.parse_exabgp_list__str(val)
+      else:
+        route = None
+
+      return route
+
+    def parse_exabgp_list__str(self, list__str):
+      m = re.match('\[ *([^\[\]]+) *\]', list__str)
+      if m:
+        inner__str = m.group(1)
+        list = inner__str.split()
+      else:
+        list = [list__str.strip()]
+      return list
+
+    def retrieve_current_routes(self):
+      logger.info("proxy_exabgp::Retriever::retrieve_current_routes(): called")
+      msg = self.fetch_raw()
+      #logger.info("proxy_exabgp::Retriever::retrieve_current_routes(): => msg="+str(msg))
+      routes = self.parse_exabgp__routes_output(msg)
+      #logger.info("proxy_exabgp::Retriever::retrieve_current_routes(): routes="+str(routes))
+      return routes
+
+    def retrieve_current_routes__globally_cached(self):
+        current_routes = cache.get("current_routes")
+        if current_routes:
+            logger.info("[CACHE] hit! got current_routes")
+            return current_routes
+        else:
+            current_routes = self.retrieve_current_routes()
+            if current_routes:
+                cache.set("current_routes", current_routes, 3600)
+                logger.info("[CACHE] miss, setting current_routes")
+                return current_routes
+            else:
+                return False
 
 class Applier(object):
   def __init__(self, route_objects=[], route_object=None, route_object_original=None, route_objects_all=[]):
@@ -91,7 +165,7 @@ class Applier(object):
         #route_name = self.get_route_name()
         #logger.info("get_existing_config_xml(): route_name="+str(route_name))
         retriever0 = Retriever()
-        config_xml_running = retriever0.fetch_xml()
+        config_xml_running = retriever0.fetch_raw()
         #logger.info("proxy::get_existing_config(): config_xml_running="+str(config_xml_running))
         return config_xml_running
 

@@ -55,11 +55,16 @@ class Retriever(object):
             #self.filter = settings.ROUTE_FILTER%route_name
             self.filter = settings.ROUTE_FILTER.replace("%s", route_name) # allow for varying number-of, multiple instances of %s
 
+    def supports__named_routes(self):
+        return True
+
+    # specific method for fetching raw NETCONF XML data
     def fetch_xml(self):
         with manager.connect(host=self.device, port=self.port, username=self.username, password=self.password, hostkey_verify=False) as m:
             xmlconfig = m.get_config(source='running', filter=('subtree',self.filter)).data_xml
         return xmlconfig
-
+   
+    # specific method for returning raw NETCONF XML data with cache
     def get_xml(self):
         if self.xml:
             xmlconfig = self.xml
@@ -67,17 +72,27 @@ class Retriever(object):
             xmlconfig = self.fetch_xml()
         return xmlconfig
 
+    # generic method for returning raw data string (here NETCONF XML)
+    def fetch_raw(self):
+        return self.get_xml()
+
+    # specific method for parsing the NETCONF XML to route objects
     def proccess_xml(self):
         xmlconfig = self.get_xml();
         parser = np.Parser()
         parser.confile = xmlconfig
         device = parser.export()
         return device
-
+    
+    # specific method for parsing the NETCONF XML to DOM object tree
     def proccess_xml_generic(self):
         xmlconfig = self.get_xml();
         root = ET.fromstring(xmlconfig)
         return root
+
+    # generic method for parsing the raw data (here NETCONF XML) to routes
+    def retrieve_current_routes(self):
+        return self.proccess_xml()
 
     def fetch_device(self):
         device = cache.get("device")
@@ -93,7 +108,11 @@ class Retriever(object):
             else:
                 return False
 
-
+    def retrieve_current_routes__globally_cached(self):
+        device = self.fetch_device()
+        routes = device.routing_options[0].routes
+        return routes
+ 
 class Applier(object):
     def __init__(self, route_objects=[], route_object=None, route_object_original=None, route_objects_all=[], device=settings.NETCONF_DEVICE, username=settings.NETCONF_USER, password=settings.NETCONF_PASS, port=settings.NETCONF_PORT):
         self.route_object = route_object
