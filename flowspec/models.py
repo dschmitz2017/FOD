@@ -497,10 +497,16 @@ class Route(models.Model):
         #logger.info("models::is_synced(): routes="+str(routes))
 
         retriever_supports__named_routes = retriever.supports__named_routes()
-        logger.info("models::is_synced(): retriever_supports__named_routes="+str(retriever_supports__named_routes))
+
+        if not retriever_supports__named_routes:
+          logger.info("models::is_synced(): retriever_supports__named_routes="+str(retriever_supports__named_routes)+", so check_sync is not supported")
+          return True # assume synced
 
         if routes:
           for route in routes:
+            logger.debug('models::is_synced(): loop routes self='+str(self))
+            logger.debug('models::is_synced(): loop routes route='+str(route))
+            logger.debug('models::is_synced(): loop routes')
             if not retriever_supports__named_routes or route.name == self.name:
                 found = True
                 logger.debug('models::is_synced(): Found a matching rule name')
