@@ -152,11 +152,11 @@ def get_protocols_numbers(protocols_set, ip_version, output_separator=","):
         for protocol in protocols_set:
             protoNo = PROTOCOL_NUMBERS.get(protocol.protocol.upper())
             if ip_version==6 and (protoNo==1 or protocol.protocol=="icmp"):
-                protocols += '=%s'+output_separator % PROTOCOL_NUMBERS.get("IPv6-ICMP")
+                protocols += ('=%s'+output_separator) % PROTOCOL_NUMBERS.get("IPv6-ICMP")
             elif protoNo:
-                protocols += '=%s'+output_separator % PROTOCOL_NUMBERS.get(protocol.protocol.upper())
+                protocols += ('=%s'+output_separator) % protoNo
             else:
-                protocols += '=%s'+output_separator % protocol.protocol
+                protocols += ('=%s'+output_separator) % protocol.protocol
         return protocols
     else:
         return ''
