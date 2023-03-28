@@ -64,9 +64,12 @@ settings.NETCONF__TESTWISE_TRY_TO_FETCH_WITHOUT_FILTER = 1; # override flowspy/s
 
 # actually perform NETCONF get-config query and print result
 from utils.proxy import *;
-proxy = PR0.Applier(); 
-xml = proxy.get_existing_config_xml();
-print(xml);
+#proxy = PR0.Applier(); 
+#xml = proxy.get_existing_config_xml();
+
+retriever = PR0.Retriever(); 
+result = retriever.retrieve_current_routes();
+print(result);
 
 EOF
 

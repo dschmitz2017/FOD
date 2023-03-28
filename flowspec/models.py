@@ -470,40 +470,48 @@ class Route(models.Model):
           self.save()
 
 
-    def check_sync(self, netconf_device_queried=None):
-        if not self.is_synced(netconf_device_queried=netconf_device_queried):
+    def check_sync(self, cached_routes=None):
+        if not self.is_synced(cached_routes=cached_routes):
             #self.status = "OUTOFSYNC"
             #self.save()
             self.update_status("OUTOFSYNC")
 
-    def is_synced(self, netconf_device_queried=None):
+    def is_synced(self, cached_routes=None):
         found = False
+              
+        retriever = PR.Retriever()
         try:
-            # allows for caching of NETCONF GetConfig query, e.g., during tasks::check_sync
-            if netconf_device_queried==None:
-              logger.info("models::is_synced(): querying routes newly from NETCONF router")
-              get_device = PR.Retriever()
-              device = get_device.fetch_device()
+            # allows for caching of current routes, e.g., during tasks::check_sync
+            if cached_routes==None:
+              logger.info("models::is_synced(): querying routes newly from router")
+              routes = retriever.retrieve_current_routes__globally_cached()
             else:
-              logger.info("models::is_synced(): reusing cached query from NETCONF router")
-              device = netconf_device_queried
-            routes = device.routing_options[0].routes
+              logger.info("models::is_synced(): reusing cached routes")
+              routes = cached_routes
         except Exception as e:
             #self.status = "EXPIRED"
             #self.save()
             self.update_status("EXPIRED")
-            logger.error('models::is_synced(): No routing options on device. Exception: %s' % e)
+            logger.error('models::is_synced(): no routing options on device. Exception: %s' % e)
             return True
 
+        retriever_supports__named_routes = retriever.supports__named_routes()
+        logger.info("models::is_synced(): retriever_supports__named_routes="+str(retriever_supports__named_routes))
+
         for route in routes:
-            if route.name == self.name:
+            if not retriever_supports__named_routes or route.name == self.name:
                 found = True
                 logger.debug('models::is_synced(): Found a matching rule name')
-                devicematch = route.match
+
+                if hasattr(route, 'match'): # unfold match part if it exists, otherwisse assume flat attribute space
+                  match = route.match
+                else:
+                  match = route
+
                 try:
                     assert(self.destination)
-                    assert(devicematch['destination'][0])
-                    if self.destination == devicematch['destination'][0]:
+                    assert(match['destination'][0])
+                    if self.destination == match['destination'][0]:
                         found = found and True
                         logger.debug('models::is_synced(): Found a matching destination')
                     else:
@@ -513,8 +521,8 @@ class Route(models.Model):
                     pass
                 try:
                     assert(self.source)
-                    assert(devicematch['source'][0])
-                    if self.source == devicematch['source'][0]:
+                    assert(match['source'][0])
+                    if self.source == match['source'][0]:
                         found = found and True
                         logger.debug('models::is_synced(): Found a matching source')
                     else:
@@ -525,8 +533,8 @@ class Route(models.Model):
 
                 try:
                     assert(self.fragmenttype.all())
-                    assert(devicematch['fragment'])
-                    devitems = devicematch['fragment']
+                    assert(match['fragment'])
+                    devitems = match['fragment']
                     dbitems = ["%s"%i for i in self.fragmenttype.all()]
                     intersect = list(set(devitems).intersection(set(dbitems)))
                     if ((len(intersect) == len(dbitems)) and (len(intersect) == len(devitems))):
@@ -540,8 +548,8 @@ class Route(models.Model):
 
                 try:
                     assert(self.port.all())
-                    assert(devicematch['port'])
-                    devitems = devicematch['port']
+                    assert(match['port'])
+                    devitems = match['port']
                     dbitems = ["%s"%i for i in self.port.all()]
                     intersect = list(set(devitems).intersection(set(dbitems)))
                     if ((len(intersect) == len(dbitems)) and (len(intersect) == len(devitems))):
@@ -555,8 +563,8 @@ class Route(models.Model):
 
                 try:
                     assert(self.protocol.all())
-                    assert(devicematch['protocol'])
-                    devitems = devicematch['protocol']
+                    assert(match['protocol'])
+                    devitems = match['protocol']
                     dbitems = ["%s"%i for i in self.protocol.all()]
                     intersect = list(set(devitems).intersection(set(dbitems)))
                     if ((len(intersect) == len(dbitems)) and (len(intersect) == len(devitems))):
@@ -570,8 +578,8 @@ class Route(models.Model):
 
                 try:
                     assert(self.destinationport.all())
-                    assert(devicematch['destination-port'])
-                    devitems = devicematch['destination-port']
+                    assert(match['destination-port'])
+                    devitems = match['destination-port']
                     dbitems = ["%s"%i for i in self.destinationport.all()]
                     intersect = list(set(devitems).intersection(set(dbitems)))
                     if ((len(intersect) == len(dbitems)) and (len(intersect) == len(devitems))):
@@ -585,8 +593,8 @@ class Route(models.Model):
 
                 try:
                     assert(self.sourceport.all())
-                    assert(devicematch['source-port'])
-                    devitems = devicematch['source-port']
+                    assert(match['source-port'])
+                    devitems = match['source-port']
                     dbitems = ["%s"%i for i in self.sourceport.all()]
                     intersect = list(set(devitems).intersection(set(dbitems)))
                     if ((len(intersect) == len(dbitems)) and (len(intersect) == len(devitems))):
@@ -601,8 +609,8 @@ class Route(models.Model):
 
 #                try:
 #                    assert(self.fragmenttype)
-#                    assert(devicematch['fragment'][0])
-#                    if self.fragmenttype == devicematch['fragment'][0]:
+#                    assert(match['fragment'][0])
+#                    if self.fragmenttype == match['fragment'][0]:
 #                        found = found and True
 #                        logger.debug('Found a matching fragment type')
 #                    else:
@@ -612,8 +620,8 @@ class Route(models.Model):
 #                    pass
                 try:
                     assert(self.icmpcode)
-                    assert(devicematch['icmp-code'][0])
-                    if self.icmpcode == devicematch['icmp-code'][0]:
+                    assert(match['icmp-code'][0])
+                    if self.icmpcode == match['icmp-code'][0]:
                         found = found and True
                         logger.debug('models::is_synced(): Found a matching icmp code')
                     else:
@@ -623,8 +631,8 @@ class Route(models.Model):
                     pass
                 try:
                     assert(self.icmptype)
-                    assert(devicematch['icmp-type'][0])
-                    if self.icmptype == devicematch['icmp-type'][0]:
+                    assert(match['icmp-type'][0])
+                    if self.icmptype == match['icmp-type'][0]:
                         found = found and True
                         logger.debug('models::is_synced(): Found a matching icmp type')
                     else:
