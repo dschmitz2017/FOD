@@ -2,48 +2,103 @@
 
 if [ "$1" = "--conf" ]; then
   shift 1
+  
+  shift_count=0
+ 
+  if [ "$1" = "--myipv6" ]; then 
+    shift 1
+    myrouter_id__ipv6="$1"
+    shift 1
+    myrouter_ipv6="$1"
+    shift 1
+    myas__ipv6="$1"
+    shift 1
+    shift_count=$(( $shift_count + 4 ))
+    
+  fi
 
   myrouter_id="$1"
   shift 1
+  myrouter_ip="$1"
+  shift 1
   myas="$1"
   shift 1
-  
-  shift_count=2 # used as global var
- 
-  ##
-  
-  [ -n "$myrouter_id" ] || myrouter_id="10.0.0.1" # defaults for own myrouter_id
-   
-  [ -n "$myas" ] || myas="9991" # defaults for myas
+  shift_count=$(( $shift_count + 3 ))
   
   ##
+  
+  [ -n "$myrouter_id" ] || myrouter_id="10.0.0.1"
+  [ -n "$myrouter_ip" ] || myrouter_ip="10.0.0.1"
+  [ -n "$myas" ] || myas="9991"
+  
+  ##
+    
+  echo "$0: myrouter_ip=$myrouter_ip myas=$myas myrouter_id=$myrouter_id" 1>&2
+  echo "$0: myrouter_ipv6=$myrouter_ipv6 myas__ipv6=$myas__ipv6 myrouter_id__ipv6=$myrouter_id__ipv6" 1>&2
+  
+  ##
+  
+  #cat > /etc/exabgp/exabgp.conf <<EOF
+  cat <<EOF
+#neighbor 10.0.0.2 {
+#	router-id 10.0.0.1;
+#	local-address 10.0.0.1;
+#	local-as 9991;
+#
+#	peer-as 9992;
+#
+#	family {
+#            ipv4 unicast;
+#            ipv4 multicast;
+#            ipv4 nlri-mpls;
+#            ipv4 mpls-vpn;
+#            ipv4 flow;
+#            ipv4 flow-vpn;
+#            ipv6 unicast;
+#            ipv6 flow;
+#            ipv6 flow-vpn;
+#	}
+#
+#	static {
+#		route 10.4.0.0/32 next-hop self;
+#	}
+#}
+EOF
 
-  myrouter_ip="$myrouter_id"
-  
-  echo "$0: conf: myrouter_id=$myrouter_id myrouter_ip=$myrouter_ip myas=$myas" 1>&2
-  
-  ##
-  
-  [ $# -gt 0 ] || set -- "10.0.0.3" "9993" # defaults for neighbor_ip and neighbor_as
+  [ $# -gt 0 ] || set -- "10.0.0.2" "10.0.0.2" "9992"
   
   echo "$0: loop args: $*" 1>&2
   
   while [ $# -gt 0 ]; do
-    neighbor_id="$1"
-    shift 1
-    shift_count=$(( $shift_count + 1 ))
-  
-    [ "$neighbor_id" != "--" ] || break
-  
-    neighbor_as="$1"
+
+    is_ipv6=0
+    if [ "$1" = "--ipv6" ]; then 
+      shift 1
+      shift_count=$(( $shift_count + 1 ))
+      is_ipv6=1
+    fi
+
+    neighbor_id="$1" 
     shift 1
     shift_count=$(( $shift_count + 1 ))
 
-    neighbor_ip="$neighbor_id"
+    neighbor_ip="$1"
+    shift 1
+    shift_count=$(( $shift_count + 1 ))
+    
+    [ "$neighbor_ip" != "--" ] || break
   
+    neighborAS="$1"
+    shift 1
+    shift_count=$(( $shift_count + 1 ))
+
+    ##
+
+if [ "$is_ipv6" = 0 ]; then
   #cat >> /etc/exabgp/exabgp.conf <<EOF
   cat <<EOF
-neighbor $neighbor_ip {
+#neighbor 10.0.0.3 
+neighbor $neighbor_id {
 	#router-id 10.0.0.1;
 	router-id $myrouter_id;
 	#local-address 10.0.0.1;
@@ -52,7 +107,38 @@ neighbor $neighbor_ip {
 	local-as $myas;
 
 	#peer-as 9993;
-	peer-as $neighbor_as;
+	peer-as $neighborAS;
+        peer-address $neighbor_ip;
+
+	#family {
+	#    ipv4 unicast;
+        #    #ipv4 multicast;
+        #    #ipv4 nlri-mpls;
+        #    #ipv4 mpls-vpn;
+        #    #ipv4 flow;
+        #    #ipv4 flow-vpn;
+        #    #ipv6 unicast;
+        #    #ipv6 flow;
+        #    #ipv6 flow-vpn;
+	#}
+
+	static {
+		route 10.10.0.0/32 next-hop self;
+		route 10.100.0.0/32 next-hop self;
+	}
+}
+EOF
+
+else
+
+  cat <<EOF
+neighbor $neighbor_id {
+	router-id $myrouter_id__ipv6;
+	local-address $myrouter_ipv6;
+	local-as $myas__ipv6;
+
+	peer-as $neighborAS;
+        peer-address $neighbor_ip;
 
 	#family {
 	#    ipv4 unicast;
@@ -67,40 +153,36 @@ neighbor $neighbor_ip {
 	#}
 
 	#static {
-        #	route 10.10.0.0/32 next-hop self;
+        #		route 10.10.0.0/32 next-hop self;
 	#	route 10.100.0.0/32 next-hop self;
 	#}
 }
 EOF
 
+fi
+
   done
 
 else
 
-  conf_filename="/etc/exabgp/exabgp.conf"
-
-  shift_count=0 # global var changed by ". $0 --conf"
-  . "$0" --conf "$@" > "$conf_filename"
+  shift_count=0
+  . "$0" --conf "$@" > /etc/exabgp/exabgp.conf
   shift "${shift_count}"
 
   ##
 
   mkfifo /run/exabgp.{in,out}
-
-  if id exabgp > /dev/null; then
-    chmod 0600 /run/exabgp.{in,out}
-    #chown exabgp: /run/exabgp.{in,out}
-    chown fod: /run/exabgp.{in,out}
-  fi
+  chmod 0666 /run/exabgp.{in,out}
+  chown exabgp: /run/exabgp.{in,out}
 
   ##
 
   if [ "$1" = "--bg" ]; then
     shift 1
-    nohup exabgp --debug "$conf_filename" "$@" > exbgp.log 1>&2 &
+    nohup exabgp --debug /etc/exabgp/exabgp.conf "$@" > exbgp.log 1>&2 &
   else
     #/fod_vnet_router --mnexec h1 exabgp --debug /etc/exabgp/exabgp.conf
-    exec exabgp --debug "$conf_filename" "$@"
+    exec exabgp --debug /etc/exabgp/exabgp.conf "$@"
   fi
 
 fi
