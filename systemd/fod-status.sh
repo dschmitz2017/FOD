@@ -59,8 +59,16 @@ case "$arg1" in
     fi
     env DJANGO_SETTINGS_MODULE=flowspy.settings python -c '
 from utils.proxy import *; 
-proxy = Applier(); 
-xml = proxy.get_existing_config_xml();
+#proxy = Applier(); 
+#proxy = PR0.Applier(); 
+#xml = proxy.get_existing_config_xml();
+retriever = PR0.Retriever(); 
+#if $parsed:
+result = retriever.retrieve_current_routes();
+print(result);
+#else:
+#  result = retriever.fetch_raw();
+#print(result);
 #print(xml);
 print("access to NETCONF seems to be working");
 ' "$@" < /dev/null 
