@@ -165,6 +165,8 @@ fi
 
 else
 
+  mkdir /etc/exabgp/
+
   shift_count=0
   . "$0" --conf "$@" > /etc/exabgp/exabgp.conf
   shift "${shift_count}"
