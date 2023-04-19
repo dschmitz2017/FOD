@@ -57,6 +57,7 @@ from flowspec.helpers import send_new_mail, get_peer_techc_mails
 import datetime
 
 import flowspec.iprange_match
+from flowspec.init_setup import init_admin_user
 
 from urllib.parse import urlencode
 
@@ -1255,24 +1256,27 @@ def routestats(request, route_slug):
         logger.error('routestats failed: %s' % e)
         return HttpResponse(json.dumps({"error": "No data available. %s" % e}), content_type="application/json", status=404)
 
+
 def setup(request):
     if settings.ENABLE_SETUP_VIEW and User.objects.count() == 0:
         if request.method == "POST":
             form = SetupForm(request.POST)
             if form.is_valid():
-                u = User.objects.create_user(username="admin", email="email@example.com", password=form.cleaned_data["password"])
-                u.is_superuser = True
-                u.is_staff = True
-                u.save()
-                pr = PeerRange(network = form.cleaned_data["test_peer_addr"])
-                pr.save()
-                p = Peer(peer_name = "testpeer", peer_tag = "testpeer")
-                p.save()
-                p.networks.add(pr)
-                ua = UserProfile()
-                ua.user = u
-                ua.save()
-                ua.peers.add(p)
+                #u = User.objects.create_user(username="admin", email="email@example.com", password=form.cleaned_data["password"])
+                #u.is_superuser = True
+                #u.is_staff = True
+                #u.save()
+                #pr = PeerRange(network = form.cleaned_data["test_peer_addr"])
+                #pr.save()
+                #p = Peer(peer_name = "testpeer", peer_tag = "testpeer")
+                #p.save()
+                #p.networks.add(pr)
+                #ua = UserProfile()
+                #ua.user = u
+                #ua.save()
+                #ua.peers.add(p)
+                #init_admin_user("admin", form.cleaned_data["password"], "email@example.com", "testpeer", form.cleaned_data["test_peer_addr"])
+                init_setup.init_admin_user("admin", form.cleaned_data["password"], "email@localhost", "admin_test_peer", form.cleaned_data["test_peer_addr"])
 
                 with open("flowspy/settings_local.py", "a") as f:
                     f.write("NETCONF_DEVICE = \"%s\"\n" % form.cleaned_data["netconf_device"])
