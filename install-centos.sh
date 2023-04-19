@@ -10,6 +10,8 @@ SCRIPT_NAME="install-centos.sh"
 fod_dir="/srv/flowspy"
 venv_dir="/srv/venv"
 
+FOD_SYSUSER="fod"
+
 inside_docker=0
 
 install_basesw=1
@@ -301,6 +303,8 @@ else
   set -e
   
   echo "$0: step 2.0" 1>&2
+  
+  id "$FOD_SYSUSER" &>/dev/null || useradd -m "$FOD_SYSUSER"
 
 
   mkdir -p /var/log/fod "$venv_dir_base"
@@ -356,6 +360,11 @@ else
 
   fi
 
+   #find "$fod_dir/" -not -user fod -exec chown -v fod: {} \;
+   find "$fod_dir/" -not -user "$FOD_SYSUSER" -exec chown "$FOD_SYSUSER:" {} \;
+
+ ###
+
   set -e
   
   echo "$0: step 2.2: setting-up FoD settings" 1>&2
@@ -374,7 +383,7 @@ else
       cp -f settings.py.centos settings.py
     
     elif [ "$inside_docker" = 1 -a -e settings.py.docker ]; then # user has own settings prepared yet ?
-      
+
       cp -f settings.py.docker settings.py
 
     elif [ -e settings.py ]; then # user has prepared a generic settings yet ?
@@ -414,6 +423,14 @@ else
 
   ##
 
+  echo "$0: step 2.3.1: preparing log sub dirs" 1>&2
+
+  mkdir -p "$fod_dir/log" "$fod_dir/logs"
+  touch "$fod_dir/debug.log"
+  chown -R "$FOD_SYSUSER:" "$fod_dir/log" "$fod_dir/logs" "$fod_dir/debug.log"
+
+  ##
+
   echo "$0: step 2.4: preparing FoD static files and database" 1>&2
 
   echo "$0: step 2.4.1: preparing FoD static files" 1>&2
@@ -429,6 +446,7 @@ else
     cd "$fod_dir"
 
     ./manage.py collectstatic -c --noinput
+    find "$fod_dir/staticfiles" -not -user "$FOD_SYSUSER" -exec chown "$FOD_SYSUSER:" {} \; || true # TODO is depending on flowspy/settings*.py var STATIC_ROOT 
   )
 
   ##
@@ -444,7 +462,7 @@ else
     [ ! -f "fodenv.sh" ] || source "./fodenv.sh"
 
     cd "$fod_dir"
-  
+
     #./manage.py syncdb --noinput
 
     #which sqlite3
@@ -458,12 +476,17 @@ else
 
   ##
 
+  # ./manage.py above may have created debug.log with root permissions:
+  chown -R "$FOD_SYSUSER:" "$fod_dir/log" "$fod_dir/logs" "$fod_dir/debug.log" 
+  [ ! -d "/var/log/fod" ] || chown -R "$FOD_SYSUSER:" "/var/log/fod"
+
+  #
   echo "$0: step 2.5: preparing FoD run-time environment" 1>&2
 
   echo "$0: step 2.5.1: preparing necessary dirs" 1>&2
 
   mkdir -p /var/run/fod
-  #chown fod /var/run/fod
+  chown "$FOD_SYSUSER:" /var/run/fod 
 
   ##
 
@@ -497,7 +520,6 @@ EOF
   echo 1>&2
 
   ##
-
   
   echo "$0: step 2.5.5: preparing systemd files" 1>&2
 
@@ -561,7 +583,16 @@ EOF
     cp -f runfod-fg.centos.sh runfod-fg.sh
   fi
 
+  (
+    echo "FOD_RUNMODE=\"$FOD_RUNMODE\"" 
+  ) > "./runfod.conf"
+
   )
+  
+  if [ "$inst_dir_is_fod_dir" = 1 ]; then
+    echo "$0: finally fixing permissions as inst_dir_is_fod_dir=$inst_dir_is_fod_dir" 1>&2
+    find "$fod_dir/" -not -user "$FOD_SYSUSER" -exec chown -v "$FOD_SYSUSER:" {} \;
+  fi
   
   echo "$0: step 2 done" 1>&2
 

@@ -10,6 +10,8 @@ SCRIPT_NAME="install-debian.sh"
 fod_dir="/srv/flowspy"
 venv_dir="/srv/venv"
 
+FOD_SYSUSER="fod"
+
 inside_docker=0
 
 install_basesw=1
@@ -456,8 +458,7 @@ else
   
   echo "$0: step 2.0" 1>&2
   
-  id fod &>/dev/null || useradd -m fod  
-
+  id "$FOD_SYSUSER" &>/dev/null || useradd -m "$FOD_SYSUSER"
 
   #mkdir -p /var/log/fod /srv
   mkdir -p /var/log/fod "$venv_dir_base"
@@ -512,7 +513,7 @@ else
   fi
 
    #find "$fod_dir/" -not -user fod -exec chown -v fod: {} \;
-   find "$fod_dir/" -not -user fod -exec chown fod: {} \;
+   find "$fod_dir/" -not -user "$FOD_SYSUSER" -exec chown "$FOD_SYSUSER:" {} \;
 
  ###
 
@@ -571,7 +572,9 @@ else
 
   mkdir -p "$fod_dir/log" "$fod_dir/logs"
   touch "$fod_dir/debug.log"
-  chown -R fod: "$fod_dir/log" "$fod_dir/logs" "$fod_dir/debug.log"
+  chown -R "$FOD_SYSUSER:" "$fod_dir/log" "$fod_dir/logs" "$fod_dir/debug.log"
+  
+  ##
 
   if [ "$try_install_docu" = 1 ]; then
     echo "$0: step 2.3.2: compiling internal docu" 1>&2
@@ -579,7 +582,8 @@ else
     (
       set -e
       which mkdocs 2>/dev/null >/dev/null || apt-get install -y mkdocs
-      cd "$fod_dir" && mkdocs build
+      cd "$fod_dir" && mkdocs build # ./mkdocs.yml
+      find "$fod_dir/static/site" -not -user "$FOD_SYSUSER" -exec chown "$FOD_SYSUSER:" {} \; # is depending on ./mkdocs.yml var site_dir
       true # in case of failure override failure status, as the documentation is non-essential
     )
   fi
@@ -603,6 +607,7 @@ else
     cd "$fod_dir"
 
     ./manage.py collectstatic -c --noinput || debug_python_deps "$venv_dir/bin/activate" 1
+    find "$fod_dir/staticfiles" -not -user "$FOD_SYSUSER" -exec chown "$FOD_SYSUSER:" {} \; || true # TODO is depending on flowspy/settings*.py var STATIC_ROOT 
   )
 
   ##
@@ -659,8 +664,8 @@ else
   ##
 
   # ./manage.py above may have created debug.log with root permissions:
-  chown -R fod: "$fod_dir/log" "$fod_dir/logs" "$fod_dir/debug.log" 
-  [ ! -d "/var/log/fod" ] || chown -R fod: "/var/log/fod"
+  chown -R "$FOD_SYSUSER:" "$fod_dir/log" "$fod_dir/logs" "$fod_dir/debug.log" 
+  [ ! -d "/var/log/fod" ] || chown -R "$FOD_SYSUSER:" "/var/log/fod"
 
   #
   echo "$0: step 2.5: preparing FoD run-time environment" 1>&2
@@ -668,7 +673,7 @@ else
   echo "$0: step 2.5.1: preparing necessary dirs" 1>&2
 
   mkdir -p /var/run/fod
-  chown fod: /var/run/fod 
+  chown "$FOD_SYSUSER:" /var/run/fod 
 
   ##
 
@@ -757,6 +762,11 @@ EOF
   ) > "./runfod.conf"
 
   )
+  
+  if [ "$inst_dir_is_fod_dir" = 1 ]; then
+    echo "$0: finally fixing permissions as inst_dir_is_fod_dir=$inst_dir_is_fod_dir" 1>&2
+    find "$fod_dir/" -not -user "$FOD_SYSUSER" -exec chown -v "$FOD_SYSUSER:" {} \;
+  fi
   
   echo "$0: step 2 done" 1>&2
 
