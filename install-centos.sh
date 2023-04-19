@@ -15,12 +15,25 @@ inside_docker=0
 install_basesw=1
 install_fodproper=1
 
+install_with_supervisord=0
 install_systemd_services=0
 ensure_installed_pythonenv_wrapper=1
 
 # workaround for old Django with old OS sqlite3 (CENTOS7 only):
 try_fixup_for_old_os_sqlite=1
 use_old_django_version__autodetect=1
+#
+
+setup_adminuser=0
+setup_adminuser__username="admin"
+setup_adminuser__pwd="admin"
+#setup_adminuser__email="admin@localhost"
+setup_adminuser__peer_name="testpeer"
+setup_adminuser__peer_ip_prefix1="0.0.0.0/0"
+
+##############################################################################
+##############################################################################
+
 
 ##
 ##############################################################################
@@ -37,6 +50,7 @@ if grep -q -E '^systemd$' /proc/1/comm; then
 elif [ "$inside_docker" = 1 ]; then 
   echo "inside_docker=$inside_docker, so setting default install_systemd_services=0" 1>&2
   install_systemd_services=0
+  #install_with_supervisord=1
 fi
 
 ##############################################################################
@@ -74,6 +88,13 @@ while [ $# -gt 0 ]; do
     shift 1
     install_basesw=0
     install_fodproper=1
+  elif [ $# -ge 1 -a \( "$1" = "--supervisor" -o "$1" = "--supervisord" \) ]; then
+    shift 1
+    install_with_supervisord=1
+    install_systemd_services=0
+  elif [ $# -ge 1 -a \( "$1" = "--no_supervisor" -o "$1" = "--no_supervisord" \) ]; then
+    shift 1
+    install_with_supervisord=0
   elif [ $# -ge 1 -a "$1" = "--systemd" ]; then
     shift 1
     install_systemd_services=1
@@ -81,6 +102,23 @@ while [ $# -gt 0 ]; do
     shift 1
     install_systemd_services=0
  else
+  elif [ $# -ge 1 -a "$1" = "--setup_admin_user" ]; then
+    shift 1
+     setup_adminuser=1
+  elif [ $# -ge 1 -a "$1" = "--setup_admin_user5" ]; then
+    shift 1
+    setup_adminuser=1
+    setup_adminuser__username="$1"
+    shift 1 
+    setup_adminuser__pwd="$1"
+    shift 1 
+    setup_adminuser__email="$1"
+    shift 1 
+    setup_adminuser__peer_name="$1"
+    shift 1 
+    setup_adminuser__peer_ip_prefix1="$1"
+    shift 1 
+  else
     break
   fi
 
@@ -96,7 +134,11 @@ fi
 #set -x
 
 ##
-  
+ 
+[ -n "$setup_adminuser__email" ] || setup_adminuser__email="$setup_adminuser__username@localhost"
+
+##
+
 venv_dir_base="$(dirname "$venv_dir")"
 
 static_dir="$fod_dir/static"
@@ -159,6 +201,13 @@ if [ "$install_basesw" = 1 ]; then
 
   echo "$0: step 1 done" 1>&2
 
+fi
+
+##
+
+if [ "$install_systemd_services" = 0 -a "$install_with_supervisord" = 1 ]; then
+  echo "trying to install supervisord" 1>&2
+  yum install -y supervisor
 fi
 
 ##
@@ -481,11 +530,35 @@ EOF
     echo
     SYSTEMD_COLORS=1 systemctl status fod-celeryd | cat
     echo
+  
+    FOD_RUNMODE="via_systemd" 
+  
+  elif [ "$install_with_supervisord" = 1 ]; then
+    echo 1>&2
+    echo "Installing supervisord conf" 1>&2
+    echo 1>&2
+
+    # supervisord.conf
+    if [ -f supervisord.conf.prep ]; then
+      echo "$0: using supervisord.conf.prep" 1>&2
+      cp -f supervisord.conf.prep /etc/supervisord.conf
+    else
+      echo "$0: using supervisord.conf" 1>&2
+      cp -f supervisord.conf /etc/supervisord.conf
+    fi
+  
+    FOD_RUNMODE="via_supervisord" 
+
+  else
+
+    FOD_RUNMODE="fg" 
+
   fi
 
   if [ "$assume__sqlite_version__to_old" = 1 ]; then
     echo "$0: assume__sqlite_version__to_old=$assume__sqlite_version__to_old => using runfod.centos.sh for old celery start syntax" 1>&2
-    cp -f runfod.centos.sh runfod.sh
+    #cp -f runfod.centos.sh runfod.sh
+    cp -f runfod-fg.centos.sh runfod-fg.sh
   fi
 
   )
