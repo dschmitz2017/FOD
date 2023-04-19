@@ -44,6 +44,10 @@ setup_adminuser__pwd="admin"
 setup_adminuser__peer_name="testpeer"
 setup_adminuser__peer_ip_prefix1="0.0.0.0/0"
 
+#
+
+setup_exabgp=0
+
 ##############################################################################
 ##############################################################################
 
@@ -247,6 +251,21 @@ while [ $# -gt 0 ]; do
     shift 1 
     setup_adminuser__peer_ip_prefix1="$1"
     shift 1 
+  elif [ $# -ge 1 -a "$1" = "--exabgp" ]; then # currently 6 params follow
+    shift 1
+    setup_exabgp=1
+    setup_exabgp__nodeid="$1"
+    shift 1
+    setup_exabgp__ip_addr="$1"
+    shift 1
+    setup_exabgp__asnr="$1"
+    shift 1
+    setup_exabgp__peer_nodeid="$1"
+    shift 1
+    setup_exabgp__peer_ip_addr="$1"
+    shift 1
+    setup_exabgp__peer_asnr="$1"
+    shift 1
   else
     break
   fi
@@ -700,7 +719,15 @@ EOF
   echo 1>&2
 
   ##
-  
+   
+  if [ "$setup_exabgp" = 1 ]; then
+    echo "$0: setting up exabgp fod conf" 1>&2
+
+    echo -e '\n#added by install-*.sh:\nPROXY_CLASS="proxy_exabgp"' >> flowspy/settings_local.py
+  fi
+
+  ##
+ 
   echo "$0: step 2.5.5: preparing systemd files" 1>&2
 
   fod_systemd_dir="$fod_dir/systemd"
@@ -759,7 +786,37 @@ EOF
 
   (
     echo "FOD_RUNMODE=\"$FOD_RUNMODE\"" 
+    echo "USE_EXABGP=\"$setup_exabgp\""
   ) > "./runfod.conf"
+
+  if [ "$setup_exabgp" = 1 ]; then
+    echo "$0: setting up exabgp" 1>&2
+
+    add1=()
+    if [ "$install_systemd_services" = 1 ]; then
+      add1=("--systemd")
+    fi
+
+    # ./exabgp/run-exabgp-generic
+    "$fod_dir/exabgp/run-exabgp-generic" --init-conf \
+	    "$setup_exabgp__nodeid" "$setup_exabgp__ip_addr" "$setup_exabgp__asnr" \
+	    "$setup_exabgp__peer_nodeid" "$setup_exabgp__peer_ip_addr" "$setup_exabgp__peer_asnr" \
+	    -- "${add1[@]}"
+    # ./flowspy/settings.py
+    #echo -e '\n#added by install-*.sh:\nPROXY_CLASS="proxy_exabgp"' >> flowspy/settings_local.py
+
+    if [ "$install_systemd_services" = 1 ]; then # TODO support supervisord as well
+      systemctl daemon-reload
+
+      systemctl enable exabgpForFod
+      systemctl restart exabgpForFod
+
+      sleep 5
+      SYSTEMD_COLORS=1 systemctl status exabgpForFod | cat
+      echo
+    fi
+ 
+  fi
 
   )
   

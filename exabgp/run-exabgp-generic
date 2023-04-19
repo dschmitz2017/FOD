@@ -1,5 +1,9 @@
 #!/bin/bash
 
+EXABGP_CONF_FILENAME="/etc/exabgp/exabgp.conf"
+
+#
+
 if [ "$1" = "--conf" ]; then
   shift 1
   
@@ -81,12 +85,12 @@ EOF
     neighbor_id="$1" 
     shift 1
     shift_count=$(( $shift_count + 1 ))
+    
+    [ "$neighbor_id" != "--" ] || break
 
     neighbor_ip="$1"
     shift 1
     shift_count=$(( $shift_count + 1 ))
-    
-    [ "$neighbor_ip" != "--" ] || break
   
     neighborAS="$1"
     shift 1
@@ -163,13 +167,18 @@ fi
 
   done
 
-else
+##
 
-  mkdir /etc/exabgp/
+elif [ "$1" = "--init-conf" ]; then
+  shift 1
+
+  mkdir -p "$(dirname "$EXABGP_CONF_FILENAME")"
 
   shift_count=0
-  . "$0" --conf "$@" > /etc/exabgp/exabgp.conf
+  . "$0" --conf "$@" > "$EXABGP_CONF_FILENAME"
   shift "${shift_count}"
+
+  echo "$0: init-conf: => shift_count=$shift_count" 1>&2
 
   ##
 
@@ -179,13 +188,79 @@ else
 
   ##
 
+  if [ "$1" = "--systemd" ]; then 
+   shift 1 
+   shift_count=$(( $shift_count + 1 ))
+
+cat > /etc/systemd/system/exabgpForFod.service <<EOF
+
+[Unit]
+Description=Firewall-On-Demand (FoD) exabgp (proxy helper)
+
+After=network.target auditd.service
+#Requires=
+
+#OnFailure=fod-status-email-user@%n.service
+
+[Service]
+
+#Type=forking
+Type=simple
+
+# TODO
+User=root 
+WorkingDirectory=$PWD
+#RuntimeDirectory=yourservice
+#RuntimeDirectoryMode=0755
+
+ExecStart=$PWD/exabgp/run-exabgp-generic --run0
+
+#PIDFile=/tmp/yourservice.pid
+
+StandardOutput=append:$PWD/log/exabgp-stdout.log
+StandardError=append:$PWD/log/exabgp-stderr.log
+
+#StandardOutput=syslog
+#StandardError=syslog
+#SyslogIdentifier=test1
+
+Restart=on-failure
+
+EOF
+
+  fi
+
+elif [ "$1" = "--run0" ]; then # assumes config already having been initialized
+  shift 1
+
+  if [ -f ./venv/bin/activate ]; then
+    . ./venv/bin/activate
+  fi
+
   if [ "$1" = "--bg" ]; then
     shift 1
-    nohup exabgp --debug /etc/exabgp/exabgp.conf "$@" > exbgp.log 1>&2 &
+    nohup exabgp --debug "$EXABGP_CONF_FILENAME" "$@" > exbgp.log 1>&2 &
   else
     #/fod_vnet_router --mnexec h1 exabgp --debug /etc/exabgp/exabgp.conf
-    exec exabgp --debug /etc/exabgp/exabgp.conf "$@"
+    exec exabgp --debug "$EXABGP_CONF_FILENAME" "$@"
   fi
+
+elif [ "$1" = "--init-conf-and-run" -o "$1" = "--run" ]; then
+  shift 1
+
+  shift_count=0
+  . "$0" --init-conf "$@"
+  shift "${shift_count}"
+  
+  echo "$0: init-conf-and-run: => shift_count=$shift_count" 1>&2
+
+  #
+
+  exec "$0" --run0 "$@"
+
+else 
+
+  exec "$0" --init-conf-and-run "$@" 
 
 fi
 
