@@ -8,7 +8,9 @@ import sys
 import time
 import select
 import signal
-import errno
+#import errno
+
+saved_sys_except_hook = sys.excepthook
 
 from exabgp.application.bgp import root_folder
 from exabgp.application.bgp import named_pipe
@@ -16,7 +18,7 @@ from exabgp.application.bgp import get_envfile
 from exabgp.application.bgp import get_env
 from exabgp.application.control import check_fifo
 
-from exabgp.reactor.network.error import error
+#from exabgp.reactor.network.error import error
 from exabgp.reactor.api.response.answer import Answer
 
 from exabgp.vendoring import docopt
@@ -31,6 +33,10 @@ logger = flowspec.logging_utils.logger_init_default(__name__, "celery_exabpg.log
 ##
 
 #print("loading exabgpcli")
+
+##
+
+sys.excepthook = saved_sys_except_hook
 
 ##
 
