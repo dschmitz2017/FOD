@@ -120,15 +120,18 @@ systemctl disable redis-server
 # needed for redis
 sysctl vm.overcommit_memory=1
 
-# supervisord.conf
-if [ -f supervisord.conf.prep ]; then
-  echo "$0: using supervisord.conf.prep" 1>&2
-  cp -f supervisord.conf.prep /etc/supervisord.conf
-else
-  echo "$0: using supervisord.conf" 1>&2
-  cp -f supervisord.conf /etc
-fi
+if [ ! -f /etc/supervisord.conf -o ! -e /etc/.supervisord.conf.fodready ]; then
 
+  # supervisord.conf
+  if [ -f supervisord.conf.prep ]; then
+    echo "$0: using supervisord.conf.prep" 1>&2
+    cp -f supervisord.conf.prep /etc/supervisord.conf
+  else
+    echo "$0: using supervisord.conf" 1>&2
+    cp -f supervisord.conf /etc
+  fi
+
+fi
 
 mkdir -p /var/run/fod /var/log/fod
 chown -R fod /var/run/fod /var/log/fod

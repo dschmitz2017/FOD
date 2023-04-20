@@ -127,6 +127,8 @@ function debug_python_deps()
   echo "# Python version: " 1>&2  
   python --version
 
+  ls -l log/ 1>&2
+
   echo 1>&2
   echo "# Python dependencies: " 1>&2  
   pip list
@@ -157,8 +159,6 @@ fi
 
 ##############################################################################
 ##############################################################################
-
-set -x
 
 while [ $# -gt 0 ]; do
 
@@ -630,7 +630,7 @@ else
   (
     set -e
 
-    [ ! -f "fodenv.sh" ] || source "./fodenv.sh"; 
+    [ ! -f "fodenv.sh" ] || source "./fodenv.sh" 
     
     source "$venv_dir/bin/activate"
 
@@ -722,15 +722,7 @@ EOF
   fi
 
   ##
-
-  echo "$0: step 2.5.3: preparing supervisord.conf" 1>&2
-
-  cp -f "$fod_dir/supervisord.conf.dist" "$fod_dir/supervisord.conf"
-  sed -i "s#/srv/flowspy#$fod_dir#" "$fod_dir/supervisord.conf"
-  echo 1>&2
-
-  ##
-   
+  
   if [ "$setup_exabgp" = 1 ]; then
     echo "$0: setting up exabgp fod conf" 1>&2
 
@@ -739,7 +731,17 @@ EOF
 
   ##
  
-  echo "$0: step 2.5.5: preparing systemd files" 1>&2
+  echo "$0: step 2.5.5: preparing systemd/supervisord files" 1>&2
+
+  echo "$0: step 2.5.5.1: preparing supervisord.conf templates" 1>&2
+
+  cp -f "$fod_dir/supervisord.conf.dist" "$fod_dir/supervisord.conf"
+  sed -i "s#/srv/flowspy#$fod_dir#" "$fod_dir/supervisord.conf"
+  echo 1>&2
+
+  ##
+
+  echo "$0: step 2.5.5.2: installing systemd/supervisord files" 1>&2
 
   fod_systemd_dir="$fod_dir/systemd"
   cp -f "$fod_systemd_dir/fod-gunicorn.service.dist" "$fod_systemd_dir/fod-gunicorn.service"
@@ -753,7 +755,7 @@ EOF
 
   if [ "$install_systemd_services" = 1 ]; then
     echo 1>&2
-    echo "Installing systemd services" 1>&2
+    echo "$0: installing systemd services" 1>&2
     echo 1>&2
     #cp -f "$fod_systemd_dir/fod-gunicorn.service" "$fod_systemd_dir/fod-celeryd.service" "/etc/systemd/system/"
     cp -v -f "$fod_systemd_dir/fod-gunicorn.service" "$fod_systemd_dir/fod-celeryd.service" "$fod_systemd_dir/fod-status-email-user@.service" "/etc/systemd/system/" 1>&2
@@ -784,7 +786,7 @@ EOF
   
   elif [ "$install_with_supervisord" = 1 ]; then
     echo 1>&2
-    echo "Installing supervisord conf" 1>&2
+    echo "$0: installing supervisord conf" 1>&2
     echo 1>&2
 
     # supervisord.conf
@@ -795,6 +797,7 @@ EOF
       echo "$0: using supervisord.conf" 1>&2
       cp -f supervisord.conf /etc/supervisord.conf
     fi
+    touch /etc/.supervisord.conf.fodready
   
     FOD_RUNMODE="via_supervisord" 
 
@@ -804,12 +807,20 @@ EOF
 
   fi
 
+  ##
+
+  echo "$0: step 2.5.6: writing ./runfod.conf" 1>&2
   (
     echo "FOD_RUNMODE=\"$FOD_RUNMODE\"" 
     echo "USE_EXABGP=\"$setup_exabgp\""
   ) > "./runfod.conf"
 
+  ##
+
   if [ "$setup_exabgp" = 1 ]; then
+    
+    echo "$0: step 2.5.7: preparing systemd/supervisord files" 1>&2
+
     echo "$0: setting up exabgp" 1>&2
 
     add1=()
@@ -828,6 +839,7 @@ EOF
     #echo -e '\n#added by install-*.sh:\nPROXY_CLASS="proxy_exabgp"' >> flowspy/settings_local.py
 
     if [ "$install_systemd_services" = 1 ]; then # TODO support supervisord as well
+      echo "$0: installing systemd service file for exabgpForFod" 1>&2	   
 
       if [ "$install_systemd_services__onlyinstall" = 1 ]; then
         #systemctl enable --no-reload "$exabgp_systemd_servicename"
@@ -842,6 +854,21 @@ EOF
         SYSTEMD_COLORS=1 systemctl status "$exabgp_systemd_servicename" | cat
         echo
       fi
+
+    elif [ "$install_with_supervisord" = 1 ]; then
+      echo "$0: adding supervisord config for exabgpForFod" 1>&2	   
+
+      # ./supervisord.conf
+      cat >>/etc/supervisord.conf <<EOF
+
+[program:exabgp]
+command=./exabgp/run-exabgp-generic --run0
+directory=$fod_dir
+user=$FOD_SYSUSER
+stdout_logfile=./log/exabgp-stdout.log        ; stdout log path, NONE for none; default AUTO
+stderr_logfile=./log/exabgp-stderr.log        ; stderr log path, NONE for none; default AUTO
+EOF
+
     fi
  
   fi
@@ -849,7 +876,7 @@ EOF
   )
   
   if [ "$inst_dir_is_fod_dir" = 1 ]; then
-    echo "$0: finally fixing permissions as inst_dir_is_fod_dir=$inst_dir_is_fod_dir" 1>&2
+    echo "$0: step 2.9: finally fixing permissions as inst_dir_is_fod_dir=$inst_dir_is_fod_dir" 1>&2
     find "$fod_dir/" -not -user "$FOD_SYSUSER" -exec chown -v "$FOD_SYSUSER:" {} \;
   fi
   
