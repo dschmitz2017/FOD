@@ -237,6 +237,14 @@ elif [ "$1" = "--run0" ]; then # assumes config already having been initialized
     . ./venv/bin/activate
   fi
 
+  ##
+
+  mkfifo /run/exabgp.{in,out}
+  chmod 0666 /run/exabgp.{in,out}
+  chown exabgp: /run/exabgp.{in,out}
+
+  ##
+
   if [ "$1" = "--bg" ]; then
     shift 1
     nohup exabgp --debug "$EXABGP_CONF_FILENAME" "$@" > exbgp.log 1>&2 &
