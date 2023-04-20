@@ -19,6 +19,7 @@ install_fodproper=1
 
 install_with_supervisord=0
 install_systemd_services=0
+install_systemd_services__onlyinstall=0
 ensure_installed_pythonenv_wrapper=1
 
 install_mta=""
@@ -146,14 +147,18 @@ fi
 if grep -q -E '^systemd$' /proc/1/comm; then 
   echo "system is running systemd as init process, setting default install_systemd_services=1" 1>&2
   install_systemd_services=1
+  install_systemd_services__onlyinstall=0
 elif [ "$inside_docker" = 1 ]; then 
   echo "inside_docker=$inside_docker, so setting default install_systemd_services=0" 1>&2
   install_systemd_services=0
+  install_systemd_services__onlyinstall=1
   #install_with_supervisord=1
 fi
 
 ##############################################################################
 ##############################################################################
+
+set -x
 
 while [ $# -gt 0 ]; do
 
@@ -197,6 +202,12 @@ while [ $# -gt 0 ]; do
   elif [ $# -ge 1 -a "$1" = "--systemd" ]; then
     shift 1
     install_systemd_services=1
+  elif [ $# -ge 1 -a "$1" = "--systemd_only_install" ]; then
+    shift 1
+    install_systemd_services__onlyinstall=1
+  elif [ $# -ge 1 -a "$1" = "--systemd_check_start" ]; then
+    shift 1
+    install_systemd_services__onlyinstall=0
   elif [ $# -ge 1 -a "$1" = "--no_systemd" ]; then
     shift 1
     install_systemd_services=0
@@ -746,19 +757,28 @@ EOF
     echo 1>&2
     #cp -f "$fod_systemd_dir/fod-gunicorn.service" "$fod_systemd_dir/fod-celeryd.service" "/etc/systemd/system/"
     cp -v -f "$fod_systemd_dir/fod-gunicorn.service" "$fod_systemd_dir/fod-celeryd.service" "$fod_systemd_dir/fod-status-email-user@.service" "/etc/systemd/system/" 1>&2
-    systemctl daemon-reload
 
-    systemctl enable fod-gunicorn
-    systemctl enable fod-celeryd
 
-    systemctl restart fod-gunicorn
-    systemctl restart fod-celeryd
+    if [ "$install_systemd_services__onlyinstall" = 1 ]; then
+      #systemctl enable --machine --no-reload fod-gunicorn
+      #systemctl enable --machine --no-reload fod-celeryd
+      ln -s -f -v "/usr/lib/systemd/system/fod-gunicorn.service" /etc/systemd/system/multi-user.target.wants/
+      ln -s -f -v "/usr/lib/systemd/system/fod-celeryd.service" /etc/systemd/system/multi-user.target.wants/
+    else
+      systemctl daemon-reload
 
-    sleep 5
-    SYSTEMD_COLORS=1 systemctl status fod-gunicorn | cat
-    echo
-    SYSTEMD_COLORS=1 systemctl status fod-celeryd | cat
-    echo
+      systemctl enable fod-gunicorn
+      systemctl enable fod-celeryd
+
+      systemctl restart fod-gunicorn
+      systemctl restart fod-celeryd
+
+      sleep 5
+      SYSTEMD_COLORS=1 systemctl status fod-gunicorn | cat
+      echo
+      SYSTEMD_COLORS=1 systemctl status fod-celeryd | cat
+      echo
+    fi
   
     FOD_RUNMODE="via_systemd" 
   
@@ -797,23 +817,31 @@ EOF
       add1=("--systemd")
     fi
 
+    exabgp_systemd_servicename="exabgpForFod" # statically defined in ./exabgp/run-exabgp-generic
+
     # ./exabgp/run-exabgp-generic
     "$fod_dir/exabgp/run-exabgp-generic" --init-conf \
-	    "$setup_exabgp__nodeid" "$setup_exabgp__ip_addr" "$setup_exabgp__asnr" \
-	    "$setup_exabgp__peer_nodeid" "$setup_exabgp__peer_ip_addr" "$setup_exabgp__peer_asnr" \
-	    -- "${add1[@]}"
+            "$setup_exabgp__nodeid" "$setup_exabgp__ip_addr" "$setup_exabgp__asnr" \
+            "$setup_exabgp__peer_nodeid" "$setup_exabgp__peer_ip_addr" "$setup_exabgp__peer_asnr" \
+            -- "${add1[@]}"
     # ./flowspy/settings.py
     #echo -e '\n#added by install-*.sh:\nPROXY_CLASS="proxy_exabgp"' >> flowspy/settings_local.py
 
     if [ "$install_systemd_services" = 1 ]; then # TODO support supervisord as well
-      systemctl daemon-reload
 
-      systemctl enable exabgpForFod
-      systemctl restart exabgpForFod
+      if [ "$install_systemd_services__onlyinstall" = 1 ]; then
+        #systemctl enable --no-reload "$exabgp_systemd_servicename"
+        #systemctl --machine enable --no-reload "$exabgp_systemd_servicename"
+        ln -s -f -v "/usr/lib/systemd/system/$exabgp_systemd_servicename.service" /etc/systemd/system/multi-user.target.wants/
+      else
+        systemctl daemon-reload
+        systemctl enable "$exabgp_systemd_servicename"
+        systemctl restart "$exabgp_systemd_servicename"
 
-      sleep 5
-      SYSTEMD_COLORS=1 systemctl status exabgpForFod | cat
-      echo
+        sleep 5
+        SYSTEMD_COLORS=1 systemctl status "$exabgp_systemd_servicename" | cat
+        echo
+      fi
     fi
  
   fi
