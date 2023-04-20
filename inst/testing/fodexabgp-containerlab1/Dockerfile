@@ -1,4 +1,7 @@
 
+# build+run: docker build -f Dockerfile -t fodexabgp-containerlab1 . && docker run -d -p 8000:8000 --privileged fodexabgp-containerlab1
+# enter: docker exec -ti ...
+
 FROM ubuntu:latest
 
 #RUN apt-get update -y -y && DEBIAN_FRONTEND="noninteractive" apt-get install -y -y systemd-sysv systemd # minimal set
@@ -9,6 +12,9 @@ COPY ./prep_fod_exabgp2_on_ubuntu.sh /opt
 
 #RUN /opt/prep_fod_exabgp2_on_ubuntu.sh --systemd --systemd_only_install --setup_admin_user5 admin adminpwd admin@localhost.local testpeer 0.0.0.0/0 --exabgp 172.17.0.2 172.17.0.2 1001 172.17.0.3 172.17.0.3 2001 
 RUN /opt/prep_fod_exabgp2_on_ubuntu.sh --systemd --systemd_only_install --setup_admin_user5 admin adminpwd admin@localhost.local testpeer 0.0.0.0/0 --exabgp 10.3.10.3 10.3.10.3 1001 10.3.10.10 10.3.10.10 2001
+
+# standalone re-setup of exabgp later (e.g., to exploit docker build cache for the action above)
+#RUN cd /opt/FOD/ && ./exabgp/run-exabgp-generic --init-conf 10.3.10.3 10.3.10.3 1001 10.3.10.10 10.3.10.12 3001 -- --systemd
 
 EXPOSE 8000
 

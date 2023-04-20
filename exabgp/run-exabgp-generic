@@ -184,7 +184,7 @@ elif [ "$1" = "--init-conf" ]; then
 
   mkfifo /run/exabgp.{in,out}
   chmod 0666 /run/exabgp.{in,out}
-  chown exabgp: /run/exabgp.{in,out}
+  id exabgp &>/dev/null && chown exabgp: /run/exabgp.{in,out}
 
   ##
 
@@ -241,7 +241,7 @@ elif [ "$1" = "--run0" ]; then # assumes config already having been initialized
 
   mkfifo /run/exabgp.{in,out}
   chmod 0666 /run/exabgp.{in,out}
-  chown exabgp: /run/exabgp.{in,out}
+  id exabgp &>/dev/null && chown exabgp: /run/exabgp.{in,out}
 
   ##
 
