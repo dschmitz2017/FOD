@@ -17,7 +17,7 @@ if cat /etc/centos-release | grep -q "release 7."; then
 
     yum install -y make
     #cd ~ && curl https://www.sqlite.org/2020/sqlite-autoconf-3320100.tar.gz > sqlite-autoconf-3320100.tar.gz && tar xvfz sqlite-autoconf-3320100.tar.gz && cd sqlite-autoconf-3320100 && ./configure && make && make install
-    cd ~ && curl https://www.sqlite.org/2023/sqlite-autoconf-3410200.tar.gz > sqlite-autoconf.tar.gz && tar xvfz sqlite-autoconftar.gz && cd sqlite-autoconf-3410200 && ./configure && make && make install
+    cd ~ && curl https://www.sqlite.org/2023/sqlite-autoconf-3410200.tar.gz > sqlite-autoconf.tar.gz && tar xvfz sqlite-autoconf.tar.gz && cd sqlite-autoconf-3410200 && ./configure && make && make install
 
     ##
 

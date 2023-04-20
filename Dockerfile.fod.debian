@@ -1,0 +1,72 @@
+
+# doc: to build+run: docker build -f Dockerfile.fod.debian -t fod.debian && docker run -ti fod.debian
+
+#############################################################################
+#############################################################################
+
+FROM debian:latest
+
+RUN apt-get -qqy update
+
+#############################################################################
+
+RUN echo -e 'LANG="en_US.UTF-8"\nLANGUAGE="en_US"\n' > /etc/default/locale && echo "en_US.utf8 UTF-8" >> /etc/locale.gen && apt-get -qqy install locales
+
+ENV LC_ALL en_US.utf8
+
+#############################################################################
+
+# uncomment, for running under systemd
+#RUN apt-get update -y -y && DEBIAN_FRONTEND="noninteractive" apt-get install -y -y systemd-sysv systemd 
+
+#############################################################################
+
+# typically useful tools for investigation
+#RUN apt-get update -y -y && DEBIAN_FRONTEND="noninteractive" apt-get install -y -y git less man make gcc strace ltrace lsof file vim tshark tcpdump curl wget net-tools sudo psutils procps iptables iputils-ping iputils-tracepath hping3 iproute2 
+
+#############################################################################
+#############################################################################
+# fod installation
+
+WORKDIR /srv/flowspy
+
+###############################
+# fod installation step1
+
+COPY install-*.sh requirement*.txt /srv/flowspy/
+
+# only install system+python deps (for quicker rebuilding by exploiting the docker cache for this step1):
+#RUN ./install-debian.sh --basesw --here --systemd --systemd_only_install
+RUN ./install-debian.sh --basesw --here --supervisord 
+
+###############################
+# fod installation step2 
+
+COPY . /srv/flowspy
+RUN rm -rf /srv/flowspy/venv
+
+# to be sure, try again to install newest deps, i.e., use --both instead of just --fodproper:
+#RUN ./install-debian.sh --fodproper --here --supervisord --setup_admin_user --setup_admin_user5 admin adminpwd admin@localhost.local testpeer 0.0.0.0/0 --exabgp 10.3.10.3 10.3.10.3 1001 10.3.10.10 10.3.10.10 2001
+#RUN ./install-debian.sh --both --here --supervisord --setup_admin_user --setup_admin_user5 admin adminpwd admin@localhost.local testpeer 0.0.0.0/0 --exabgp 172.17.0.2 172.17.0.2 1001 172.17.0.3 172.17.0.3 3001
+#RUN ./install-debian.sh --both --here --systemd --systemd_only_install --setup_admin_user --setup_admin_user5 admin adminpwd admin@localhost.local testpeer 0.0.0.0/0 # --exabgp 172.17.0.2 172.17.0.2 1001 172.17.0.3 172.17.0.3 3001
+RUN ./install-debian.sh --both --here --supervisord --setup_admin_user --setup_admin_user5 admin adminpwd admin@localhost.local testpeer 0.0.0.0/0 # --exabgp 172.17.0.2 172.17.0.2 1001 172.17.0.3 172.17.0.3 3001
+
+###############################
+
+# potential standalone re-setup of exabgp later (e.g., to exploit docker build cache for the actual installation step(s) above)
+#RUN cd /opt/FOD/ && ./exabgp/run-exabgp-generic --init-conf 10.3.10.3 10.3.10.3 1001 10.3.10.10 10.3.10.12 3001 -- --systemd
+
+#############################################################################
+#############################################################################
+# running fod
+
+EXPOSE 8000
+
+# if running under systemd
+#CMD [ "/sbin/init" ]
+
+CMD [ "/srv/flowspy/runfod.sh" ]
+
+#############################################################################
+#############################################################################
+

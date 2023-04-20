@@ -138,7 +138,6 @@ while [ $# -gt 0 ]; do
   elif [ $# -ge 1 -a "$1" = "--no_systemd" ]; then
     shift 1
     install_systemd_services=0
- else
   elif [ $# -ge 1 -a "$1" = "--setup_admin_user" ]; then
     shift 1
      setup_adminuser=1
@@ -305,6 +304,8 @@ if [ "$install_fodproper" = 0 ]; then
   set -e
 
   echo "Setup partial python environment for FoD"
+
+  (ls -la "$venv_dir" 1>&2 || true)
   if [ -x pyvenv ]; then
     #pyvenv /srv/venv
     pyvenv "$venv_dir"

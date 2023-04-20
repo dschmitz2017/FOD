@@ -1,0 +1,72 @@
+
+# doc: to build+run: docker build -f Dockerfile.fod.centos -t fod.centos && docker run -ti fod.centos
+
+#############################################################################
+#############################################################################
+
+FROM centos:7
+
+#############################################################################
+
+ENV LC_ALL en_US.utf8
+
+RUN yum -y install procps # somehow needed for centos repo installation in ./install-centos.sh
+
+#############################################################################
+
+# uncomment, for running under systemd
+#RUN apt-get update -y -y && centos_FRONTEND="noninteractive" apt-get install -y -y systemd-sysv systemd 
+
+#############################################################################
+
+# typically useful tools for investigation
+#RUN apt-get update -y -y && centos_FRONTEND="noninteractive" apt-get install -y -y git less man make gcc strace ltrace lsof file vim tshark tcpdump curl wget net-tools sudo psutils procps iptables iputils-ping iputils-tracepath hping3 iproute2 
+
+#############################################################################
+#############################################################################
+# fod installation
+
+WORKDIR /srv/flowspy
+
+###############################
+# fod installation step1
+
+COPY . /srv/flowspy
+RUN rm -rf /srv/flowspy/venv
+
+COPY install-*.sh requirement*.txt /srv/flowspy/
+
+# only install system+python deps (for quicker rebuilding by exploiting the docker cache for this step1):
+#RUN ./install-centos.sh --basesw --here --systemd --systemd_only_install
+RUN bash ./install-centos.sh --basesw --here --supervisord 
+
+###############################
+# fod installation step2 
+
+COPY . /srv/flowspy
+#RUN rm -rf /srv/flowspy/venv
+
+#RUN bash ./install-centos.sh --fodproper --here --supervisord --setup_admin_user --setup_admin_user5 admin adminpwd admin@localhost.local testpeer 0.0.0.0/0 --exabgp 10.3.10.3 10.3.10.3 1001 10.3.10.10 10.3.10.10 2001
+#RUN bash ./install-centos.sh --both --here --supervisord --setup_admin_user --setup_admin_user5 admin adminpwd admin@localhost.local testpeer 0.0.0.0/0 --exabgp 172.17.0.2 172.17.0.2 1001 172.17.0.3 172.17.0.3 3001
+#RUN bash ./install-centos.sh --both --here --systemd --systemd_only_install --setup_admin_user --setup_admin_user5 admin adminpwd admin@localhost.local testpeer 0.0.0.0/0 # --exabgp 172.17.0.2 172.17.0.2 1001 172.17.0.3 172.17.0.3 3001
+RUN ./install-centos.sh --fodproper --here --supervisord --setup_admin_user --setup_admin_user5 admin adminpwd admin@localhost.local testpeer 0.0.0.0/0 # --exabgp 172.17.0.2 172.17.0.2 1001 172.17.0.3 172.17.0.3 3001
+
+###############################
+
+# potential standalone re-setup of exabgp later (e.g., to exploit docker build cache for the actual installation step(s) above)
+#RUN cd /opt/FOD/ && ./exabgp/run-exabgp-generic --init-conf 10.3.10.3 10.3.10.3 1001 10.3.10.10 10.3.10.12 3001 -- --systemd
+
+#############################################################################
+#############################################################################
+# running fod
+
+EXPOSE 8000
+
+# if running under systemd
+#CMD [ "/sbin/init" ]
+
+CMD [ "/srv/flowspy/runfod.sh" ]
+
+#############################################################################
+#############################################################################
+
