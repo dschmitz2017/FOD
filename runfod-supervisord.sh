@@ -102,11 +102,12 @@ if ! which supervisord; then
 fi
 
 # TODO
-systemctl disable supervisord
-systemctl disable supervisor
-systemctl disable redis
-systemctl disable redis-server
-
+if grep -q -E '^systemd$' /proc/1/comm; then
+  systemctl disable supervisord
+  systemctl disable supervisor
+  systemctl disable redis
+  systemctl disable redis-server
+fi
 
 #useradd -m fod
 (
