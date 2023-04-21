@@ -33,7 +33,7 @@ WORKDIR /srv/flowspy
 ###############################
 # fod installation step1
 
-COPY install-*.sh requirement*.txt /srv/flowspy/
+COPY install-*.sh requirement*.txt* /srv/flowspy/
 
 # only install system+python deps (for quicker rebuilding by exploiting the docker cache for this step1):
 #RUN ./install-debian.sh --basesw --here --systemd --systemd_only_install
@@ -42,8 +42,10 @@ RUN ./install-debian.sh --basesw --here --supervisord
 ###############################
 # fod installation step2 
 
+RUN mv /srv/flowspy/venv /srv/flowspy/venv.saved
 COPY . /srv/flowspy
 RUN rm -rf /srv/flowspy/venv
+RUN mv /srv/flowspy/venv.saved /srv/flowspy/venv
 
 # to be sure, try again to install newest deps, i.e., use --both instead of just --fodproper:
 #RUN ./install-debian.sh --fodproper --here --supervisord --setup_admin_user --setup_admin_user5 admin adminpwd admin@localhost.local testpeer 0.0.0.0/0 --exabgp 10.3.10.3 10.3.10.3 1001 10.3.10.10 10.3.10.10 2001

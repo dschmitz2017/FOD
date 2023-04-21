@@ -192,6 +192,11 @@ fi
 
 venv_dir_base="$(dirname "$venv_dir")"
 
+echo "$0: venv_dir=$venv_dir => venv_dir_base=$venv_dir_base" 1>&2
+ls -dla "$venv_dir" "$venv_dir_base" 1>&2
+
+##
+
 static_dir="$fod_dir/static"
 
 inst_dir="$(dirname "$0")"
@@ -305,7 +310,7 @@ if [ "$install_fodproper" = 0 ]; then
 
   echo "Setup partial python environment for FoD"
 
-  (ls -la "$venv_dir" 1>&2 || true)
+  (ls -dla "$venv_dir" 1>&2 || true)
   if [ -x pyvenv ]; then
     #pyvenv /srv/venv
     pyvenv "$venv_dir"
@@ -314,6 +319,7 @@ if [ "$install_fodproper" = 0 ]; then
     virtualenv-3 "$venv_dir"
   fi
   ln -sf "$venv_dir" "$fod_dir/venv"
+  ls -dla "$venv_dir" "$fod_dir/venv" 1>&2
 
   #source /srv/venv/bin/activate
   source "$venv_dir/bin/activate"
@@ -364,6 +370,7 @@ else
 
   echo "Setup python environment for FoD"
 
+  (ls -dla "$venv_dir" "$fod_dir/venv" "$venv_dir_base" 1>&2 || false)
   if [ -x pyvenv ]; then
     #pyvenv /srv/venv
     pyvenv "$venv_dir"
@@ -372,6 +379,7 @@ else
     virtualenv-3 "$venv_dir"
   fi
   ln -sf "$venv_dir" "$fod_dir/venv"
+  ls -dla "$venv_dir" "$fod_dir/venv" 1>&2
 
   (
   set +e

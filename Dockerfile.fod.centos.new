@@ -31,24 +31,26 @@ WORKDIR /srv/flowspy
 ###############################
 # fod installation step1
 
-COPY . /srv/flowspy
-RUN rm -rf /srv/flowspy/venv
+#COPY . /srv/flowspy
+#RUN rm -rf /srv/flowspy/venv
 
-COPY install-*.sh requirement*.txt /srv/flowspy/
+COPY install-*.sh requirement*.txt* /srv/flowspy/
 
 # only install system+python deps (for quicker rebuilding by exploiting the docker cache for this step1):
 #RUN ./install-centos.sh --basesw --here --systemd --systemd_only_install
-RUN bash ./install-centos.sh --basesw --here --supervisord 
+RUN ./install-centos.sh --basesw --here --supervisord 
 
 ###############################
 # fod installation step2 
 
+RUN mv /srv/flowspy/venv /srv/flowspy/venv.saved
 COPY . /srv/flowspy
-#RUN rm -rf /srv/flowspy/venv
+RUN rm -rf /srv/flowspy/venv
+RUN mv /srv/flowspy/venv.saved /srv/flowspy/venv
 
-#RUN bash ./install-centos.sh --fodproper --here --supervisord --setup_admin_user --setup_admin_user5 admin adminpwd admin@localhost.local testpeer 0.0.0.0/0 --exabgp 10.3.10.3 10.3.10.3 1001 10.3.10.10 10.3.10.10 2001
-#RUN bash ./install-centos.sh --both --here --supervisord --setup_admin_user --setup_admin_user5 admin adminpwd admin@localhost.local testpeer 0.0.0.0/0 --exabgp 172.17.0.2 172.17.0.2 1001 172.17.0.3 172.17.0.3 3001
-#RUN bash ./install-centos.sh --both --here --systemd --systemd_only_install --setup_admin_user --setup_admin_user5 admin adminpwd admin@localhost.local testpeer 0.0.0.0/0 # --exabgp 172.17.0.2 172.17.0.2 1001 172.17.0.3 172.17.0.3 3001
+#RUN ./install-centos.sh --fodproper --here --supervisord --setup_admin_user --setup_admin_user5 admin adminpwd admin@localhost.local testpeer 0.0.0.0/0 --exabgp 10.3.10.3 10.3.10.3 1001 10.3.10.10 10.3.10.10 2001
+#RUN ./install-centos.sh --both --here --supervisord --setup_admin_user --setup_admin_user5 admin adminpwd admin@localhost.local testpeer 0.0.0.0/0 --exabgp 172.17.0.2 172.17.0.2 1001 172.17.0.3 172.17.0.3 3001
+#RUN ./install-centos.sh --both --here --systemd --systemd_only_install --setup_admin_user --setup_admin_user5 admin adminpwd admin@localhost.local testpeer 0.0.0.0/0 # --exabgp 172.17.0.2 172.17.0.2 1001 172.17.0.3 172.17.0.3 3001
 RUN ./install-centos.sh --fodproper --here --supervisord --setup_admin_user --setup_admin_user5 admin adminpwd admin@localhost.local testpeer 0.0.0.0/0 # --exabgp 172.17.0.2 172.17.0.2 1001 172.17.0.3 172.17.0.3 3001
 
 ###############################
