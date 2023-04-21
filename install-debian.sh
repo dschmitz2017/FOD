@@ -7,6 +7,47 @@
 
 SCRIPT_NAME="install-debian.sh"
 
+#############################################################################
+#############################################################################
+
+# allow for easy clean-slate installation
+if [ "$1" = "--git-checkout" ]; then 
+  shift 1
+  gitrepo="$1" 
+  shift 1
+  git_branch="$1"
+  shift 1
+  git_checkout_dir="$1"
+  shift 1
+
+  [ -n "$gitrepo" ] || gitrepo="https://github.com/GEANT/FOD"
+
+  [ -n "$git_branch" ] || git_branch="python3"
+
+  echo "$0: git-checkout: gitrepo=$gitrepo git_branch="$git_branch" git_checkout_dir=$git_checkout_dir" 1>&2
+
+  ##
+
+  set -e
+  set -x
+
+  git_checkout_dir_parentdir="$(dirname "$git_checkout_dir")"
+  mkdir -p "$git_checkout_dir_parentdir"
+
+  git clone "$gitrepo" "$git_checkout_dir"
+
+  cd "$git_checkout_dir"
+
+  git checkout "refs/remotes/origin/$git_branch"
+  git checkout -b "$git_branch"
+
+  exec "./$SCRIPT_NAME" "$@" 
+
+fi
+
+#############################################################################
+#############################################################################
+
 fod_dir="/srv/flowspy"
 venv_dir="/srv/venv"
 
