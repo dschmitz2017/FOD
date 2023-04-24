@@ -55,8 +55,13 @@ FOD_SYSUSER="fod"
 
 inside_docker=0
 
-install_basesw=1
-install_fodproper=1
+install_default_used=1
+#install_basesw_os=1
+install_basesw_os=0
+#install_basesw_python=1
+install_basesw_python=0
+#install_basesw_python=1
+install_fodproper=0
 
 install_with_supervisord=0
 install_systemd_services=0
@@ -226,15 +231,38 @@ while [ $# -gt 0 ]; do
     shift 1
   elif [ $# -ge 1 -a "$1" = "--both" ]; then
     shift 1
-    install_basesw=1
+    install_default_used=0
+
+    install_basesw_os=1
+    install_basesw_python=1
     install_fodproper=1
   elif [ $# -ge 1 -a "$1" = "--basesw" ]; then 
     shift 1
-    install_basesw=1
-    install_fodproper=0
+    install_default_used=0
+
+    install_basesw_os=1
+    install_basesw_python=1
+    #install_fodproper=0
+  elif [ $# -ge 1 -a "$1" = "--basesw_os" ]; then 
+    shift 1
+    install_default_used=0
+
+    install_basesw_os=1
+    #install_basesw_python=0
+    #install_fodproper=0
+  elif [ $# -ge 1 -a "$1" = "--basesw_python" ]; then 
+    shift 1
+    install_default_used=0
+
+    #install_basesw_os=0
+    install_basesw_python=1
+    #install_fodproper=0
   elif [ $# -ge 1 -a "$1" = "--fodproper" ]; then
     shift 1
-    install_basesw=0
+    install_default_used=0
+
+    #install_basesw_os=0
+    install_basesw_python=1
     install_fodproper=1
   elif [ $# -ge 1 -a \( "$1" = "--supervisor" -o "$1" = "--supervisord" \) ]; then
     shift 1
@@ -346,7 +374,15 @@ fi
 echo "conf_db_access=$conf_db_access DB_NAME=$DB__FOD_DBNAME DB_USER=$DB__FOD_USER DB_PASSWORD=$DB__FOD_PASSWORD" 1>&2
 
 ##
- 
+
+if [ "$install_default_used" = 1 ]; then
+  install_basesw_os=1
+  install_basesw_python=1
+  install_fodproper=1
+fi
+
+echo "$0: install_default_used=$install_default_used ; install_basesw_os=$install_basesw_os install_basesw_python=$install_basesw_python install_fodproper=$install_fodproper" 1>&2
+
 [ -n "$setup_adminuser__email" ] || setup_adminuser__email="$setup_adminuser__username@localhost"
 
 ##
@@ -371,7 +407,7 @@ echo "$0: inst_dir=$inst_dir fod_dir=$fod_dir => inst_dir_is_fod_dir=$inst_dir_i
 #############################################################################
 #############################################################################
 
-if [ "$install_basesw" = 1 ]; then
+if [ "$install_basesw_os" = 1 ]; then
 
   echo "$0: step 1: installing base software dependencies (OS packages)" 1>&2
 
@@ -500,7 +536,7 @@ fi
 #############################################################################
 #############################################################################
 
-if [ "$install_fodproper" = 0 ]; then
+if [ "$install_fodproper" = 0 -a "$install_basesw_python" = 1 ]; then
   
   echo "$0: step 2a: installing Python dependencies only" 1>&2
 
@@ -533,7 +569,7 @@ if [ "$install_fodproper" = 0 ]; then
 
   echo "$0: step 2a done" 1>&2
 
-else
+elif [ "$install_fodproper" = 1 ]; then
 
   echo "$0: step 2: installing FoD in installation dir + ensuring Python dependencies are installed + setting-up FoD settings, database preparations, and FoD run-time environment" 1>&2
 
@@ -595,8 +631,9 @@ else
 
   fi
 
-   #find "$fod_dir/" -not -user fod -exec chown -v fod: {} \;
-   find "$fod_dir/" -not -user "$FOD_SYSUSER" -exec chown "$FOD_SYSUSER:" {} \;
+  echo "$0: step 2.1a: fixing permissions" 1>&2
+  #find "$fod_dir/" -not -user fod -exec chown -v fod: {} \;
+  find "$fod_dir/" -not -user "$FOD_SYSUSER" -exec chown "$FOD_SYSUSER:" {} \;
 
  ###
 
@@ -640,7 +677,7 @@ else
   
   echo "$0: step 2.3: ensuring Python dependencies are installed" 1>&2
 
-  if [ "$install_basesw" = 1 ]; then #are we running in --both mode, i.e. for the venv init is run for the first time, i.e. the problematic package having issues with to new setuptools is not yet installed?
+  if [ "$install_basesw_python" = 1 ]; then #are we running in --both mode, i.e. for the venv init is run for the first time, i.e. the problematic package having issues with to new setuptools is not yet installed?
     # fix for broken anyjson and cl
     # TODO: fix this more cleanly
     pip install 'setuptools==57.5.0'

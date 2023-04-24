@@ -1,5 +1,5 @@
 
-# doc: to build+run: docker build -f Dockerfile.fod.debian -t fod.debian && docker run -ti fod.debian
+# doc: to build+run: docker build -f Dockerfile.fod.debian -t fod.debian . && docker run -ti fod.debian
 
 #############################################################################
 #############################################################################
@@ -26,22 +26,59 @@ ENV LC_ALL en_US.utf8
 
 #############################################################################
 #############################################################################
-# fod installation
+# fod installation: can be split into 3 parts: os dependencies; virtualenv+pip dependencies; fod proper installation/setup
+# exploiting docker build cache to redo only what is necessary on rebuilding of the container:
+# 1) os dependencies is time and network-bandwidth consuming; normally, not to be redone quite often (os deps for FoD normally do not change, only to be redone for updating to the lates updates); will be auto redone on rebuild only if install*.sh changed
+# 2) pip dependencies is still somewhat time consuming; will be auto redone on rebuild only if either install*.sh or requirements*.txt* changed
+# 3) for proper installation/setup, relatively fast; will be auto redone on rebuild if anything in the FoD dir, e.g. code, changed 
 
 WORKDIR /srv/flowspy
+
+#############################################################################
+#############################################################################
+# fod installation in a single step: (either using systemd or supervisord)
+
+#COPY . /srv/flowspy
+#RUN rm -rf /srv/flowspy/venv
+#RUN ./install-debian.sh --both --here --systemd --systemd_only_install
+#RUN ./install-debian.sh --both --here --supervisord
+
+#############################################################################
+#############################################################################
+# fod installation in 2 steps: (either using systemd or supervisord)
+
+#COPY install-*.sh requirement*.txt* /srv/flowspy/
+#RUN ./install-debian.sh --basesw --here --systemd --systemd_only_install
+#RUN ./install-debian.sh --basesw --here --supervisord
+
+#COPY . /srv/flowspy
+#RUN rm -rf /srv/flowspy/venv
+#RUN ./install-debian.sh --both --here --systemd --systemd_only_install
+#RUN ./install-debian.sh --both --here --supervisord
+
+#############################################################################
+#############################################################################
 
 ###############################
 # fod installation step1
 
-COPY install-*.sh requirement*.txt* /srv/flowspy/
-
-# only install system+python deps (for quicker rebuilding by exploiting the docker cache for this step1):
-#RUN ./install-debian.sh --basesw --here --systemd --systemd_only_install
-RUN ./install-debian.sh --basesw --here --supervisord 
+# only install os deps (for quicker rebuilding by exploiting the docker cache for this step1):
+COPY install-*.sh /srv/flowspy/
+#RUN ./install-debian.sh --basesw_os --here --systemd --systemd_only_install
+RUN ./install-debian.sh --basesw_os --here --supervisord 
 
 ###############################
-# fod installation step2 
+# fod installation step2
 
+# only install virtualenv+pip/python deps (for quicker rebuilding by exploiting the docker cache for this step1):
+COPY requirement*.txt* /srv/flowspy/
+#RUN ./install-debian.sh --basesw_python --here --systemd --systemd_only_install
+RUN ./install-debian.sh --basesw_python --here --supervisord 
+
+###############################
+# fod installation step3
+
+# handle /srv/flowspy/venv, having been already initialized above
 RUN mv /srv/flowspy/venv /srv/flowspy/venv.saved
 COPY . /srv/flowspy
 RUN rm -rf /srv/flowspy/venv
