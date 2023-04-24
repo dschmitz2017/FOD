@@ -6,6 +6,13 @@ fi
 
 #
 
+if [ -n "$ifc_setup__name" ]; then
+  echo "$0: setting ip address of $ifc_setup__name to $ifc_setup__ip_addr_and_subnetmask" 1>&2
+  ifconfig "$ifc_setup__name" "$ifc_setup__ip_addr_and_subnetmask"
+fi
+
+#
+
 if [ "$FOD_RUNMODE" = "via_systemd" ]; then
   echo "$0: using runmode via_systemd, nothing todo" 1>&2
 

@@ -90,6 +90,9 @@ setup_adminuser__peer_ip_prefix1="0.0.0.0/0"
 
 setup_exabgp=0
 
+ifc_setup__name=""
+ifc_setup__ip_addr_and_subnetmask=""
+
 ##############################################################################
 ##############################################################################
 
@@ -320,13 +323,13 @@ while [ $# -gt 0 ]; do
     shift 1
   elif [ $# -ge 1 -a "$1" = "--ip-addr-set" ]; then # for easy support for of extra veth-pair end point init in containers for containerlab 
     shift 1
-    ifc_name="$1"
+    ifc_setup__name="$1"
     shift 1
-    ip_addr_and_subnetmask="$1"
+    ifc_setup__ip_addr_and_subnetmask="$1"
     shift 1
-    echo "$0: init of interface $ifc_name with ip_addr_and_subnetmask=$ip_addr_and_subnetmask" 1>&2
-    ifconfig "$ifc_name" "$ip_addr_and_subnetmask" 
-    ifconfig "$ifc_name" 1>&2
+    echo "$0: init of interface $ifc_setup__name with ip_addr_and_subnetmask=$ifc_setup__ip_addr_and_subnetmask" 1>&2
+    ifconfig "$ifc_setup__name" "$ifc_setup__ip_addr_and_subnetmask" 
+    ifconfig "$ifc_setup__name" 1>&2
   else
     break
   fi
@@ -863,6 +866,10 @@ EOF
   (
     echo "FOD_RUNMODE=\"$FOD_RUNMODE\"" 
     echo "USE_EXABGP=\"$setup_exabgp\""
+    if [ -n "$ifc_setup__name" ]; then
+      echo "ifc_setup__name=\"$ifc_setup__name\""
+      echo "ifc_setup__ip_addr_and_subnetmask=\"$ifc_setup__ip_addr_and_subnetmask\""
+    fi
   ) > "./runfod.conf"
 
   ##
