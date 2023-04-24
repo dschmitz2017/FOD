@@ -318,6 +318,15 @@ while [ $# -gt 0 ]; do
     shift 1
     setup_exabgp__peer_asnr="$1"
     shift 1
+  elif [ $# -ge 1 -a "$1" = "--ip-addr-set" ]; then # for easy support for of extra veth-pair end point init in containers for containerlab 
+    shift 1
+    ifc_name="$1"
+    shift 1
+    ip_addr_and_subnetmask="$1"
+    shift 1
+    echo "$0: init of interface $ifc_name with ip_addr_and_subnetmask=$ip_addr_and_subnetmask" 1>&2
+    ifconfig "$ifc_name" "$ip_addr_and_subnetmask" 
+    ifconfig "$ifc_name" 1>&2
   else
     break
   fi
