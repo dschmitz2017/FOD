@@ -8,7 +8,16 @@ fi
 
 if [ -n "$ifc_setup__name" ]; then
   echo "$0: setting ip address of $ifc_setup__name to $ifc_setup__ip_addr_and_subnetmask" 1>&2
+
+  if [ "$ifc_setup__wait_for_ifc__in_runfod" = 1 ]; then
+    while ! ifconfig "$ifc_setup__name" 1>&2; do
+      echo "$0: interface $ifc_setup__name not available yet, waiting" 1>&2
+      sleep 1
+    done
+  fi
+
   ifconfig "$ifc_setup__name" "$ifc_setup__ip_addr_and_subnetmask"
+
 fi
 
 #

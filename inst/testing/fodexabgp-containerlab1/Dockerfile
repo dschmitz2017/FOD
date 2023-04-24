@@ -17,7 +17,7 @@ COPY ./install-debian.sh /opt
 #RUN /opt/prep_fod_exabgp2_on_ubuntu.sh --systemd --systemd_only_install --setup_admin_user5 admin adminpwd admin@localhost.local testpeer 0.0.0.0/0 --exabgp 172.17.0.2 172.17.0.2 1001 172.17.0.3 172.17.0.3 2001 
 #RUN /opt/prep_fod_exabgp2_on_ubuntu.sh --systemd --systemd_only_install --setup_admin_user5 admin adminpwd admin@localhost.local testpeer 0.0.0.0/0 --exabgp 10.3.10.3 10.3.10.3 1001 10.3.10.10 10.3.10.10 2001
 #RUN cd /opt && /opt/prep_fod_exabgp2_on_ubuntu.sh --supervisord --setup_admin_user5 admin adminpwd admin@localhost.local testpeer 0.0.0.0/0 --exabgp 10.3.10.3 10.3.10.3 1001 10.3.10.10 10.3.10.10 2001
-RUN cd /opt && /opt/install-debian.sh --git-checkout "" feature/exabgp_support2 /opt/FOD --here --supervisord --setup_admin_user --setup_admin_user5 admin adminpwd admin@localhost.local testpeer 0.0.0.0/0 --ip-addr-set eth1 10.3.10.3 --exabgp 10.3.10.3 10.3.10.3 1001 10.3.10.10 10.3.10.10 2001
+RUN cd /opt && /opt/install-debian.sh --git-checkout "" feature/exabgp_support2 /opt/FOD --here --supervisord --setup_admin_user --setup_admin_user5 admin adminpwd admin@localhost.local testpeer 0.0.0.0/0 --ip-addr-set eth1 10.3.10.3 1 --exabgp 10.3.10.3 10.3.10.3 1001 10.3.10.10 10.3.10.10 2001
 
 # standalone re-setup of exabgp later (e.g., to exploit docker build cache for the action above)
 #RUN cd /opt/FOD/ && ./exabgp/run-exabgp-generic --init-conf 10.3.10.3 10.3.10.3 1001 10.3.10.10 10.3.10.12 3001 -- --systemd

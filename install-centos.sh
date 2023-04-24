@@ -86,6 +86,7 @@ setup_exabgp=0
 
 ifc_setup__name=""
 ifc_setup__ip_addr_and_subnetmask=""
+ifc_setup__wait_for_ifc__in_runfod=0
 
 ##############################################################################
 ##############################################################################
@@ -246,6 +247,8 @@ while [ $# -gt 0 ]; do
     ifc_setup__name="$1"
     shift 1
     ifc_setup__ip_addr_and_subnetmask="$1"
+    shift 1
+    ifc_setup__wait_for_ifc__in_runfod="$1"
     shift 1
     echo "$0: init of interface $ifc_setup__name with ip_addr_and_subnetmask=$ifc_setup__ip_addr_and_subnetmask" 1>&2
     ifconfig "$ifc_setup__name" "$ifc_setup__ip_addr_and_subnetmask" 
@@ -779,6 +782,7 @@ EOF
     if [ -n "$ifc_setup__name" ]; then
       echo "ifc_setup__name=\"$ifc_setup__name\""
       echo "ifc_setup__ip_addr_and_subnetmask=\"$ifc_setup__ip_addr_and_subnetmask\""
+      echo "ifc_setup__wait_for_ifc__in_runfod=\"$ifc_setup__wait_for_ifc__in_runfod\""
     fi
   ) > "./runfod.conf"
 
