@@ -81,7 +81,11 @@ echo "$0: ip_address_rtr1=$ip_address_rtr1" 1>&2
 
 ##
 
-./ubuntu_os_docker/myenter_ubuntu0 sh -c 'cd /opt/FOD && . venv/bin/activate && "$@"' -- ./exabgp/run-exabgp-generic "$ip_address_fod" "$ip_address_fod" 1001 "$ip_address_rtr1" "$ip_address_rtr1" 2001
+# configure and run exabgp in foreground:
+#./ubuntu_os_docker/myenter_ubuntu0 sh -c 'cd /opt/FOD && . venv/bin/activate && "$@"' -- ./exabgp/run-exabgp-generic "$ip_address_fod" "$ip_address_fod" 1001 "$ip_address_rtr1" "$ip_address_rtr1" 2001
+
+# configure and start exabgp in background controlled by systemd
+./ubuntu_os_docker/myenter_ubuntu0 sh -c 'cd /opt/FOD && . venv/bin/activate && "$@"' -- ./exabgp/run-exabgp-generic --init-conf "$ip_address_fod" "$ip_address_fod" 1001 "$ip_address_rtr1" "$ip_address_rtr1" 2001 -- --systemd --enable
 
 fi #endif testonly!=1
 

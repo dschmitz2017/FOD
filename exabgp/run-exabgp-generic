@@ -45,13 +45,13 @@ if [ "$1" = "--conf" ]; then
   #cat > /etc/exabgp/exabgp.conf <<EOF
   cat <<EOF
 #neighbor 10.0.0.2 {
-#	router-id 10.0.0.1;
-#	local-address 10.0.0.1;
-#	local-as 9991;
+#       router-id 10.0.0.1;
+#       local-address 10.0.0.1;
+#       local-as 9991;
 #
-#	peer-as 9992;
+#       peer-as 9992;
 #
-#	family {
+#       family {
 #            ipv4 unicast;
 #            ipv4 multicast;
 #            ipv4 nlri-mpls;
@@ -61,11 +61,11 @@ if [ "$1" = "--conf" ]; then
 #            ipv6 unicast;
 #            ipv6 flow;
 #            ipv6 flow-vpn;
-#	}
+#       }
 #
-#	static {
-#		route 10.4.0.0/32 next-hop self;
-#	}
+#       static {
+#               route 10.4.0.0/32 next-hop self;
+#       }
 #}
 EOF
 
@@ -103,19 +103,19 @@ if [ "$is_ipv6" = 0 ]; then
   cat <<EOF
 #neighbor 10.0.0.3 
 neighbor $neighbor_id {
-	#router-id 10.0.0.1;
-	router-id $myrouter_id;
-	#local-address 10.0.0.1;
-	local-address $myrouter_ip;
-	#local-as 9991;
-	local-as $myas;
+        #router-id 10.0.0.1;
+        router-id $myrouter_id;
+        #local-address 10.0.0.1;
+        local-address $myrouter_ip;
+        #local-as 9991;
+        local-as $myas;
 
-	#peer-as 9993;
-	peer-as $neighborAS;
+        #peer-as 9993;
+        peer-as $neighborAS;
         peer-address $neighbor_ip;
 
-	#family {
-	#    ipv4 unicast;
+        #family {
+        #    ipv4 unicast;
         #    #ipv4 multicast;
         #    #ipv4 nlri-mpls;
         #    #ipv4 mpls-vpn;
@@ -124,12 +124,12 @@ neighbor $neighbor_id {
         #    #ipv6 unicast;
         #    #ipv6 flow;
         #    #ipv6 flow-vpn;
-	#}
+        #}
 
-	static {
-		route 10.10.0.0/32 next-hop self;
-		route 10.100.0.0/32 next-hop self;
-	}
+        static {
+                route 10.10.0.0/32 next-hop self;
+                route 10.100.0.0/32 next-hop self;
+        }
 }
 EOF
 
@@ -137,15 +137,15 @@ else
 
   cat <<EOF
 neighbor $neighbor_id {
-	router-id $myrouter_id__ipv6;
-	local-address $myrouter_ipv6;
-	local-as $myas__ipv6;
+        router-id $myrouter_id__ipv6;
+        local-address $myrouter_ipv6;
+        local-as $myas__ipv6;
 
-	peer-as $neighborAS;
+        peer-as $neighborAS;
         peer-address $neighbor_ip;
 
-	#family {
-	#    ipv4 unicast;
+        #family {
+        #    ipv4 unicast;
         #    #ipv4 multicast;
         #    #ipv4 nlri-mpls;
         #    #ipv4 mpls-vpn;
@@ -154,12 +154,12 @@ neighbor $neighbor_id {
         #    #ipv6 unicast;
         #    #ipv6 flow;
         #    #ipv6 flow-vpn;
-	#}
+        #}
 
-	#static {
-        #		route 10.10.0.0/32 next-hop self;
-	#	route 10.100.0.0/32 next-hop self;
-	#}
+        #static {
+        #               route 10.10.0.0/32 next-hop self;
+        #       route 10.100.0.0/32 next-hop self;
+        #}
 }
 EOF
 
@@ -188,11 +188,29 @@ elif [ "$1" = "--init-conf" ]; then
 
   ##
 
+  if [ -z "$FOD_SYSUSER" ]; then
+    if id fod &>/dev/null; then
+      FOD_SYSUSER="fod"
+    fi
+  fi
+
   if [ "$1" = "--systemd" ]; then 
    shift 1 
    shift_count=$(( $shift_count + 1 ))
 
-cat > /etc/systemd/system/exabgpForFod.service <<EOF
+   enable1=0
+   enable_type=""
+   if [ "$1" != "${1#--enable}" ]; then
+     enable1=1
+     enable_type="${1#--enable}"
+
+     shift 1
+     shift_count=$(( $shift_count + 1 ))
+   fi
+    
+   exabgp_systemd_servicename="exabgpForFod" # statically defined in ./exabgp/run-exabgp-generic
+
+cat > "/etc/systemd/system/$exabgp_systemd_servicename.service" <<EOF
 
 [Unit]
 Description=Firewall-On-Demand (FoD) exabgp (proxy helper)
@@ -226,6 +244,54 @@ StandardError=append:$PWD/log/exabgp-stderr.log
 
 Restart=on-failure
 
+EOF
+
+  if [ "$enable1" = 1 ]; then
+
+      if [ "$enable_type" = ".min" || ! grep -q -E '^systemd$' /proc/1/comm; then 
+        #systemctl enable --no-reload "$exabgp_systemd_servicename"
+        #systemctl --machine enable --no-reload "$exabgp_systemd_servicename"
+        ln -s -f -v "/usr/lib/systemd/system/$exabgp_systemd_servicename.service" /etc/systemd/system/multi-user.target.wants/
+      else
+        systemctl daemon-reload
+        systemctl enable "$exabgp_systemd_servicename"
+        systemctl restart "$exabgp_systemd_servicename"
+
+        sleep 5
+        SYSTEMD_COLORS=1 systemctl status "$exabgp_systemd_servicename" | cat
+        echo
+      fi
+
+   fi
+
+  elif [ "$1" = "--supervisord" ]; then
+    shift 1
+    shift_count=$(( $shift_count + 1 ))
+
+    echo "$0: adding supervisord config for exabgpForFod" 1>&2     
+
+    add_line1=
+    if [ "$1" = "--no-autostart" ]; then
+      shift 1
+      shift_count=$(( $shift_count + 1 ))
+      add_line1="autostart=false"
+    fi
+
+    user_line=
+    if [ -n "$FOD_SYSUSER" ]; then
+      user_line="user=$FOD_SYSUSER"
+    fi
+
+    # ./supervisord.conf
+    cat >>/etc/supervisord.conf <<EOF
+
+[program:exabgp]
+command=./exabgp/run-exabgp-generic --run0
+directory=$PWD
+$user_line
+$add_line1
+stdout_logfile=./log/exabgp-stdout.log        ; stdout log path, NONE for none; default AUTO
+stderr_logfile=./log/exabgp-stderr.log        ; stderr log path, NONE for none; default AUTO
 EOF
 
   fi

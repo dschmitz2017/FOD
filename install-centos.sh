@@ -83,6 +83,16 @@ setup_adminuser__peer_ip_prefix1="0.0.0.0/0"
 #
 
 setup_exabgp=0
+setup_exabgp_full=0
+
+setup_exabgp__nodeid=1.1.1.1
+setup_exabgp__ip_addr=127.0.0.1
+setup_exabgp__asnr=1234
+setup_exabgp__peer_nodeid=2.2.2.2
+setup_exabgp__peer_ip_addr=127.0.0.2
+setup_exabgp__peer_asnr=2345
+
+#
 
 ifc_setup__name=""
 ifc_setup__ip_addr_and_subnetmask=""
@@ -227,9 +237,16 @@ while [ $# -gt 0 ]; do
     shift 1 
     setup_adminuser__peer_ip_prefix1="$1"
     shift 1 
+  elif [ $# -ge 1 -a "$1" = "--exabgp0" ]; then 
+    shift 1
+    setup_exabgp=1
+    shift 1
+    setup_exabgp_full=0
   elif [ $# -ge 1 -a "$1" = "--exabgp" ]; then # currently 6 params follow
     shift 1
     setup_exabgp=1
+    setup_exabgp_full=1
+
     setup_exabgp__nodeid="$1"
     shift 1
     setup_exabgp__ip_addr="$1"
@@ -796,13 +813,25 @@ EOF
 
     add1=()
     if [ "$install_systemd_services" = 1 ]; then
-      add1=("--systemd")
+      if [ "$install_systemd_services__onlyinstall" = 1 -a "$setup_exabgp_full" = 1 ]; then
+        add1=("--systemd" "--enable.min")
+      elif [ "$install_systemd_services__onlyinstall" = 0 -a "$setup_exabgp_full" = 1 ]; then
+        add1=("--systemd" "--enable")
+      else
+        add1=("--systemd")
+      fi
+    elif [ "$install_systemd_services" = 1 ]; then
+      if [ "$setup_exabgp_full" = 1 ]; then
+        add1=("--supervisord")
+      else
+        add1=("--supervisord" "--no-autostart")
+      fi
     fi
 
     exabgp_systemd_servicename="exabgpForFod" # statically defined in ./exabgp/run-exabgp-generic
 
     # ./exabgp/run-exabgp-generic
-    "$fod_dir/exabgp/run-exabgp-generic" --init-conf \
+    FOD_SYSUSER="$FOD_SYSUSER" "$fod_dir/exabgp/run-exabgp-generic" --init-conf \
             "$setup_exabgp__nodeid" "$setup_exabgp__ip_addr" "$setup_exabgp__asnr" \
             "$setup_exabgp__peer_nodeid" "$setup_exabgp__peer_ip_addr" "$setup_exabgp__peer_asnr" \
             -- "${add1[@]}"
@@ -810,35 +839,29 @@ EOF
     #echo -e '\n#added by install-*.sh:\nPROXY_CLASS="proxy_exabgp"' >> flowspy/settings_local.py
 
     if [ "$install_systemd_services" = 1 ]; then # TODO support supervisord as well
-      echo "$0: installing systemd service file for exabgpForFod" 1>&2	   
+      #echo "$0: installing systemd service file for exabgpForFod" 1>&2     
 
-      if [ "$install_systemd_services__onlyinstall" = 1 ]; then
-        #systemctl enable --no-reload "$exabgp_systemd_servicename"
-        #systemctl --machine enable --no-reload "$exabgp_systemd_servicename"
-        ln -s -f -v "/usr/lib/systemd/system/$exabgp_systemd_servicename.service" /etc/systemd/system/multi-user.target.wants/
-      else
-        systemctl daemon-reload
-        systemctl enable "$exabgp_systemd_servicename"
-        systemctl restart "$exabgp_systemd_servicename"
+      #if [ "$setup_exabgp_full" = 0 ]; then
+      #  :
 
-        sleep 5
-        SYSTEMD_COLORS=1 systemctl status "$exabgp_systemd_servicename" | cat
-        echo
-      fi
+      #elif [ "$install_systemd_services__onlyinstall" = 1 ]; then
+      #  #systemctl enable --no-reload "$exabgp_systemd_servicename"
+      #  #systemctl --machine enable --no-reload "$exabgp_systemd_servicename"
+      #  ln -s -f -v "/usr/lib/systemd/system/$exabgp_systemd_servicename.service" /etc/systemd/system/multi-user.target.wants/
+      #else
+      #  systemctl daemon-reload
+      #  systemctl enable "$exabgp_systemd_servicename"
+      #  systemctl restart "$exabgp_systemd_servicename"
+
+      #  sleep 5
+      #  SYSTEMD_COLORS=1 systemctl status "$exabgp_systemd_servicename" | cat
+      #  echo
+      #fi
+      :
 
     elif [ "$install_with_supervisord" = 1 ]; then
-      echo "$0: adding supervisord config for exabgpForFod" 1>&2	   
-
-      # ./supervisord.conf
-      cat >>/etc/supervisord.conf <<EOF
-
-[program:exabgp]
-command=./exabgp/run-exabgp-generic --run0
-directory=$fod_dir
-user=$FOD_SYSUSER
-stdout_logfile=./log/exabgp-stdout.log        ; stdout log path, NONE for none; default AUTO
-stderr_logfile=./log/exabgp-stderr.log        ; stderr log path, NONE for none; default AUTO
-EOF
+      #echo "$0: adding supervisord config for exabgpForFod" 1>&2          
+      :
 
     fi
  

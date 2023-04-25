@@ -11,8 +11,10 @@ fod-gunicorn and fod-celeryd
 (bridged via redis and a local sqlite database file named /opt/FOD/example-data)
 
 2.
-first admin user has still to be setup, either in cli (check ./prep_fod_exabgp2_on_ubuntu.sh for examples as comments)
+Generally, after FoD installation, first admin user has still to be setup, either in cli (check ./prep_fod_exabgp2_on_ubuntu.sh for examples as comments)
 or via http://.../setup web UI
+Alternatively, ./install.sh now supports options to setup the first admin user
+(check ./prep_fod_exabgp2_on_ubuntu.sh)
 
 3.
 exabgp has still to be started manually with local BGP node id/ip address/AS and remote BGP node id/ip address/AS (freertr peer)
