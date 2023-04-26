@@ -1,7 +1,7 @@
 
 # run from FoD main dir
 
-# build+run: docker build -f Dockerfile -t fodexabgp-containerlab1 . && docker run -d -p 8000:8000 --privileged fodexabgp-containerlab1
+# build+run: docker build -f inst/testing/fodexabgp-containerlab1/Dockerfile -t fodexabgp-containerlab1 . && docker run -d -p 8000:8000 --privileged fodexabgp-containerlab1
 # enter: docker exec -ti ...
 
 FROM ubuntu:latest
