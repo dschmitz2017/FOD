@@ -947,7 +947,7 @@ EOF
       else
         add1=("--systemd")
       fi
-    elif [ "$install_systemd_services" = 1 ]; then
+    elif [ "$install_with_supervisord" = 1 ]; then
       if [ "$setup_exabgp_full" = 1 ]; then
         add1=("--supervisord")
       else
