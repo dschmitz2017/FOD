@@ -23,7 +23,8 @@ from celery.exceptions import TimeLimitExceeded, SoftTimeLimitExceeded
 from .portrange import parse_portrange
 import traceback
 from ipaddress import ip_network
-import xml.etree.ElementTree as ET
+from .flowspec_utils import map__ip_proto__for__ip_version__to_flowspec
+#import xml.etree.ElementTree as ET
 import re
 
 import flowspec.logging_utils

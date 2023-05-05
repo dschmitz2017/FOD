@@ -30,6 +30,7 @@ from celery.exceptions import TimeLimitExceeded, SoftTimeLimitExceeded
 from .portrange import parse_portrange
 import traceback
 from ipaddress import ip_network
+from .flowspec_utils import map__ip_proto__for__ip_version__to_flowspec
 #import xml.etree.ElementTree as ET
 
 import flowspec.logging_utils
@@ -92,7 +93,10 @@ class Retriever(object):
 
     # generic method for parsing the raw data (here NETCONF XML) to routes
     def retrieve_current_routes(self):
-        return self.proccess_xml()
+        device = self.proccess_xml()
+        routes_lists = [flow.routes for flow in device.routing_options]
+        routes = [item for routes_sublist in routes_lists for item in routes_sublist]
+        return routes
 
     def fetch_device(self):
         device = cache.get("device")
@@ -110,7 +114,9 @@ class Retriever(object):
 
     def retrieve_current_routes__globally_cached(self):
         device = self.fetch_device()
-        routes = device.routing_options[0].routes
+        #routes = device.routing_options[0].routes
+        routes_lists = [flow.routes for flow in device.routing_options]
+        routes = [item for routes_sublist in routes_lists for item in routes_sublist]
         return routes
  
 class Applier(object):
@@ -142,7 +148,7 @@ class Applier(object):
              route.match['destination-v6'].append(route_obj.destination)
 
     def to_xml(self, operation=None):
-        logger.info("Operation: %s"%operation)
+        logger.info("proxy::Applier::to_xml(): Operation: %s"%operation)
 
         if self.route_object:
 
@@ -150,12 +156,13 @@ class Applier(object):
                 settings.PORTRANGE_LIMIT
             except:
                 settings.PORTRANGE_LIMIT = 100
-            logger.info("Generating XML config")
+            logger.info("proxy::Applier::to_xml:(): Generating XML config")
 
             route_obj = self.route_object
 
+            ip_version = self.route_object.ip_version()
             is_ipv4 = self.route_object.is_ipv4()
-            logger.info("proxy::to_xml(): is_ipv4="+str(is_ipv4))
+            logger.info("proxy::Applier::to_xml(): is_ipv4="+str(is_ipv4))
 
             device = np.Device()
             flow = np.Flow(is_ipv4)
@@ -165,7 +172,7 @@ class Applier(object):
             route.name = route_obj.name
 
             if operation == "delete":
-                logger.info("Requesting a delete operation")
+                logger.info("proxy::Applier::to_xml(): Requesting a delete operation")
                 route.operation = operation
                 device = device.export(netconf_config=True)
                 return ET.tostring(device)
@@ -175,7 +182,8 @@ class Applier(object):
             try:
                 if route_obj.protocol:
                     for protocol in route_obj.protocol.all():
-                        route.match['protocol'].append(protocol.protocol)
+                        protocol_id = map__ip_proto__for__ip_version__to_flowspec(ip_version, protocol.protocol)
+                        route.match['protocol'].append(protocol_id)
             except:
                 pass
             try:
@@ -227,7 +235,7 @@ class Applier(object):
                 else:
                     route.then[thenaction.action] = True
             if operation == "replace":
-                logger.info("Requesting a replace operation")
+                logger.info("proxy::Applier::to_xml(): Requesting a replace operation")
                 route.operation = operation
             device = device.export(netconf_config=True)
             result = ET.tostring(device)
