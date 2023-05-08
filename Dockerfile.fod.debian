@@ -88,7 +88,9 @@ RUN mv /srv/flowspy/venv.saved /srv/flowspy/venv
 #RUN ./install-debian.sh --fodproper --here --supervisord --setup_admin_user --setup_admin_user5 admin adminpwd admin@localhost.local testpeer 0.0.0.0/0 --exabgp 10.3.10.3 10.3.10.3 1001 10.3.10.10 10.3.10.10 2001
 #RUN ./install-debian.sh --both --here --supervisord --setup_admin_user --setup_admin_user5 admin adminpwd admin@localhost.local testpeer 0.0.0.0/0 --exabgp 172.17.0.2 172.17.0.2 1001 172.17.0.3 172.17.0.3 3001
 #RUN ./install-debian.sh --both --here --systemd --systemd_only_install --setup_admin_user --setup_admin_user5 admin adminpwd admin@localhost.local testpeer 0.0.0.0/0 # --exabgp 172.17.0.2 172.17.0.2 1001 172.17.0.3 172.17.0.3 3001
-RUN ./install-debian.sh --both --here --supervisord --setup_admin_user --setup_admin_user5 admin adminpwd admin@localhost.local testpeer 0.0.0.0/0 # --exabgp 172.17.0.2 172.17.0.2 1001 172.17.0.3 172.17.0.3 3001
+RUN ./install-debian.sh --both --here --supervisord # for later setup of admin user and NETCONF parameters via /setup URL
+#RUN ./install-debian.sh --both --here --supervisord --setup_admin_user --setup_admin_user5 admin adminpwd admin@localhost.local testpeer 0.0.0.0/0 --netconf 172.17.0.3 830 netconf netconf
+#RUN ./install-debian.sh --both --here --supervisord --setup_admin_user --setup_admin_user5 admin adminpwd admin@localhost.local testpeer 0.0.0.0/0 --exabgp 172.17.0.2 172.17.0.2 1001 172.17.0.3 172.17.0.3 3001
 
 ###############################
 

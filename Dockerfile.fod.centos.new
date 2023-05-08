@@ -76,15 +76,19 @@ RUN ./install-centos.sh --basesw_python --here --supervisord
 ###############################
 # fod installation step3
 
+# handle /srv/flowspy/venv, having been already initialized above
 RUN mv /srv/flowspy/venv /srv/flowspy/venv.saved
 COPY . /srv/flowspy
 RUN rm -rf /srv/flowspy/venv
 RUN mv /srv/flowspy/venv.saved /srv/flowspy/venv
 
+# to be sure, try again to install newest deps, i.e., use --both instead of just --fodproper:
 #RUN ./install-centos.sh --fodproper --here --supervisord --setup_admin_user --setup_admin_user5 admin adminpwd admin@localhost.local testpeer 0.0.0.0/0 --exabgp 10.3.10.3 10.3.10.3 1001 10.3.10.10 10.3.10.10 2001
 #RUN ./install-centos.sh --both --here --supervisord --setup_admin_user --setup_admin_user5 admin adminpwd admin@localhost.local testpeer 0.0.0.0/0 --exabgp 172.17.0.2 172.17.0.2 1001 172.17.0.3 172.17.0.3 3001
 #RUN ./install-centos.sh --both --here --systemd --systemd_only_install --setup_admin_user --setup_admin_user5 admin adminpwd admin@localhost.local testpeer 0.0.0.0/0 # --exabgp 172.17.0.2 172.17.0.2 1001 172.17.0.3 172.17.0.3 3001
-RUN ./install-centos.sh --fodproper --here --supervisord --setup_admin_user --setup_admin_user5 admin adminpwd admin@localhost.local testpeer 0.0.0.0/0 # --exabgp 172.17.0.2 172.17.0.2 1001 172.17.0.3 172.17.0.3 3001
+RUN ./install-centos.sh --both --here --supervisord # for later setup of admin user and NETCONF parameters via /setup URL
+#RUN ./install-centos.sh --both --here --supervisord --setup_admin_user --setup_admin_user5 admin adminpwd admin@localhost.local testpeer 0.0.0.0/0 --netconf 172.17.0.3 830 netconf netconf
+#RUN ./install-centos.sh --both --here --supervisord --setup_admin_user --setup_admin_user5 admin adminpwd admin@localhost.local testpeer 0.0.0.0/0 --exabgp 172.17.0.2 172.17.0.2 1001 172.17.0.3 172.17.0.3 3001
 
 ###############################
 

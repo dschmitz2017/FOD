@@ -82,6 +82,15 @@ setup_adminuser__peer_ip_prefix1="0.0.0.0/0"
 
 #
 
+setup_netconf=0
+
+setup_netconf__device=
+setup_netconf__port=830
+setup_netconf__user="netconf"
+setup_netconf__pass="netconf"
+
+#
+
 setup_exabgp=0
 setup_exabgp_full=0
 
@@ -237,6 +246,17 @@ while [ $# -gt 0 ]; do
     shift 1 
     setup_adminuser__peer_ip_prefix1="$1"
     shift 1 
+  elif [ $# -ge 1 -a "$1" = "--netconf" ]; then 
+    shift 1
+    setup_netconf=1
+    setup_netconf__device="$1" 
+    shift 1
+    setup_netconf__port="$1"
+    shift 1
+    setup_netconf__user="$1"
+    shift 1
+    setup_netconf__pass="$1"
+    shift 1
   elif [ $# -ge 1 -a "$1" = "--exabgp0" ]; then 
     shift 1
     setup_exabgp=1
@@ -691,6 +711,22 @@ exec "\$@"
 EOF
     chmod +x "$fod_dir/pythonenv"
     echo 1>&2
+  fi
+
+  ##
+  
+  if [ "$setup_netconf" = 1 ]; then
+    echo "$0: setting up NETCONF fod conf" 1>&2
+    
+    (
+      echo -e '\n#added by install-*.sh:' 
+      echo "PROXY_CLASS=\"proxy_netconf_junos\"" 
+      echo "NETCONF_DEVICE=\"$setup_netconf__device\""
+      echo "NETCONF_PORT=\"$setup_netconf__port\""
+      echo "NETCONF_USER=\"$setup_netconf__user\""
+      echo "NETCONF_PASS=\"$setup_netconf__pass\""
+    ) >> flowspy/settings_local.py
+
   fi
 
   ##
