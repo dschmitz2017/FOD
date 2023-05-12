@@ -68,9 +68,13 @@ install_systemd_services=0
 install_systemd_services__onlyinstall=0
 ensure_installed_pythonenv_wrapper=1
 
+try_install_docu=1
+
 install_mta=""
 
-try_install_docu=1
+#
+
+use__database_schema_migrate__fake_initial=0
 
 #
 
@@ -303,6 +307,9 @@ while [ $# -gt 0 ]; do
   elif [ $# -ge 1 -a "$1" = "--no_systemd" ]; then
     shift 1
     install_systemd_services=0
+  elif [ $# -ge 1 -a "$1" = "--db_schema_migrate__fake_initial" ]; then 
+    shift 1
+    db_schema_migrate__fake_initial=1    
   elif [ $# -ge 1 -a "$1" = "--with_mta_postfix" ]; then
     shift 1
     install_mta="postfix"
@@ -800,7 +807,13 @@ elif [ "$install_fodproper" = 1 ]; then
 
     #./manage.py syncdb --noinput
 
-    ./manage.py migrate
+    add1=()
+    if [ "$db_schema_migrate__fake_initial" = 1 ]; then
+      echo "using --fake-initial" 1>&2
+      add1=("--fake-initial")
+    fi
+    ./manage.py migrate "${add1[@]}"
+
     ./manage.py loaddata initial_data
   )
   echo 1>&2

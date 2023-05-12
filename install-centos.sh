@@ -68,9 +68,18 @@ install_systemd_services=0
 install_systemd_services__onlyinstall=0
 ensure_installed_pythonenv_wrapper=1
 
+try_install_docu=0 # mkdocs not available
+
 # workaround for old Django with old OS sqlite3 (CENTOS7 only):
 try_fixup_for_old_os_sqlite=1
 use_old_django_version__autodetect=1
+
+#
+
+use__database_schema_migrate__fake_initial=0
+
+#
+
 #
 
 setup_adminuser=0
@@ -230,6 +239,9 @@ while [ $# -gt 0 ]; do
   elif [ $# -ge 1 -a "$1" = "--no_systemd" ]; then
     shift 1
     install_systemd_services=0
+  elif [ $# -ge 1 -a "$1" = "--db_schema_migrate__fake_initial" ]; then 
+    shift 1
+    db_schema_migrate__fake_initial=1    
   elif [ $# -ge 1 -a "$1" = "--setup_admin_user" ]; then
     shift 1
      setup_adminuser=1
@@ -617,6 +629,20 @@ elif [ "$install_fodproper" = 1 ]; then
   mkdir -p "$fod_dir/log" "$fod_dir/logs"
   touch "$fod_dir/debug.log"
   chown -R "$FOD_SYSUSER:" "$fod_dir/log" "$fod_dir/logs" "$fod_dir/debug.log"
+  
+  ##
+
+  #if [ "$try_install_docu" = 1 ]; then
+  #  echo "$0: step 2.3.2: compiling internal docu" 1>&2
+  #  echo "trying to install mkdocs-based documentation" 1>&2
+  #  (
+  #    set -e
+  #    which mkdocs 2>/dev/null >/dev/null || yum install -y mkdocs
+  #    cd "$fod_dir" && mkdocs build # ./mkdocs.yml
+  #    find "$fod_dir/static/site" -not -user "$FOD_SYSUSER" -exec chown "$FOD_SYSUSER:" {} \; # is depending on ./mkdocs.yml var site_dir
+  #    true # in case of failure override failure status, as the documentation is non-essential
+  #  )
+  #fi
 
   ##
 
@@ -658,7 +684,13 @@ elif [ "$install_fodproper" = 1 ]; then
     #sqlite3 -version
     #source "$venv_dir/bin/activate"
 
-    ./manage.py migrate
+    add1=()
+    if [ "$db_schema_migrate__fake_initial" = 1 ]; then
+      echo "using --fake-initial" 1>&2
+      add1=("--fake-initial")
+    fi
+    ./manage.py migrate "${add1[@]}"
+
     ./manage.py loaddata initial_data
   )
   echo 1>&2
