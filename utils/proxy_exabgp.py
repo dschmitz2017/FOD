@@ -26,11 +26,12 @@ from ipaddress import ip_network
 from .flowspec_utils import map__ip_proto__for__ip_version__to_flowspec
 #import xml.etree.ElementTree as ET
 import re
+import sys
 
 import flowspec.logging_utils
 logger = flowspec.logging_utils.logger_init_default(__name__, "celery_exabpg.log", False)
 
-#print("loading proxy_exabgp")
+#print("loading proxy_exabgp", file=sys.stderr)
 
 cwd = os.getcwd()
 
