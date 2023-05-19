@@ -102,8 +102,8 @@ if $old_version:
   if $parsed:
     retriever = Retriever();
     device = retriever.fetch_device();
-    result = device.routing_options[0].routes;
-    result = [route.__dict__ for route in result];
+    #result = [route.__dict__ for route in device.routing_options[0].routes];
+    result = [route.__dict__ for r in device.routing_options for route in r.routes];
     #from pprint import pprint
     #pprint(result);
     import json
