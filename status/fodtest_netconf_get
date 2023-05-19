@@ -50,7 +50,13 @@ unset SSH_AUTH_SOCK
 
 ##
 
-. ./venv/bin/activate
+#. ./venv/bin/activate
+mydir="$(dirname "$0")"
+cd -P "$mydir/../"
+
+pwd
+
+. "./venv/bin/activate"
 
 ##
 
