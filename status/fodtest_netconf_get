@@ -12,6 +12,9 @@ while [ $# -gt 0 ]; do
   elif [ "$1" = "--parsed" ]; then 
     shift 1
     parsed=1
+  elif [ "$1" = "--parsed_json" -o "$1" = "--json" ]; then 
+    shift 1
+    parsed=2
   elif [ "$1" = "--old_version" ]; then 
     shift 1
     old_version=1
@@ -42,7 +45,7 @@ shift 1
 [ -n "$NETCONF_USER" ] || NETCONF_USER="netconf"
 [ -n "$NETCONF_PASS" ] || NETCONF_PASS="netconf"
 
-echo "$0: using NETCONF_DEVICE='$NETCONF_DEVICE' NETCONF_PORT='$NETCONF_PORT' NETCONF_USER='$NETCONF_USER' NETCONF_PASS='$NETCONF_PASS'" 1>&2
+echo "$0: using parsed=$parsed : NETCONF_DEVICE='$NETCONF_DEVICE' NETCONF_PORT='$NETCONF_PORT' NETCONF_USER='$NETCONF_USER' NETCONF_PASS='$NETCONF_PASS'" 1>&2
 
 ##
 
@@ -99,13 +102,16 @@ settings.NETCONF__TESTWISE_TRY_TO_FETCH_WITHOUT_FILTER = 1; # override flowspy/s
 from utils.proxy import *;
 
 if $old_version:
-  if $parsed:
+  if $parsed==1:
     retriever = Retriever();
     device = retriever.fetch_device();
-    #result = [route.__dict__ for route in device.routing_options[0].routes];
     result = [route.__dict__ for r in device.routing_options for route in r.routes];
-    #from pprint import pprint
-    #pprint(result);
+    from pprint import pprint
+    pprint(result);
+  elif $parsed==2:
+    retriever = Retriever();
+    device = retriever.fetch_device();
+    result = [route.__dict__ for r in device.routing_options for route in r.routes];
     import json
     print(json.dumps(result, indent=4));
   else:
@@ -114,11 +120,14 @@ if $old_version:
     print(result);
 else:
   retriever = PR0.Retriever(); 
-  if $parsed:
+  if $parsed==1:
     result = retriever.retrieve_current_routes();
     result = [route.__dict__ for route in result];
-    #from pprint import pprint
-    #pprint(result);
+    from pprint import pprint
+    pprint(result);
+  elif $parsed==2:
+    result = retriever.retrieve_current_routes();
+    result = [route.__dict__ for route in result];
     import json
     print(json.dumps(result, indent=4));
   else:
