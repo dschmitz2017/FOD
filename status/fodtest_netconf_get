@@ -52,9 +52,9 @@ unset SSH_AUTH_SOCK
 
 #. ./venv/bin/activate
 mydir="$(dirname "$0")"
-cd -P "$mydir/../"
+echo "$0: mydir=$mydir/../" 1>&2
 
-pwd
+cd -P "$mydir/../"
 
 . "./venv/bin/activate"
 
@@ -102,8 +102,12 @@ if $old_version:
   if $parsed:
     retriever = Retriever();
     device = retriever.fetch_device();
-    result = device.routing_options[0].routes
-    print(result);
+    result = device.routing_options[0].routes;
+    result = [route.__dict__ for route in result];
+    #from pprint import pprint
+    #pprint(result);
+    import json
+    print(json.dumps(result, indent=4));
   else:
     applier = Applier();
     result = applier.get_existing_config_xml();
@@ -112,7 +116,11 @@ else:
   retriever = PR0.Retriever(); 
   if $parsed:
     result = retriever.retrieve_current_routes();
-    print(result);
+    result = [route.__dict__ for route in result];
+    #from pprint import pprint
+    #pprint(result);
+    import json
+    print(json.dumps(result, indent=4));
   else:
     result = retriever.fetch_raw();
     print(result);
