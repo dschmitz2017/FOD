@@ -298,7 +298,7 @@ class Applier(object):
       if operation == "delete":
         logger.info("proxy_exabgp::apply(): requesting a delete operation")
         if route_with_same_params__exists:
-          logger.info("proxy_exabgp::apply(): route_with_same_params__exists, nothing todo; list2="+str(list2))
+          logger.info("proxy_exabgp::apply(): route_with_same_params__exists, nothing todo")
           status =True
           msg = "route_with_same_params__exists, nothing todo"
         elif route_original__status!="INACTIVE" and route_original__status!="PENDING":
@@ -393,7 +393,7 @@ class Applier(object):
           status = True
           msg = "status!=ACTIVE/PENDING, ignoring request"
         elif route_with_same_params__exists:
-          logger.info("proxy_exabgp::apply(): route_with_same_params__exists, nothing todo; list2="+str(list2))
+          logger.info("proxy_exabgp::apply(): route_with_same_params__exists, nothing todo")
           status = True
           msg = "route_with_same_params__exists, nothing todo"
         else:
