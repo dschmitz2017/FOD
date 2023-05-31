@@ -532,7 +532,7 @@ NETCONF_MAX_RETRY_BEFORE_ERROR = 5
 COMMIT = True
 
 #
-NETCONF_FLOWSPEC_MAP_ICMP_TO_ICMPV6 = False
+NETCONF_FLOWSPEC_MAP_ICMP_TO_ICMPV6 = True
 
 ##############################################################################
 ##############################################################################
