@@ -122,12 +122,13 @@ else:
   retriever = PR0.Retriever(); 
   if $parsed==1:
     result = retriever.retrieve_current_routes();
-    result = [route.__dict__ for route in result];
     from pprint import pprint
+    #pprint(result);
+    #result = [route.__dict__ for route in result];
     pprint(result);
   elif $parsed==2:
     result = retriever.retrieve_current_routes();
-    result = [route.__dict__ for route in result];
+    #result = [route.__dict__ for route in result];
     import json
     print(json.dumps(result, indent=4));
   else:
