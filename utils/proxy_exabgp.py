@@ -84,7 +84,8 @@ class Retriever(object):
     # generic method for returning raw data string (here NETCONF XML)
     def fetch_raw(self):
       logger.info("proxy_exabgp::Retriever::fetch_raw(): called")
-      ret, msg = do_exabgp_interaction(["show adj-rib out"])
+      #ret, msg = do_exabgp_interaction(["show adj-rib out"])
+      ret, msg = do_exabgp_interaction(["show adj-rib out extensive"])
       logger.info("proxy_exabgp::Retriever::fetch_raw(): ret="+str(ret))
       #logger.info("proxy_exabgp::Retriever::fetch_raw(): msg="+str(msg))
       return msg
@@ -94,16 +95,22 @@ class Retriever(object):
     # generic method for parsing the raw data (here NETCONF XML) to routes
     # e.g., neighbor 127.0.0.3 ipv6 flow flow source-ipv6 ::/0/0 protocol [ =tcp =udp ] destination-port [ >=2&<=900 ] source-port [ >=1&<=100 ] fragment [ dont-fragment last-fragment ]
     def parse_exabgp__routes_output(self, msg):
+       logger.info("parse_exabgp__routes_output(): called")
        lines = msg.split("\n")
        #logger.info("proxy_exabgp::Retriever::parse_exabgp__routes_output(): => lines="+str(lines))
-       re1 = re.compile('^neighbor +\S+ +ipv([46]) +flow +flow +(.*)$')
+       #re1 = re.compile('^neighbor +\S+ +ipv([46]) +flow +flow +(.*)$')
+       re1 = re.compile('^neighbor +.* +ipv([46]) +flow +flow +(.*)$')
+       #logger.info("re="+str(re))
        route_exabgp__str__list = [re1.match(line).group(1)+" "+re1.match(line).group(2) for line in lines if re1.match(line)]
+       #logger.info("route_exabgp__str__list="+str(route_exabgp__str__list))
        routes = [self.parse_exabgp_route__str(route_exabgp__str) for route_exabgp__str in route_exabgp__str__list]
+       logger.info("=> routes="+str(routes))
        return routes
 
     # e.g., 4 source-ipv6 ::/0/0 protocol [ =tcp =udp ] destination-port [ >=2&<=900 ] source-port [ >=1&<=100 ] fragment [ dont-fragment last-fragment ]
     def parse_exabgp_route__str(self, route_exabgp__str):
-      re1 = re.compile('^(?P<version>[46]) +((destination-ipv[46]) +(?P<destination>\S+) +)?((source-ipv[46]) +(?P<source>\S+) +)?(protocol +(?P<protocol>(\[[^\[\]]+\])|\S+) +)?(destination-port +(?P<destination_port>(\[[^\[\]]+\])|\S+) +)?(source-port +(?P<source_port>(\[[^\[\]]+\])|\S+) +)?(fragment +(?P<fragment>(\[[^\[\]]+\])|\S+) +)?')
+      #re1 = re.compile('^(?P<version>[46]) +((destination-ipv[46]) +(?P<destination>\S+) +)?((source-ipv[46]) +(?P<source>\S+) +)?(protocol +(?P<protocol>(\[[^\[\]]+\])|\S+) +)?(destination-port +(?P<destination_port>(\[[^\[\]]+\])|\S+) +)?(source-port +(?P<source_port>(\[[^\[\]]+\])|\S+) +)?(fragment +(?P<fragment>(\[[^\[\]]+\])|\S+) +)?')
+      re1 = re.compile('^(?P<version>[46]) +((destination-ipv[46]) +(?P<destination>\S+) +)?((source-ipv[46]) +(?P<source>\S+) +)?(protocol +(?P<protocol>(\[[^\[\]]+\])|\S+) +)?(destination-port +(?P<destination_port>(\[[^\[\]]+\])|\S+) +)?(source-port +(?P<source_port>(\[[^\[\]]+\])|\S+) +)?(fragment +(?P<fragment>(\[[^\[\]]+\])|\S+) +)?(extended-community +)?(rate-limit +(?P<ratelimit>(\[[^\[\]]+\])|\S+) +)?')
       key_is_singlevalued = {
         'version': 1,
         #'source': 1,
@@ -119,6 +126,13 @@ class Retriever(object):
             if groupname=='source' or groupname=='destination' and route['version']=='6':
               if val!=None:
                 val = re.sub('(/[0-9]+)/0$', '\\1', val)
+            elif groupname=='ratelimit':
+                if val=="0":
+                    groupname="then"
+                    val="rate-limit "+val 
+                else:
+                    groupname="then"
+                    val="discard"
 
             groupname2 = groupname.translate({ '_' : '-' })
             if groupname in key_is_singlevalued or val==None:
@@ -218,6 +232,7 @@ class Applier(object):
         destinationport = route['destinationport']
         protocols = route['protocol']
         fragtypes = route['fragmenttype']
+        thens = route['then']
     else:
         source = route.source
         destination = route.destination
@@ -225,6 +240,7 @@ class Applier(object):
         destinationport = route.destinationport
         protocols = route.protocol.all()
         fragtypes = route.fragmenttype.all()
+        thens = route.then.all()
 
     ret = ret + " source-ipv4 " + str(source) + " "
     ret = ret + " destination-ipv4 " + str(destination) + " "
@@ -256,6 +272,29 @@ class Applier(object):
       ret1 = ret1 + str(fragtype) + " "
     if ret1!="":
       ret = ret + " fragment [ " + ret1 + "]"
+
+    ret1 = ""
+    for then in thens:
+      logger.info("then='"+str(then)+"'")
+      #action = then.action
+      #action_value = then.action_value
+      ret2 = ""
+      if str(then)=="rate-limit":
+        ret2 = "rate-limit "+str(action_value)
+      elif str(then)=="discard":
+        ret2 = "rate-limit 0"
+      else:
+        logger.error("currently only rate-limit and discard supported as then action")
+
+      ret1 = ret1 + ret2 + " "
+      logger.info("then => ret1="+str(ret1))
+
+    if ret1!="":
+      logger.info("then final => ret1="+str(ret1))
+      #ret = ret + " fragment [ " + ret1 + "]"
+      ret = ret + ret1
+
+    logger.info("helper_get_exabgp__route_parameter_string(): ret="+str(ret))
 
     return ret
 
