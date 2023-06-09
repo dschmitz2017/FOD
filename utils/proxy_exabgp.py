@@ -110,7 +110,7 @@ class Retriever(object):
     # e.g., 4 source-ipv6 ::/0/0 protocol [ =tcp =udp ] destination-port [ >=2&<=900 ] source-port [ >=1&<=100 ] fragment [ dont-fragment last-fragment ]
     def parse_exabgp_route__str(self, route_exabgp__str):
       #re1 = re.compile('^(?P<version>[46]) +((destination-ipv[46]) +(?P<destination>\S+) +)?((source-ipv[46]) +(?P<source>\S+) +)?(protocol +(?P<protocol>(\[[^\[\]]+\])|\S+) +)?(destination-port +(?P<destination_port>(\[[^\[\]]+\])|\S+) +)?(source-port +(?P<source_port>(\[[^\[\]]+\])|\S+) +)?(fragment +(?P<fragment>(\[[^\[\]]+\])|\S+) +)?')
-      re1 = re.compile('^(?P<version>[46]) +((destination-ipv[46]) +(?P<destination>\S+) +)?((source-ipv[46]) +(?P<source>\S+) +)?(protocol +(?P<protocol>(\[[^\[\]]+\])|\S+) +)?(destination-port +(?P<destination_port>(\[[^\[\]]+\])|\S+) +)?(source-port +(?P<source_port>(\[[^\[\]]+\])|\S+) +)?(fragment +(?P<fragment>(\[[^\[\]]+\])|\S+) +)?(extended-community +)?(rate-limit +(?P<ratelimit>(\[[^\[\]]+\])|\S+) +)?')
+      re1 = re.compile('^(?P<version>[46]) +((destination-ipv[46]) +(?P<destination>\S+) +)?((source-ipv[46]) +(?P<source>\S+) +)?(protocol +(?P<protocol>(\[[^\[\]]+\])|\S+) +)?(destination-port +(?P<destination_port>(\[[^\[\]]+\])|\S+) +)?(source-port +(?P<source_port>(\[[^\[\]]+\])|\S+) +)?(fragment +(?P<fragment>(\[[^\[\]]+\])|\S+) +)?(extended-community +)?(rate-limit:+(?P<ratelimit>(\[[^\[\]]+\])|\S+) +)?')
       key_is_singlevalued = {
         'version': 1,
         #'source': 1,
@@ -121,15 +121,16 @@ class Retriever(object):
           route = {}
           for groupname in re1.groupindex:
             val = m.group(groupname)
+            logger.info("groupname="+str(groupname)+" => val="+str(val))
 
             # special case
             if groupname=='source' or groupname=='destination' and route['version']=='6':
               if val!=None:
                 val = re.sub('(/[0-9]+)/0$', '\\1', val)
             elif groupname=='ratelimit':
-                if val=="0":
+                if val!="0":
                     groupname="then"
-                    val="rate-limit "+val 
+                    val="rate-limit:"+str(int(int(val)/1000))+"k"
                 else:
                     groupname="then"
                     val="discard"
@@ -275,12 +276,20 @@ class Applier(object):
 
     ret1 = ""
     for then in thens:
-      logger.info("then='"+str(then)+"'")
+      then_str = str(then)
+      logger.info("then='"+then_str+"'")
       #action = then.action
       #action_value = then.action_value
       ret2 = ""
-      if str(then)=="rate-limit":
-        ret2 = "rate-limit "+str(action_value)
+      #re1 = re.compile('^rate-limit:(?P<value>.*)(k?)$'
+      re1 = re.compile('^rate-limit:(?P<value>[0-9]+)(k?)$')
+      re_match1 = re1.match(then_str)
+      if re_match1:
+        val_part = str(re_match1.group(1))
+        k_part = str(re_match1.group(2))
+        if k_part=="k":
+          val_part = str(int(val_part)*1000)
+        ret2 = "rate-limit "+val_part
       elif str(then)=="discard":
         ret2 = "rate-limit 0"
       else:
