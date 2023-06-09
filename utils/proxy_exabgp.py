@@ -49,19 +49,25 @@ def do_exabgp_interaction(command_list):
     lock.acquire()
     logger.info(pre1+"proxy_exabgp::do_exabgp_interaction(): lock acquired")
     ret=""
+    msg=""
     try:
       logger.info(pre1+"proxy_exabgp::do_exabgp_interaction(): before exabgp_interaction")
       ret, msg = exabgp_interaction(command_list)
       logger.info(pre1+"proxy_exabgp::do_exabgp_interaction(): done with exabgp_interaction")
     except Exception as e:
       logger.info(pre1+"proxy_exabgp::do_exabgp_interaction(): got exception "+str(e), exc_info=True)
+      ret=1
     except Error as e:
       logger.info(pre1+"proxy_exabgp::do_exabgp_interaction(): got error "+str(e), exc_info=True)
+      ret=1
     except:
       logger.info(pre1+"proxy_exabgp::do_exabgp_interaction(): got unknown error ", exc_info=True)
+      ret=1
     finally:
       lock.release() #release lock
       logger.info(pre1+"proxy_exabgp::do_exabgp_interaction(): lock released")
+
+    logger.info("proxy_exabgp::do_exabgp_interaction(): ret="+str(ret)+" msg="+str(msg))
     return ret, msg
 
 class Retriever(object):
