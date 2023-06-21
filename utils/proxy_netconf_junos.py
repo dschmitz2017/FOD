@@ -184,7 +184,10 @@ class Applier(object):
             try:
                 if route_obj.protocol:
                     for protocol in route_obj.protocol.all():
-                        protocol_id = map__ip_proto__for__ip_version__to_flowspec(ip_version, protocol.protocol)
+                        try:
+                          protocol_id = map__ip_proto__for__ip_version__to_flowspec(ip_version, protocol.protocol)
+                        except Exception as e:
+                          logger.error("proxy::Applier::to_xml(): got exception in map__ip_proto__for__ip_version__to_flowspec: "+str(e))
                         route.match['protocol'].append(protocol_id)
             except:
                 pass
