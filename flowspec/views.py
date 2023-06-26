@@ -974,6 +974,7 @@ def user_login(request):
             logger.info('user does not exist for username=%s, but username_old_to_migrate_value=%s, trying user id attribute migration' % (username, username_old_to_migrate_value))
             user_old = User.objects.get(username__exact=username_old_to_migrate_value)
             logger.info('=> user_old='+str(user_old))
+            user = user_old
             user.username = username
             user.save()
             user_exists = True
