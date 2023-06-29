@@ -122,6 +122,10 @@ ifc_setup__name=""
 ifc_setup__ip_addr_and_subnetmask=""
 ifc_setup__wait_for_ifc__in_runfod=0
 
+#
+
+findfix_file_permissions=0
+
 ##############################################################################
 ##############################################################################
 
@@ -195,6 +199,8 @@ function debug_python_deps()
   echo "debug_python_deps(): venv_file=$venv_file exit_code=$exit_code" 1>&2
 
   [ -z "$venv_file" ] || . "$venv_file"
+
+  export 1>&2
 
   echo 1>&2
   echo "# Python version: " 1>&2  
@@ -447,6 +453,11 @@ echo "$0: install_default_used=$install_default_used ; install_basesw_os=$instal
 
 venv_dir_base="$(dirname "$venv_dir")"
 
+echo "$0: venv_dir=$venv_dir => venv_dir_base=$venv_dir_base" 1>&2
+ls -dla "$venv_dir" "$venv_dir_base" 1>&2
+
+##
+
 static_dir="$fod_dir/static"
 
 inst_dir="$(dirname "$0")"
@@ -481,11 +492,14 @@ if [ "$install_basesw_os" = 1 ]; then
 
   echo 1>&2
   echo "Install dependencies" 1>&2
+  # 2023-03 now pkg-config needed for mysqlclient python deps
   apt-get -qqy update
   apt-get -qqy install virtualenv python3-venv python3-setuptools \
     python3-dev vim git build-essential libevent-dev libxml2-dev libxslt1-dev \
     "${mysql_server_pkg[@]}" libmariadb-dev patch redis-server sqlite3 \
     rustc libssl-dev \
+    pkg-config \
+    sudo \
     procps 
   echo 1>&2
 
@@ -601,6 +615,9 @@ fi
 #############################################################################
 #############################################################################
 
+# grep -B 100000 '#step2' install-centos.sh > install-centos-step1.sh
+#step2
+
 if [ "$install_fodproper" = 0 -a "$install_basesw_python" = 1 ]; then
   
   echo "$0: step 2a: installing Python dependencies only" 1>&2
@@ -608,6 +625,19 @@ if [ "$install_fodproper" = 0 -a "$install_basesw_python" = 1 ]; then
   set -e
 
   echo "Setup partial python environment for FoD"
+  
+  [ ! -f "fodenv.sh" ] || source "./fodenv.sh"
+
+  if [ "$findfix_file_permissions" = 0 ]; then
+    echo "preparing venv_dir $venv_dir permissions for user $FOD_SYSUSER" 1>&2
+    mkdir -p "$venv_dir"
+    #find "$venv_dir/" -not -user "$FOD_SYSUSER" -print0 | xargs -0 chown -v "$FOD_SYSUSER:" || true
+    find "$venv_dir/" -not -group "$FOD_SYSUSER" -print0 | xargs -0 chgrp -v "$FOD_SYSUSER" "$venv_dir" || true
+    chown "$FOD_SYSUSER:$FOD_SYSUSER" "$venv_dir"
+    chmod og+rxs "$venv_dir"
+  fi
+
+  (ls -dla "$venv_dir" 1>&2 || true)
 
   #mkdir -p /srv
   mkdir -p "$venv_dir_base"
@@ -619,6 +649,7 @@ if [ "$install_fodproper" = 0 -a "$install_basesw_python" = 1 ]; then
     virtualenv --python=python3 "$venv_dir"
   fi
   ln -sf "$venv_dir" "$fod_dir/venv"
+  ls -dla "$venv_dir" "$fod_dir/venv" 1>&2
 
   #source /srv/venv/bin/activate
   source "$venv_dir/bin/activate"
@@ -634,7 +665,12 @@ if [ "$install_fodproper" = 0 -a "$install_basesw_python" = 1 ]; then
 
   echo "$0: step 2a done" 1>&2
 
-elif [ "$install_fodproper" = 1 ]; then
+fi
+
+# grep -B 100000 '#step3' install-centos.sh > install-centos-step2.sh
+#step3
+
+if [ "$install_fodproper" = 1 ]; then
 
   echo "$0: step 2: installing FoD in installation dir + ensuring Python dependencies are installed + setting-up FoD settings, database preparations, and FoD run-time environment" 1>&2
 
@@ -651,19 +687,35 @@ elif [ "$install_fodproper" = 1 ]; then
 
   echo "Setup python environment for FoD"
 
+  (ls -dla "$venv_dir" "$fod_dir/venv" "$venv_dir_base" 1>&2 || false)
+
+  if [ "$findfix_file_permissions" = 0 ]; then
+    echo "preparing venv_dir $venv_dir permissions for user $FOD_SYSUSER" 1>&2
+    mkdir -p "$venv_dir"
+    #find "$venv_dir/" -not -user "$FOD_SYSUSER" -print0 | xargs -0 chown -v "$FOD_SYSUSER:" || true
+    find "$venv_dir/" -not -group "$FOD_SYSUSER" -print0 | xargs -0 chgrp -v "$FOD_SYSUSER" "$venv_dir" 
+    chown "$FOD_SYSUSER:$FOD_SYSUSER" "$venv_dir"
+    chmod og+rxs "$venv_dir"
+  fi
+  
+  [ ! -f "fodenv.sh" ] || source "./fodenv.sh"
+
   if [ -x pyvenv ]; then
-    #pyvenv /srv/venv
+    echo "using pyvenv" 1>&2
     pyvenv "$venv_dir"
   else
-    #virtualenv /srv/venv
-    virtualenv --python=python3 "$venv_dir"
+    echo "using virtualenv" 1>&2
+    virtualenv "$venv_dir"
   fi
   ln -sf "$venv_dir" "$fod_dir/venv"
+  ls -dla "$venv_dir" "$fod_dir/venv" 1>&2
 
   (
   set +e
-  #source /srv/venv/bin/activate
   source "$venv_dir/bin/activate"
+
+
+  export 1>&2
 
   ##
 
@@ -675,11 +727,13 @@ elif [ "$install_fodproper" = 1 ]; then
     echo "$0: step 2.1: coyping from source dir to installation dir $fod_dir" 1>&2
 
     MYSELF="$(basename "$0")"
+    DIRNAME="$(dirname "$0")"
 
     # Select source dir and copy FoD into /srv/flowspy/
     if [ "$MYSELF" = "$SCRIPT_NAME" ]; then # if started as main script, e.g., in Docker or on OS-installation
       # this script is in the source directory
       #cp -f -r "`dirname $0`"/* /srv/flowspy/
+      #cp -f -r "$DIRNAME"/* "$fod_dir"
       cp -f -r "$inst_dir"/* "$fod_dir"
     elif [ -e /vagrant ]; then # running in vagrant with /vagrant available
       # vagrant's copy in /vagrant/
@@ -690,16 +744,16 @@ elif [ "$install_fodproper" = 1 ]; then
       #cp -f -r ./* /srv/flowspy/
       cp -f -r ./* "$fod_dir"
     else
-      echo "Could not find FoD src directory tried `dirname $0`, /vagrant/, ./"
+      echo "Could not find FoD src directory tried $DIRNAME, /vagrant/, ./"
       exit 1
     fi
 
   fi
 
-  echo "$0: step 2.1a: fixing permissions" 1>&2
-  #find "$fod_dir/" -not -user fod -exec chown -v fod: {} \;
-  #find "$fod_dir/" -not -user "$FOD_SYSUSER" -exec chown "$FOD_SYSUSER:" {} \;
-  find "$fod_dir/" -not -user "$FOD_SYSUSER" -print0 | xargs -0 chown -v "$FOD_SYSUSER:" || true
+  if [ "$findfix_file_permissions" = 1 ]; then
+    echo "$0: step 2.1a: fixing permissions" 1>&2
+    find "$fod_dir/" -not -user "$FOD_SYSUSER" -print0 | xargs -0 chown -v "$FOD_SYSUSER:" || true
+  fi
 
  ###
 
@@ -769,11 +823,11 @@ elif [ "$install_fodproper" = 1 ]; then
     echo "trying to install mkdocs-based documentation" 1>&2
     (
       set -e
+      set -x
       which mkdocs 2>/dev/null >/dev/null || apt-get install -y mkdocs
       cd "$fod_dir" && mkdocs build # ./mkdocs.yml
       #find "$fod_dir/static/site" -not -user "$FOD_SYSUSER" -exec chown "$FOD_SYSUSER:" {} \; # is depending on ./mkdocs.yml var site_dir
-      find "$fod_dir/static/site" -not -user "$FOD_SYSUSER" -print0 | xargs -0 chown -v "$FOD_SYSUSER:" # is depending on ./mkdocs.yml var site_dir
-      true # in case of failure override failure status, as the documentation is non-essential
+      find "$fod_dir/static/site" -not -user "$FOD_SYSUSER" -print0 | xargs -0 chown -v "$FOD_SYSUSER:" "$fod_dir/static/site" # is depending on ./mkdocs.yml var site_dir
     )
   fi
 
@@ -795,9 +849,14 @@ elif [ "$install_fodproper" = 1 ]; then
 
     cd "$fod_dir"
 
-    ./manage.py collectstatic -c --noinput || debug_python_deps "$venv_dir/bin/activate" 1
+    if type -p sudo 2>/dev/null; then
+      sudo --preserve-env=LD_LIBRARY_PATH,PATH -E -u "$FOD_SYSUSER" ./manage.py collectstatic -c --noinput || debug_python_deps "$venv_dir/bin/activate" 1
+    else
+      ./manage.py collectstatic -c --noinput || debug_python_deps "$venv_dir/bin/activate" 1
+    fi
+
     #find "$fod_dir/staticfiles" -not -user "$FOD_SYSUSER" -exec chown "$FOD_SYSUSER:" {} \; || true # TODO is depending on flowspy/settings*.py var STATIC_ROOT 
-    find "$fod_dir/staticfiles" -not -user "$FOD_SYSUSER" -print0 | xargs -0 chown -v "$FOD_SYSUSER:" # is depending on ./mkdocs.yml var site_dir
+    find "$fod_dir/staticfiles" -not -user "$FOD_SYSUSER" -print0 | xargs -0 chown -v "$FOD_SYSUSER:" "$fod_dir/staticfiles" # is depending on ./mkdocs.yml var site_dir
   )
 
   ##
@@ -1069,9 +1128,10 @@ EOF
   )
   
   if [ "$inst_dir_is_fod_dir" = 1 ]; then
-    echo "$0: step 2.9: finally fixing permissions as inst_dir_is_fod_dir=$inst_dir_is_fod_dir" 1>&2
-    #find "$fod_dir/" -not -user "$FOD_SYSUSER" -exec chown -v "$FOD_SYSUSER:" {} \;
-    find "$fod_dir/" -not -user "$FOD_SYSUSER" -print0 | xargs -0 chown -v "$FOD_SYSUSER:" || true
+    if [ "$findfix_file_permissions" = 1 ]; then
+      echo "$0: step 2.9: finally fixing permissions as inst_dir_is_fod_dir=$inst_dir_is_fod_dir" 1>&2
+      find "$fod_dir/" -not -user "$FOD_SYSUSER" -print0 | xargs -0 chown -v "$FOD_SYSUSER:" || true
+    fi
   fi
   
   echo "$0: step 2 done" 1>&2

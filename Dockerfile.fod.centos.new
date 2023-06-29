@@ -32,6 +32,8 @@ RUN yum -y install procps # somehow needed for centos repo installation in ./ins
 
 WORKDIR /srv/flowspy
 
+RUN useradd fod
+
 #############################################################################
 #############################################################################
 # fod installation in a single step: (either using systemd or supervisord)
@@ -61,26 +63,30 @@ WORKDIR /srv/flowspy
 # fod installation step1
 
 # only install os deps (for quicker rebuilding by exploiting the docker cache for this step1):
-COPY install-*.sh /srv/flowspy/
+#COPY install-*.sh /srv/flowspy/
+COPY --chown=fod:fod install-centos.sh install-centos-fixcentos-sqlite.sh /srv/flowspy/
 #RUN ./install-centos.sh --basesw_os --here --systemd --systemd_only_install
+#RUN ./install-centos.sh --basesw_os --here --supervisord 
 RUN ./install-centos.sh --basesw_os --here --supervisord 
 
 ###############################
 # fod installation step2
 
 # only install virtualenv+pip/python deps (for quicker rebuilding by exploiting the docker cache for this step1):
-COPY requirement*.txt* /srv/flowspy/
+#COPY requirement*.txt* /srv/flowspy/
+COPY --chown=fod:fod requirement*.txt* /srv/flowspy/
 #RUN ./install-centos.sh --basesw_python --here --systemd --systemd_only_install
+#RUN ./install-centos.sh --basesw_python --here --supervisord 
 RUN ./install-centos.sh --basesw_python --here --supervisord 
 
 ###############################
 # fod installation step3
 
-# handle /srv/flowspy/venv, having been already initialized above
-RUN mv /srv/flowspy/venv /srv/flowspy/venv.saved
-COPY . /srv/flowspy
-RUN rm -rf /srv/flowspy/venv
-RUN mv /srv/flowspy/venv.saved /srv/flowspy/venv
+# handle /srv/flowspy/venv, having been already initialized above : NOT needed as venv is in .dockerignore now
+#RUN mv /srv/flowspy/venv /srv/flowspy/venv.saved
+COPY --chown=fod:fod . /srv/flowspy
+#RUN rm -rf /srv/flowspy/venv
+#RUN mv /srv/flowspy/venv.saved /srv/flowspy/venv
 
 # to be sure, try again to install newest deps, i.e., use --both instead of just --fodproper:
 #RUN ./install-centos.sh --fodproper --here --supervisord --setup_admin_user --setup_admin_user5 admin adminpwd admin@localhost.local testpeer 0.0.0.0/0 --exabgp 10.3.10.3 10.3.10.3 1001 10.3.10.10 10.3.10.10 2001
