@@ -981,13 +981,14 @@ def user_login(request):
           except:
             pass
 
-        user_dict = model_to_dict(user)
-        rule_changelog_logger.info("login user="+str(user.username)+": "+str(user_dict))
-
         user = authenticate(username=username, firstname=firstname, lastname=lastname, mail=mail, authsource='shibboleth')
         logger.debug('Authentication of %s' % user)
 
         if user is not None:
+
+            user_dict = model_to_dict(user)
+            rule_changelog_logger.info("login user="+str(user.username)+": "+str(user_dict))
+
             try:
                 user.userprofile.peers.all()
             except:
