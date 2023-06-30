@@ -630,6 +630,7 @@ if [ "$install_fodproper" = 0 -a "$install_basesw_python" = 1 ]; then
 
   if [ "$findfix_file_permissions" = 0 ]; then
     echo "preparing venv_dir $venv_dir permissions for user $FOD_SYSUSER" 1>&2
+    id "$FOD_SYSUSER" &>/dev/null || useradd -m "$FOD_SYSUSER"
     mkdir -p "$venv_dir"
     #find "$venv_dir/" -not -user "$FOD_SYSUSER" -print0 | xargs -0 chown -v "$FOD_SYSUSER:" || true
     find "$venv_dir/" -not -group "$FOD_SYSUSER" -print0 | xargs -0 chgrp -v "$FOD_SYSUSER" "$venv_dir" || true
