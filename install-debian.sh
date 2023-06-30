@@ -52,6 +52,7 @@ fod_dir="/srv/flowspy"
 venv_dir="/srv/venv"
 
 FOD_SYSUSER="fod"
+FOD_SYSGROUP="fod"
 
 inside_docker=0
 
@@ -124,7 +125,7 @@ ifc_setup__wait_for_ifc__in_runfod=0
 
 #
 
-findfix_file_permissions=0
+findfix_file_permissions=1
 
 ##############################################################################
 ##############################################################################
@@ -214,6 +215,32 @@ function debug_python_deps()
   echo "# End of Python dependencies" 1>&2  
 
   [ -z "$exit_code" ] || exit "$exit_code"
+}
+
+function fix_permission_in_dir()
+{
+  user="$1" # user for test accessing
+  shift 1
+  group="$1" # used in fixing with chgrp + chmod +rx for dirs +r for other files
+  shift 1
+  dir="$1"  
+  shift 1
+
+  echo "fix_permission_in_dir on dir '$dir'" 1>&2
+
+  set --
+
+  (set +e
+
+  export MYUSER2="$user"
+  export MYGROUP2="$group"
+
+  find "$dir" -print0 | xargs -0 sh -c 'sudo -u "$MYUSER2" find "$@" -maxdepth 0 \( -type d -not -readable -not -executable \) -print0' -- | xargs -0 sh -c '[ $# -gt 0 ] || exit; chgrp -v "$MYGROUP2" "$@"; chmod -v g+rx "$@";' --
+  #find "$dir" -print0 | xargs -0 sh -c 'sudo -u "$MYUSER2" find "$@" -maxdepth 0 -not -readable -print0' -- | xargs -0 sh -c '[ $# -gt 0 ] || exit; chgrp -v "$MYGROUP2" "$@"; chmod -v g+r "$@";' --
+  find "$dir" -print0 | xargs -0 sh -c 'sudo -u "$MYUSER2" find "$@" -maxdepth 0 -type f -not -readable -print0' -- | xargs -0 sh -c '[ $# -gt 0 ] || exit; chgrp -v "$MYGROUP2" "$@"; chmod -v g+r "$@";' --
+
+  true
+  )
 }
 
 ##
@@ -324,6 +351,9 @@ while [ $# -gt 0 ]; do
   elif [ $# -ge 1 -a "$1" = "--no_systemd" ]; then
     shift 1
     install_systemd_services=0
+  elif [ $# -ge 1 -a "$1" = "--fix_permissions" ]; then
+    shift 1
+    findfix_file_permissions=1
   elif [ $# -ge 1 -a "$1" = "--db_schema_migrate__fake_initial" ]; then 
     shift 1
     db_schema_migrate__fake_initial=1    
@@ -633,8 +663,10 @@ if [ "$install_fodproper" = 0 -a "$install_basesw_python" = 1 ]; then
     id "$FOD_SYSUSER" &>/dev/null || useradd -m "$FOD_SYSUSER"
     mkdir -p "$venv_dir"
     #find "$venv_dir/" -not -user "$FOD_SYSUSER" -print0 | xargs -0 chown -v "$FOD_SYSUSER:" || true
-    find "$venv_dir/" -not -group "$FOD_SYSUSER" -print0 | xargs -0 chgrp -v "$FOD_SYSUSER" "$venv_dir" || true
-    chown "$FOD_SYSUSER:$FOD_SYSUSER" "$venv_dir"
+    #find "$venv_dir/" -not -group "$FOD_SYSUSER" -print0 | xargs -0 chgrp -v "$FOD_SYSUSER" "$venv_dir" || true
+    fix_permission_in_dir "$FOD_SYSUSER" "$FOD_SYSGROUP" "$venv_dir/"
+
+    chown "$FOD_SYSUSER:$FOD_SYSGROUP" "$venv_dir"
     chmod og+rxs "$venv_dir"
   fi
 
@@ -688,13 +720,15 @@ if [ "$install_fodproper" = 1 ]; then
 
   echo "Setup python environment for FoD"
 
-  (ls -dla "$venv_dir" "$fod_dir/venv" "$venv_dir_base" 1>&2 || false)
+  #(ls -dla "$venv_dir" "$fod_dir/venv" "$venv_dir_base" 1>&2 || false)
 
   if [ "$findfix_file_permissions" = 0 ]; then
     echo "preparing venv_dir $venv_dir permissions for user $FOD_SYSUSER" 1>&2
     mkdir -p "$venv_dir"
     #find "$venv_dir/" -not -user "$FOD_SYSUSER" -print0 | xargs -0 chown -v "$FOD_SYSUSER:" || true
-    find "$venv_dir/" -not -group "$FOD_SYSUSER" -print0 | xargs -0 chgrp -v "$FOD_SYSUSER" "$venv_dir" 
+    #find "$venv_dir/" -not -group "$FOD_SYSUSER" -print0 | xargs -0 chgrp -v "$FOD_SYSUSER" "$venv_dir" 
+    fix_permission_in_dir "$FOD_SYSUSER" "$FOD_SYSGROUP" "$venv_dir/"
+
     chown "$FOD_SYSUSER:$FOD_SYSUSER" "$venv_dir"
     chmod og+rxs "$venv_dir"
   fi
@@ -753,7 +787,8 @@ if [ "$install_fodproper" = 1 ]; then
 
   if [ "$findfix_file_permissions" = 1 ]; then
     echo "$0: step 2.1a: fixing permissions" 1>&2
-    find "$fod_dir/" -not -user "$FOD_SYSUSER" -print0 | xargs -0 chown -v "$FOD_SYSUSER:" || true
+    #find "$fod_dir/" -not -user "$FOD_SYSUSER" -print0 | xargs -0 chown -v "$FOD_SYSUSER:" || true
+    fix_permission_in_dir "$FOD_SYSUSER" "$FOD_SYSGROUP" "$fod_dir/"
   fi
 
  ###
@@ -824,11 +859,12 @@ if [ "$install_fodproper" = 1 ]; then
     echo "trying to install mkdocs-based documentation" 1>&2
     (
       set -e
-      set -x
+      #set -x
       which mkdocs 2>/dev/null >/dev/null || apt-get install -y mkdocs
       cd "$fod_dir" && mkdocs build # ./mkdocs.yml
       #find "$fod_dir/static/site" -not -user "$FOD_SYSUSER" -exec chown "$FOD_SYSUSER:" {} \; # is depending on ./mkdocs.yml var site_dir
-      find "$fod_dir/static/site" -not -user "$FOD_SYSUSER" -print0 | xargs -0 chown -v "$FOD_SYSUSER:" "$fod_dir/static/site" # is depending on ./mkdocs.yml var site_dir
+      #find "$fod_dir/static/site" -not -user "$FOD_SYSUSER" -print0 | xargs -0 chown -v "$FOD_SYSUSER:" "$fod_dir/static/site" # is depending on ./mkdocs.yml var site_dir
+      fix_permission_in_dir "$FOD_SYSUSER" "$FOD_SYSGROUP" "$fod_dir/static/site"
     )
   fi
 
@@ -850,14 +886,15 @@ if [ "$install_fodproper" = 1 ]; then
 
     cd "$fod_dir"
 
-    if type -p sudo 2>/dev/null; then
+    if false && type -p sudo 2>/dev/null; then
       sudo --preserve-env=LD_LIBRARY_PATH,PATH -E -u "$FOD_SYSUSER" ./manage.py collectstatic -c --noinput || debug_python_deps "$venv_dir/bin/activate" 1
     else
       ./manage.py collectstatic -c --noinput || debug_python_deps "$venv_dir/bin/activate" 1
     fi
 
     #find "$fod_dir/staticfiles" -not -user "$FOD_SYSUSER" -exec chown "$FOD_SYSUSER:" {} \; || true # TODO is depending on flowspy/settings*.py var STATIC_ROOT 
-    find "$fod_dir/staticfiles" -not -user "$FOD_SYSUSER" -print0 | xargs -0 chown -v "$FOD_SYSUSER:" "$fod_dir/staticfiles" # is depending on ./mkdocs.yml var site_dir
+    #find "$fod_dir/staticfiles" -not -user "$FOD_SYSUSER" -print0 | xargs -0 chown -v "$FOD_SYSUSER:" "$fod_dir/staticfiles" # is depending on ./mkdocs.yml var site_dir
+    fix_permission_in_dir "$FOD_SYSUSER" "$FOD_SYSGROUP" "$fod_dir/staticfiles"
   )
 
   ##
@@ -1129,9 +1166,12 @@ EOF
   )
   
   if [ "$inst_dir_is_fod_dir" = 1 ]; then
-    if [ "$findfix_file_permissions" = 1 ]; then
+    if true || [ "$findfix_file_permissions" = 1 ]; then
       echo "$0: step 2.9: finally fixing permissions as inst_dir_is_fod_dir=$inst_dir_is_fod_dir" 1>&2
-      find "$fod_dir/" -not -user "$FOD_SYSUSER" -print0 | xargs -0 chown -v "$FOD_SYSUSER:" || true
+      ##find "$fod_dir/" -not -group "$FOD_SYSUSER" -print0 | xargs -0 chgrp -v "$FOD_SYSUSER" "$fod_dir" || true
+      ##find "$fod_dir/" -not -group "$FOD_SYSUSER" -print0 | xargs -0 chgrp -v "$FOD_SYSUSER" "$fod_dir" || true
+      #find "$fod_dir/" -not -user "$FOD_SYSUSER" -print0 | xargs -0 chown -v "$FOD_SYSUSER:" || true
+      fix_permission_in_dir "$FOD_SYSUSER" "$FOD_SYSGROUP" "$fod_dir/"
     fi
   fi
   
