@@ -279,6 +279,13 @@ EOF
       add_line1="autostart=false"
     fi
 
+    enable1=0
+    if [ "$1" != "${1#--enable}" ]; then
+      enable1=1
+      shift 1
+      shift_count=$(( $shift_count + 1 ))
+    fi
+ 
     user_line=
     if [ -n "$FOD_SYSUSER" ]; then
       user_line="user=$FOD_SYSUSER"
@@ -295,6 +302,11 @@ $add_line1
 stdout_logfile=./log/exabgp-stdout.log        ; stdout log path, NONE for none; default AUTO
 stderr_logfile=./log/exabgp-stderr.log        ; stderr log path, NONE for none; default AUTO
 EOF
+
+    if [ "$enable1" = 1 ]; then
+      supervisorctl reload
+      supervisorctl start exabgp
+    fi
 
   fi
 
