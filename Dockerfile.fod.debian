@@ -97,7 +97,8 @@ RUN ./install-debian.sh --both --here --supervisord # for later setup of admin u
 ###############################
 
 # potential standalone re-setup of exabgp later (e.g., to exploit docker build cache for the actual installation step(s) above)
-#RUN cd /opt/FOD/ && ./exabgp/run-exabgp-generic --init-conf 10.3.10.3 10.3.10.3 1001 10.3.10.10 10.3.10.12 3001 -- --systemd
+##RUN cd /opt/FOD/ && ./exabgp/run-exabgp-generic --init-conf 10.3.10.3 10.3.10.3 1001 10.3.10.10 10.3.10.12 3001 -- --supervisord --enable
+#RUN cd /opt/FOD/ && ./exabgp/run-exabgp-generic --init-conf 10.3.10.3 10.3.10.3 1001 10.3.10.10 10.3.10.12 3001 -- --supervisord 
 
 #############################################################################
 #############################################################################
