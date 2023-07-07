@@ -1,5 +1,5 @@
 
-# doc: to build+run: docker build -f Dockerfile.fod.debian -t fod.debian . && docker run -ti fod.debian
+# doc: to build+run: docker build -f Dockerfile.fod.debian -t fod.debian . && docker run -ti -p 8000:8000 fod.debian 
 
 #############################################################################
 #############################################################################
@@ -10,9 +10,18 @@ RUN apt-get -qqy update
 
 #############################################################################
 
-RUN echo -e 'LANG="en_US.UTF-8"\nLANGUAGE="en_US"\n' > /etc/default/locale && echo "en_US.utf8 UTF-8" >> /etc/locale.gen && apt-get -qqy install locales
+#RUN echo -e 'LANG="en_US.UTF-8"\nLANGUAGE="en_US"\n' > /etc/default/locale && echo "en_US.utf8 UTF-8" >> /etc/locale.gen && apt-get -qqy install locales
+#ENV LC_ALL en_US.utf8
 
-ENV LC_ALL en_US.utf8
+RUN apt-get update -y && apt-get install -y locales
+RUN sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \
+    dpkg-reconfigure --frontend=noninteractive locales && \
+    update-locale LANG=en_US.UTF-8
+ENV LANG en_US.UTF-8
+
+#
+
+RUN apt-get update -y && apt-get -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' --assume-yes -fuy dist-upgrade
 
 #############################################################################
 
