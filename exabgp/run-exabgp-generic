@@ -304,7 +304,9 @@ stderr_logfile=./log/exabgp-stderr.log        ; stderr log path, NONE for none; 
 EOF
 
     if [ "$enable1" = 1 ]; then
-      supervisorctl reload
+      #supervisorctl reload
+      supervisorctl reread
+      supervisorctl update exabgp
       supervisorctl start exabgp
     fi
 
