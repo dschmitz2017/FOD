@@ -419,7 +419,7 @@ while [ $# -gt 0 ]; do
     shift 1 
   elif [ $# -ge 1 -a "$1" = "--setup_test_rule" ]; then
     shift 1
-    setup_test_rule=1
+    setup_testrule=1
   elif [ $# -ge 1 -a "$1" = "--setup_test_rule5" ]; then
     shift 1
     setup_testrule=1
@@ -987,7 +987,9 @@ if [ "$install_fodproper" = 1 ]; then
     (
       set +e # for now ignore potential errors, especially in case user already exists
       source ./venv/bin/activate
-{ cat /dev/fd/5 | ./pythonenv ./manage.py shell; } 5<<EOF
+      [ ! -f "fodenv.sh" ] || source "./fodenv.sh"
+      
+      { cat /dev/fd/5 | ./manage.py shell; } 5<<EOF
 from flowspec.models import *
 from django.contrib.auth.models import User; 
 applier1 = User.objects.get(username__exact='$setup_testrule_appliername');
