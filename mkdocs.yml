@@ -34,6 +34,7 @@ nav:
     - 'Administration and Usage': 
         - 'Basic Administration and Usage (v1.7)': 'administration_and_usage/basic_administration_and_usage-v1.7.md'
         - 'Basic Administration and Usage (v1.8)': 'administration_and_usage/basic_administration_and_usage-v1.8.md'
+        - 'Testing and Using FoD with Freertr': 'administration_and_usage/testing_and_using_fod_with_freertr.md'
     - 'API': 
         - 'v1.3': 'api/api-v1.3.md'
         - 'v1.7': 'api/api-v1.7.md'
