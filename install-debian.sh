@@ -98,6 +98,15 @@ setup_adminuser__peer_ip_prefix1="0.0.0.0/0"
 
 #
 
+setup_testrule=0
+setup_testrule_appliername="$setup_adminuser__username"
+setup_testrule_name_prefix="testrule1"
+setup_testrule_source_prefix="0.0.0.0/0"
+setup_testrule_destination_prefix="127.0.0.1/32"
+setup_testrule_IPprotocolId=1 # ICMP
+
+#
+
 setup_netconf=0
 
 setup_netconf__device=
@@ -408,6 +417,22 @@ while [ $# -gt 0 ]; do
     shift 1 
     setup_adminuser__peer_ip_prefix1="$1"
     shift 1 
+  elif [ $# -ge 1 -a "$1" = "--setup_test_rule" ]; then
+    shift 1
+    setup_test_rule=1
+  elif [ $# -ge 1 -a "$1" = "--setup_test_rule5" ]; then
+    shift 1
+    setup_testrule=1
+    setup_testrule_name_prefix="$1" 
+    shift 1
+    setup_testrule_source_prefix="$1"
+    shift 1
+    setup_testrule_destination_prefix="$1"
+    shift 1
+    setup_testrule_IPprotocolId="$1"
+    shift 1
+    setup_testrule_appliername="$1"
+    shift 1
   elif [ $# -ge 1 -a "$1" = "--netconf" ]; then 
     shift 1
     setup_netconf=1
@@ -952,6 +977,36 @@ if [ "$install_fodproper" = 1 ]; then
       true
     )
  
+  fi
+
+  echo "setup_testrule=$setup_testrule" 1>&2
+
+  if [ "$setup_testrule" = 1 ]; then
+    echo "$0: step 2.4.2.1: setup test rule" 1>&2
+
+    (
+      set +e # for now ignore potential errors, especially in case user already exists
+      source ./venv/bin/activate
+{ cat /dev/fd/5 | ./pythonenv ./manage.py shell; } 5<<EOF
+from flowspec.models import *
+from django.contrib.auth.models import User; 
+applier1 = User.objects.get(username__exact='$setup_testrule_appliername');
+
+from django.db.models import Q
+query = Q()
+query |= Q(source='$setup_testrule_source_prefix', destination='$setup_testrule_destination_prefix', protocol__in=[$setup_testrule_IPprotocolId])
+matching_routes = Route.objects.filter(query)
+
+if len(matching_routes)!=0:
+  print("test rule $setup_testrule_name_prefix already exists")
+  print("matching_routes="+str(matching_routes))
+else:
+  a = Route(name='$setup_testrule_name_prefix', source='$setup_testrule_source_prefix', destination='$setup_testrule_destination_prefix', status='INACTIVE', applier=applier1)
+  a.save();
+  a.protocol.set([$setup_testrule_IPprotocolId])
+  a.save();
+EOF
+    )
   fi
 
   ##

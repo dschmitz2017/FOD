@@ -1,5 +1,5 @@
 
-# doc: to build+run: docker build -f Dockerfile.fod.centos.new -t fod.centos . && docker run -ti fod.centos
+# doc: to build+run: docker build -f Dockerfile.fod.centos.new -t fod.centos . && docker run -ti -p 8000:8000 fod.centos
 
 #############################################################################
 #############################################################################
