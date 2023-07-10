@@ -4,7 +4,7 @@ services:
     build:
         context: .
         dockerfile: docker-compose/Dockerfile_FOD-novol
-    container_name: fod
+    container_name: fodnovol
     privileged: true
     expose:
         - "8000"
