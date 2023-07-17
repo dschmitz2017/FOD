@@ -253,6 +253,7 @@ BRANDING = {
     'email': 'helpdesk@example.com',
     'logo': 'fodlogo2.png',
     'favicon': 'favicon.ico',
+    'contact_support': 'GÉANT OC at <a href=\'mailto:support@oc.geant.net\'>support@oc.geant.net</a> or +44 1223 733033.',
 }
 
 SETTINGS_EXPORT = [
