@@ -36,6 +36,14 @@ in between Gunicorn and Celeryd
 
 - ./flowspy/urls.py # Django urls config
 
+#### Python program entry points
+
+Gunicorn:      ./flowspy/wsgi.py
+Celeryd:       ./flowspy/celery.py
+Django manage: ./manage.py
+
+task defintions shared between Gunicorn and Celeryd: ./flowspec/tasks.py
+
 #### Overview of directories and files with code
 
 proper Python code, partly shared by gunicorn and celeryd components:
