@@ -845,7 +845,7 @@ if [ "$install_fodproper" = 1 ]; then
 
     (
       set +e # for now ignore potential errors, especially in case user already exists
-      source ./venv/bin/activate
+      source "$venv_dir/bin/activate"
       [ ! -f "fodenv.sh" ] || source "./fodenv.sh"
       
       { cat /dev/fd/5 | ./manage.py shell; } 5<<EOF

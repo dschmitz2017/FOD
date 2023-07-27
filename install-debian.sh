@@ -972,7 +972,7 @@ if [ "$install_fodproper" = 1 ]; then
    
     (
       set +e # for now ignore potential errors, especially in case user already exists
-      source ./venv/bin/activate
+      source "$venv_dir/bin/activate"
       echo "from flowspec.init_setup import init_admin_user; init_admin_user('$setup_adminuser__username', '$setup_adminuser__pwd', '$setup_adminuser__email', '$setup_adminuser__peer_name', '$setup_adminuser__peer_ip_prefix1')" | DJANGO_SETTINGS_MODULE="flowspy.settings" ./manage.py shell
       true
     )
@@ -986,7 +986,7 @@ if [ "$install_fodproper" = 1 ]; then
 
     (
       set +e # for now ignore potential errors, especially in case user already exists
-      source ./venv/bin/activate
+      source "$venv_dir/bin/activate"
       [ ! -f "fodenv.sh" ] || source "./fodenv.sh"
       
       { cat /dev/fd/5 | ./manage.py shell; } 5<<EOF
