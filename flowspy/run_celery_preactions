@@ -1,0 +1,8 @@
+#!/bin/bash
+
+# run from FoD main dir
+
+# ./flowspy/celery.py
+# ./flowspy/celery_preactions.py
+python3 -c 'import flowspy.celery_preactions'
+

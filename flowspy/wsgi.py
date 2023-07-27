@@ -19,6 +19,9 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "flowspy.settings")
 os.environ['HTTPS'] = "on"
 os.environ['wsgi.url_scheme'] = 'https'
 
+import sys
+print ("loading flowspy.gunicorn", file=sys.stderr)
+
 # This application object is used by any WSGI server configured to use this
 # file. This includes Django's development server, if the WSGI_APPLICATION
 # setting points here.
