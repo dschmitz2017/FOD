@@ -11,6 +11,6 @@ else
 		--setup_admin_user --setup_admin_user5 admin "${ADMIN_PASS}" "${ADMIN_EMAIL}" "${FOD_ORG}" "${FOD_ORG_NET}" \
 		--setup_test_rule --setup_test_rule5 "${FOD_TESTRULE1_NAME_PREFIX}" "${FOD_TESTRULE1_SOURCE_IP_PREFIX}" "${FOD_TESTRULE1_DESTINATION_IP_PREFIX}" "${FOD_TESTRULE1_DESTINATION_IP_PROTOCOL}" admin \
 		--exabgp "${FOD_EXABGP_LOCAL_ID}" "${FOD_EXABGP_LOCAL_IP}" "${FOD_EXABGP_LOCAL_AS}" "${FOD_EXABGP_REMOTE_ID}" "${FOD_EXABGP_REMOTE_IP}" "${FOD_EXABGP_REMOTE_AS}"
-	/opt/FOD/venv/bin/python -m pip install exabgp
+	/opt/FOD/../venv/bin/python -m pip install exabgp
 	touch /opt/setup_ok
 fi
