@@ -129,8 +129,9 @@ neighbor $neighbor_id {
         #}
 
         static {
-                route 10.10.0.0/32 next-hop self;
-                route 10.100.0.0/32 next-hop self;
+                # just for testing:
+                #route 10.10.0.0/32 next-hop self;
+                #route 10.100.0.0/32 next-hop self;
         }
 }
 EOF
