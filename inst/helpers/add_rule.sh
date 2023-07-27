@@ -26,6 +26,10 @@ name_prefix="testrtr1"
 
 #
 
+echo "$0: args: $source_prefix $destination_prefix $IPprotocolId $enablex $appliername"
+
+#
+
 { cat /dev/fd/5 | ./pythonenv ./manage.py shell; } 5<<EOF
 from flowspec.models import *
 from django.contrib.auth.models import User; 
@@ -33,7 +37,7 @@ applier1 = User.objects.get(username__exact='$appliername');
 
 from django.db.models import Q
 query = Q()
-query |= Q(source='$source_prefix', destination='$destination_prefix', protocol__in=[$IPprotocolId])
+query |= Q(source='$source_prefix', destination='$destination_prefix', protocol__in=[$IPprotocolId], then__in=['3'])
 matching_routes = Route.objects.filter(query)
 
 if len(matching_routes)!=0:
@@ -43,10 +47,15 @@ else:
   a = Route(name='$name_prefix', source='$source_prefix', destination='$destination_prefix', status='INACTIVE', applier=applier1)
   a.save();
   a.protocol.set([$IPprotocolId])
+  a.then.set(['3']) # 3 == 'discard'
   a.save();
 EOF
+
+status="$?"
 
 #
 
 echo "SELECT * from route;" | ./pythonenv ./manage.py dbshell | grep "$name_prefix.*$source_prefix.*$destination_prefix.*$IPprotocolId"
+
+exit "$status"
 

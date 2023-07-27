@@ -43,36 +43,47 @@ applier1 = User.objects.get(username__exact='$appliername');
 
 from django.db.models import Q
 query = Q()
-query |= Q(source='$source_prefix', destination='$destination_prefix', protocol__in=[$IPprotocolId])
+query |= Q(source='$source_prefix', destination='$destination_prefix', protocol__in=[$IPprotocolId], then__in=['3'])
 matching_routes = Route.objects.filter(query)
 
 from copy import copy
 
+a=None
 if len(matching_routes)!=0:
   print("test rule $name_prefix already exists")
   print("matching_routes="+str(matching_routes))
   a = matching_routes[0]
   a0=copy(a)
 else:
-  a = Route(name='$name_prefix', source='$source_prefix', destination='$destination_prefix', status='INACTIVE', applier=applier1)
-  a.save();
-  a.protocol.set([$IPprotocolId])
-  a.save();
-  a0=copy(a)
+  if $enablex>=0:
+    print("no matching rule found in FoD DB, trying to create one")
+    a = Route(name='$name_prefix', source='$source_prefix', destination='$destination_prefix', status='INACTIVE', applier=applier1)
+    a.save();
+    a.protocol.set([$IPprotocolId])
+    a.then.set([3]) # 3 == 'discard'
+    a.save();
+    a0=copy(a)
+    
+print("rule="+str(a))
 
-from flowspec.tasks import edit, deactivate_route
-if $enablex:
-  a.status="ACTIVE"
-  a.save()
-  edit(a.id, a0)
-else:
-  a.status="PENDING"
-  a.save()
-  deactivate_route(a.id)
+if a!=None:
+  from flowspec.tasks import edit, deactivate_route
+  if $enablex>0:
+    a.status="ACTIVE"
+    a.save()
+    edit(a.id, a0)
+  else:
+    a.status="PENDING"
+    a.save()
+    deactivate_route(a.id)
 
 EOF
+
+status="$?"
 
 #
 
 echo "SELECT * from route;" | ./pythonenv ./manage.py dbshell | grep "$name_prefix.*$source_prefix.*$destination_prefix.*$IPprotocolId"
+
+exit "$status"
 
