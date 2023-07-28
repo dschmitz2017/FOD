@@ -92,6 +92,7 @@ echo "starting redis" 1>&2
 /usr/bin/redis-server &
 
 echo "Starting FoD celeryd in background" 1>&2
+"$fod_dir/flowspy/run_celery_preactions"
 #celery worker -A flowspy -B --concurrency=2 --detach -l debug -f celery.log
 celery worker -A flowspy -B --concurrency=2 --detach -l info -f celery.log
 

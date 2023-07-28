@@ -143,6 +143,8 @@ chown fod "$fod_dir" "$fod_dir/log" "$fod_dir/logs" "$fod_dir/log/"* "$fod_dir/l
 
 ##
 
+"$fod_dir/flowspy/run_celery_preactions"
+
 mkdir -p /var/run/supervisor
 exec /usr/bin/supervisord -n -c /etc/supervisord.conf
 
