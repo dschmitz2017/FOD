@@ -28,7 +28,7 @@ if [ "$1" = "rebuild" -o "$count_up" != 4 ]; then
   echo "$0: tearing down docker-compse set completly" 1>&2
   docker-compose -f "$docker_compose_spec__file" down
 
-  echo "$0: (re-)building docker-compose set" 1&>2
+  echo "$0: (re-)building docker-compose set" 1>&2
   docker-compose -f "$docker_compose_spec__file" build
 
   echo "$0: bringing docker-compose set up" 1>&2
@@ -46,7 +46,7 @@ fi
 echo "$0: running freertr_disable_offload hack" 1>&2
 ./docker-compose/freertr_disable_offload.sh || true
 
-if [ "$use_novol" != 1 ]; then
+if [ "$use_novol" != 1 ]; then # compare ./docker-compose/fod_setup_environment-step3.sh used by ./docker-compose/Dockerfile_FOD (in case $novol == 0)
   echo "$0: making sure bind-mounted FoD dir is setup from within container" 1>&2
   while ! docker exec -ti "$fod_container_name" ls /opt/setup_ok &>/dev/null; do
     echo "docker container has not yet fully completed setup of FoD dir from inside container, so waiting 1 sec" 1>&2
