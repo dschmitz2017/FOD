@@ -338,7 +338,7 @@ REST_FRAMEWORK = {
 
 # configuration of celery task manager
 POLLS_TUBE = 'polls'
-CELERY_BROKER_URL = "redis://localhost//"
+CELERY_BROKER_URL = "redis://redis//"
 BROKER_VHOST = "/"
 CELERY_CONCURRENCY = 1
 

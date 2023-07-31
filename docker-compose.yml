@@ -4,6 +4,7 @@ services:
     build:
         context: .
         dockerfile: docker-compose/Dockerfile_FOD
+    image: flowspydjango
     container_name: fod
     privileged: true
     expose:
@@ -18,6 +19,29 @@ services:
         ipv4_address: 10.197.36.2
     volumes:
         - ./:/opt/FOD
+
+  celery:
+    image: flowspydjango
+    command: supervisord -c docker-compose/fod_celery.conf
+    depends_on:
+      - fod
+    container_name: celeryfod
+    privileged: true
+    env_file:
+      - ./docker-compose/.env_fod
+    networks:
+      mgmt:
+      xfod:
+        ipv4_address: 10.197.36.6
+    volumes:
+        - ./:/opt/FOD
+
+  redis:
+    image: redis:latest
+    networks:
+      mgmt:
+      xfod:
+        ipv4_address: 10.197.36.5
 
   freertr:
     build:
