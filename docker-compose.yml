@@ -1,11 +1,11 @@
 version: "3"
 services:
   fod:
-    build:
-        context: .
-        dockerfile: docker-compose/Dockerfile_FOD
     image: flowspydjango
+    command: /opt/FOD/pythonenv gunicorn -b 0.0.0.0:8000 flowspy.wsgi -w 10 -k gevent --limit-request-fields 10000 --timeout 30 --graceful-timeout 25
     container_name: fod
+    depends_on:
+      - celery
     privileged: true
     expose:
         - "8000"
@@ -21,10 +21,11 @@ services:
         - ./:/opt/FOD
 
   celery:
+    build:
+        context: .
+        dockerfile: docker-compose/Dockerfile_FOD
     image: flowspydjango
-    command: supervisord -c docker-compose/fod_celery.conf
-    depends_on:
-      - fod
+#    command: supervisord -c docker-compose/fod_celery.conf
     container_name: celeryfod
     privileged: true
     env_file:
