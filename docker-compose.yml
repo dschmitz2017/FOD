@@ -2,7 +2,8 @@ version: "3"
 services:
   fod:
     image: flowspydjango
-    command: /opt/FOD/pythonenv gunicorn -b 0.0.0.0:8000 flowspy.wsgi -w 10 -k gevent --limit-request-fields 10000 --timeout 30 --graceful-timeout 25
+    #command: /opt/FOD/pythonenv gunicorn -b 0.0.0.0:8000 flowspy.wsgi -w 10 -k gevent --limit-request-fields 10000 --timeout 30 --graceful-timeout 25
+    command: /opt/FOD/pythonenv ./manage.py runserver 0.0.0.0:8000
     container_name: fod
     depends_on:
       - celery
