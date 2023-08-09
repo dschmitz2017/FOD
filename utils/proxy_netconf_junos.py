@@ -334,7 +334,7 @@ class Applier(object):
         edit_is_successful = False
         commit_confirmed_is_successful = False
         commit_is_successful = False
-        r = redis.StrictRedis()
+        r = redis.StrictRedis(host=settings.REDIS_HOST)
         lock = r.lock("netconf_lock")
         lock.acquire(blocking=True)
         try:

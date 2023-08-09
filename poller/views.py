@@ -103,7 +103,7 @@ class Msgs(object):
             except:
                 user = None
                 return False
-            r = redis.StrictRedis()
+            r = redis.StrictRedis(host=settings.REDIS_HOST)
             key = "notifstream_%s" % user
             logger.debug(str((key, user)))
             if last_id and last_id != b"null":

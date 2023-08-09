@@ -287,7 +287,7 @@ def announce(messg, user, route):
 def announce_redis_lowlevel(messg, channelname):
     messg = str(messg)
     logger.info("ANNOUNCE " + messg)
-    r = redis.StrictRedis()
+    r = redis.StrictRedis(host=settings.REDIS_HOST)
     key = "notifstream_%s" % channelname
     obj = {"m": messg, "time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
     logger.info("ANNOUNCE " + str(obj))

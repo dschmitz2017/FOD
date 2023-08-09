@@ -111,6 +111,8 @@ LOGGING = {
     }
 }
 
+REDIS_HOST = "redis"
+
 ##############################################################################
 ##############################################################################
 
@@ -338,7 +340,7 @@ REST_FRAMEWORK = {
 
 # configuration of celery task manager
 POLLS_TUBE = 'polls'
-CELERY_BROKER_URL = "redis://redis//"
+CELERY_BROKER_URL = f'redis://{REDIS_HOST}/0'
 BROKER_VHOST = "/"
 CELERY_CONCURRENCY = 1
 
