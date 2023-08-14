@@ -255,6 +255,7 @@ BRANDING = {
     'favicon': 'favicon.ico',
     'contact_support': 'GÉANT OC at <a href=\'mailto:support@oc.geant.net\'>support@oc.geant.net</a> or +44 1223 733033.',
     'product_name' : 'Firewall-On-Demand',
+    'product_name_short' : 'FoD',
 }
 
 SETTINGS_EXPORT = [

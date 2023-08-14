@@ -1,6 +1,6 @@
 Your account with username {{ user.username }} has been activated.
 
-You may login to FoD using the following URL:
+You may login to {{ settings.BRANDING.product_name_short|default:'FoD' }} using the following URL:
 
 http://{{ site.domain }}{% url 'login' %}
 
