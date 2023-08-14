@@ -31,7 +31,7 @@
 				<div class="item active">
 					<img src="{% static 'img/slide2.jpg' %}" alt="FoD" style="width:100%; height:100%; margin: auto; padding:auto;">
 						<div class="carousel-caption">
-							<h2>{{ BRANDING.name }} - Firewall on Demand</h2>
+							<h2>{{ BRANDING.name }} - {{ BRANDING.product_name|default:'Firewall on Demand' }}</h2>
 							<h4>Protect your network, protect the network</h4>
 							<p>
 								<a href="{% url 'login' %}" type="button" class="btn btn-lg btn-outline btn-primary">{% trans "Join Now" %}</a>
