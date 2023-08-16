@@ -44,7 +44,7 @@ Celery instance
 
 1. Fetch an updated config from Gunicorn
 2. Overwrite the existing `exabgp.conf` file with the new config
-3. Send a SIGUSR1 to cause ExaBGP to reload the config
+3. Send a `SIGUSR1` to cause ExaBGP to reload the config
 
 This also allows ExaBGP instances to run effectively statelessly. If a new
 ExaBGP instance is brought up, it will immediately fetch and implement a
@@ -82,3 +82,9 @@ NAT and load balancing, so while we can provide ExaBGP container images,
 they may be run on individual machines (not part of a stack) or the
 ExaBGP/Flask combination might be run on separate VMs as in the earlier
 scenario.
+
+## Still to decide
+
+- How to pass settings into containers: env vars? mounted files?
+- How to secure the Flask instance in a VM scenario?
+- Is there really nothing in the filesystem that could cause race conditions?
