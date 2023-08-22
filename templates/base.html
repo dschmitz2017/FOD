@@ -6,7 +6,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ settings.BRANDING.name }} FoD :: {% block title %}{% endblock %}</title>
+    <title>{{ settings.BRANDING.name }} {{ settings.BRANDING.product_name_short|default:'FoD' }} :: {% block title %}{% endblock %}</title>
 	<META HTTP-EQUIV="Pragma" CONTENT="no-cache">
 	<META HTTP-EQUIV="expires" CONTENT="Wed, 26 Feb 1997 08:21:57 GMT">
 	<link REL="SHORTCUT ICON" HREF="{% get_static_prefix %}/{{ settings.BRANDING.favicon }}">

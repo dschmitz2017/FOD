@@ -87,6 +87,9 @@ LOG_FILE_LOCATION = "/srv/flowspy/log/"
 LOGGING_FORMAT_DEFAULT = '%(asctime)s %(name)s %(levelname)s: %(message)s'
 #LOGGING_FORMAT_DEFAULT = '%(processName)s[%(process)d] %(asctime)s %(name)s %(levelname)s: %(message)s'
 
+#CELERYD_LOG_FORMAT = LOGGING_FORMAT_DEFAULT
+#CELERYD_TASK_LOG_FORMAT = CELERYD_LOG_FORMAT
+
 # "error" | "warn" | "info" | "debug"
 LOG_LEVEL = "info"
 
@@ -262,6 +265,8 @@ BRANDING = {
     'logo': 'fodlogo2.png',
     'favicon': 'favicon.ico',
     'contact_support': 'GÉANT OC at <a href=\'mailto:support@oc.geant.net\'>support@oc.geant.net</a> or +44 1223 733033.',
+    'product_name' : 'Firewall-On-Demand',
+    'product_name_short' : 'FoD',
 }
 
 SETTINGS_EXPORT = [
