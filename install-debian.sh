@@ -194,9 +194,9 @@ function conf_db_access () {
 
   (set -e
    sed -i "s/^\s*'ENGINE':.*#\s*DB_ENGINE/        'ENGINE': 'django.db.backends.$conf_db_access',  # DB_ENGINE # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'./" "$fod_dir/flowspy/settings.py"
-   sed -i "s/^\s*'NAME':.*#\s*DB_NAME/        'NAME': '$DB__FOD_DBNAME',  # DB_NAME/" "$fod_dir/flowspy/settings.py"
-   sed -i "s/^\s*'USER':.*#\s*DB_USER/        'USER': '$DB__FOD_USER',  # DB_USER/" "$fod_dir/flowspy/settings.py"
-   sed -i "s/^\s*'PASSWORD':.*#\s*DB_PASSWORD/        'PASSWORD': '$DB__FOD_PASSWORD',  # DB_PASSWORD/" "$fod_dir/flowspy/settings.py"
+   sed -i "s/^\s*'NAME':.*#\s*DB_NAME/        'NAME': $DB__FOD_DBNAME,  # DB_NAME/" "$fod_dir/flowspy/settings.py"
+   sed -i "s/^\s*'USER':.*#\s*DB_USER/        'USER': $DB__FOD_USER,  # DB_USER/" "$fod_dir/flowspy/settings.py"
+   sed -i "s/^\s*'PASSWORD':.*#\s*DB_PASSWORD/        'PASSWORD': $DB__FOD_PASSWORD,  # DB_PASSWORD/" "$fod_dir/flowspy/settings.py"
   )
 
 }
@@ -401,6 +401,14 @@ while [ $# -gt 0 ]; do
     DB__FOD_DBNAME="fod"
     DB__FOD_USER="fod"
     DB__FOD_PASSWORD="$(get_random_password)"
+  elif [ $# -ge 1 -a "$1" = "--use_db_from_env" ]; then
+    shift 1
+    install_db=""
+    init_db=""
+    conf_db_access="' + os.getenv('FOD_DB_ENG', 'mysql') + '"
+    DB__FOD_DBNAME="_require_env('FOD_DB_NAME')"
+    DB__FOD_USER="_require_env('FOD_DB_USER')"
+    DB__FOD_PASSWORD="_require_env('FOD_DB_PASS')"
   elif [ $# -ge 1 -a "$1" = "--setup_admin_user" ]; then
     shift 1
      setup_adminuser=1

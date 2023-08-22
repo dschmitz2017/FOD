@@ -28,7 +28,15 @@ except ImportError:
     _uuid_generate_random = None
 
 import os
+from django.core.exceptions import ImproperlyConfigured
 from celery.schedules import crontab
+
+def _require_env(name):
+    """Raise an error if the environment variable isn't defined"""
+    value = os.getenv(name)
+    if value is None:
+        raise ImproperlyConfigured('Required environment variable "{}" is not set.'.format(name))
+    return value
 
 ##############################################################################
 ##############################################################################
@@ -49,7 +57,7 @@ ALLOWED_HOSTS = ['*']
 SITE_ID = 1
 
 # Place a sequence of random chars here
-SECRET_KEY = '@sa@5234#$%345345^@#$%*()123^@12!&!()$JMNDF#$@(@#8FRNJWX_'
+SECRET_KEY = os.getenv('FOD_SECRET_KEY', '@sa@5234#$%345345^@#$%*()123^@12!&!()$JMNDF#$@(@#8FRNJWX_')
 
 #DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
@@ -64,8 +72,8 @@ DATABASES = {
         'NAME': '',                       # DB_NAME
         'USER': '',                       # DB_USER
         'PASSWORD': '',                   # DB_PASSWORD
-        'HOST': '',                      # Set to empty string for localhost.
-        'PORT': '',                      # Set to empty string for default.
+        'HOST': os.getenv('FOD_DB_HOST', ''),  # Set to empty string for localhost.
+        'PORT': os.getenv('FOD_DB_PORT', ''),  # Set to empty string for default.
     }
 }
 
@@ -110,8 +118,6 @@ LOGGING = {
         },
     }
 }
-
-REDIS_HOST = "redis"
 
 ##############################################################################
 ##############################################################################
@@ -337,6 +343,8 @@ REST_FRAMEWORK = {
 ##############################################################################
 ##############################################################################
 # polling (live status etc.)
+
+REDIS_HOST = os.getenv('FOD_REDIS_HOST', 'localhost')
 
 # configuration of celery task manager
 POLLS_TUBE = 'polls'
