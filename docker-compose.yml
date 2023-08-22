@@ -28,7 +28,6 @@ services:
         context: .
         dockerfile: docker-compose/Dockerfile_FOD
     image: flowspydjango
-#    command: supervisord -c docker-compose/fod_celery.conf
     container_name: celeryfod
     depends_on:
       db:
