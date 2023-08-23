@@ -408,7 +408,8 @@ while [ $# -gt 0 ]; do
     conf_db_access="' + os.getenv('FOD_DB_ENG', 'mysql') + '"
     DB__FOD_DBNAME="_require_env('FOD_DB_NAME')"
     DB__FOD_USER="_require_env('FOD_DB_USER')"
-    DB__FOD_PASSWORD="_require_env('FOD_DB_PASS')"
+    #DB__FOD_PASSWORD="_require_env('FOD_DB_PASS')"
+    DB__FOD_PASSWORD="os.getenv('FOD_DB_PASS', '')"
   elif [ $# -ge 1 -a "$1" = "--setup_admin_user" ]; then
     shift 1
      setup_adminuser=1

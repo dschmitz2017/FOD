@@ -73,7 +73,7 @@ DATABASES = {
         'USER': '',                       # DB_USER
         'PASSWORD': '',                   # DB_PASSWORD
         'HOST': os.getenv('FOD_DB_HOST', ''),  # Set to empty string for localhost.
-        'PORT': os.getenv('FOD_DB_PORT', ''),  # Set to empty string for default.
+        'PORT': os.getenv('FOD_DB_PORT', '3306'),  # Set to empty string for default. | now set to 3306 for mysql/mariadb default
     }
 }
 
