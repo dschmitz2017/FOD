@@ -7,7 +7,8 @@
 use_novol=1
 
 if [ "$use_novol" = 1 ]; then
-  docker_compose_spec__file="./docker-compose-novol.yml"
+  #docker_compose_spec__file="./docker-compose-novol.yml"
+  docker_compose_spec__file="./docker-compose-singlefodctr-novol.yml"
   fod_container_name="fodnovol"
 else
   docker_compose_spec__file="./docker-compose.yml"
@@ -72,7 +73,7 @@ echo "$0: exabgp current exported rules/routes:" 1>&2
 docker exec -ti "$fod_container_name" sh -c '. /opt/venv/bin/activate && exabgpcli show adj-rib out extensive'
 
 echo "$0: freertr policy-map and block counters:" 1>&2
-docker exec -ti freertr sh -c '{ echo "show ipv4 bgp 1 flowspec database"; echo "show policy-map flowspec CORE ipv4"; echo exit; } | netcat 127.1 2323'
+docker exec -ti freertr sh -c '{ echo "show ipv4 bgp 1 flowspec summary"; echo "show ipv4 bgp 1 flowspec database"; echo "show policy-map flowspec CORE ipv4"; echo exit; } | netcat 127.1 2323'
 
 sleep 2
 
@@ -81,7 +82,7 @@ docker exec -d -ti host1 ping -c 1 10.2.10.12
 docker exec -ti host1 ping -c 7 10.2.10.12
 
 echo "$0: freertr policy-map and block counters:" 1>&2
-docker exec -ti freertr sh -c '{ echo "show ipv4 bgp 1 flowspec database"; echo "show policy-map flowspec CORE ipv4"; echo exit; } | netcat 127.1 2323'
+docker exec -ti freertr sh -c '{ echo "show ipv4 bgp 1 flowspec summary"; echo "show ipv4 bgp 1 flowspec database"; echo "show policy-map flowspec CORE ipv4"; echo exit; } | netcat 127.1 2323'
 
 ###
 
@@ -91,7 +92,7 @@ echo "waiting $wait1 seconds" 1>&2
 sleep "$wait1"
 
 echo "$0: exabgp current exported rules/routes:" 1>&2
-docker exec -ti freertr sh -c '{ echo "show ipv4 bgp 1 flowspec database"; echo "show policy-map flowspec CORE ipv4"; echo exit; } | netcat 127.1 2323'
+docker exec -ti freertr sh -c '{ echo "show ipv4 bgp 1 flowspec summary"; echo "show ipv4 bgp 1 flowspec database"; echo "show policy-map flowspec CORE ipv4"; echo exit; } | netcat 127.1 2323'
 
 #
 
@@ -113,12 +114,12 @@ echo "$0: exabgp current exported rules/routes:" 1>&2
 docker exec -ti "$fod_container_name" sh -c '. /opt/venv/bin/activate && exabgpcli show adj-rib out extensive'
 
 echo "$0: freertr block counters:" 1>&2
-docker exec -ti freertr sh -c '{ echo "show ipv4 bgp 1 flowspec database"; echo "show policy-map flowspec CORE ipv4"; echo exit; } | netcat 127.1 2323'
+docker exec -ti freertr sh -c '{ echo "show ipv4 bgp 1 flowspec summary"; echo "show ipv4 bgp 1 flowspec database"; echo "show policy-map flowspec CORE ipv4"; echo exit; } | netcat 127.1 2323'
 
 echo "$0: ping to block:" 1>&2
 docker exec -ti host1 ping -c 7 10.2.10.12 || true
 
 echo "$0: freertr policy-map and block counters:" 1>&2
-docker exec -ti freertr sh -c '{ echo "show ipv4 bgp 1 flowspec database"; echo "show policy-map flowspec CORE ipv4"; echo exit; } | netcat 127.1 2323'
+docker exec -ti freertr sh -c '{ echo "show ipv4 bgp 1 flowspec summary"; echo "show ipv4 bgp 1 flowspec database"; echo "show policy-map flowspec CORE ipv4"; echo exit; } | netcat 127.1 2323'
 
 
