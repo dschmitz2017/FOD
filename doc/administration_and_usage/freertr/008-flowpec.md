@@ -4,6 +4,7 @@
 
 #### enabling FlowSpec in bgp server config:
 
+```
 router bgp4 1
  vrf CORE
  !vrf OOB
@@ -26,9 +27,11 @@ router bgp4 1
  redistribute uni2flow4 1
  exit
 !
+```
 
 #### local example rules to install in Flowspec Database
 
+```
 access-list rule1
  sequence 10 deny 6 15.10.10.1 255.255.255.255 123-129 20.20.20.1 255.255.255.255 200-400
  sequence 20 deny 6 16.10.10.1 255.255.255.255 123-129 20.20.20.1 255.255.255.255 200-400
@@ -42,9 +45,11 @@ policy-map flowspec-v4
  !
  exit
 !
+```
 
 #### introspection and status
 
+```
 show policy-map flowspec-v4 # dump local rules defined in policy-map flowspec-v4
 
 show ipv4 bgp 1 flowspec summary 
@@ -52,6 +57,7 @@ show ipv4 bgp 1 flowspec summary
 show ipv4 bgp 1 flowspec database # show FlowSpec rules defined locally or received 
 
 show policy-map flowspec CORE ipv4 # replace CORE by vrf name # dump FlowSpec statistics
+```
 
 ## Freertr used with Firewall-On-Demand (FoD)
 
@@ -60,13 +66,16 @@ https://github.com/GEANT/FOD/blob/feature/exabgp_support2/docker-compose/demo1.s
 prerequistes: docker, docker-compose
 
 clone repo: git clone https://github.com/GEANT/FOD && cd ./FOD
+
 switch to correct branch: git checkout feature/exabgp_support2
+
 run demo script: ./docker-compose/demo1.sh # from main dir
 
 ### example output of a blocking rule src=10.1.10.11 dst=10.2.10.12 proto=icmp
 
 ... (after rule was installed by FoD on FreeRtr via FlowSpec)
 
+```
 ./docker-compose/demo1.sh: status and freertr policy-map and block counters before the ping to be blocked:
 line ready
 15802c338fa3#show ipv4 bgp 1 flowspec summary                                 
@@ -114,5 +123,5 @@ seq  chld  queue  intrvl  byt/int  rxb  rxp  trnsmt                       ace
 
 15802c338fa3#exit                                                             
 see you later
-
+```
 
