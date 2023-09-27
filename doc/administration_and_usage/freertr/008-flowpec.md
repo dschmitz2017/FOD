@@ -138,9 +138,11 @@ git checkout feature/exabgp_support2
 
 #### Demo: Diagram of docker containers 
 
+```
 host1 (attacker) - freertr - host2 (victim)
                       |
                      fod
+```
 
 #### Demo: Example output of a blocking rule src=10.1.10.11 dst=10.2.10.12 proto=icmp
 
