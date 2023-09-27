@@ -2,7 +2,7 @@
 
 ### Freertr and FlowSpec
 
-#### enabling FlowSpec in bgp server config:
+#### Freertr Config: Enabling FlowSpec in bgp server config
 
 FlowSpec support via BGP is enabled within the respective router bgp[46] config:
 First of all, the flowspec has to be added as an supported addres family for the router itself, as well as all respective peers.
@@ -36,7 +36,7 @@ router bgp4 1
 !
 ```
 
-#### local example rules to install in Flowspec Database
+#### Freertr Config: Local example rules to install in Flowspec Database
 
 Here is an example of a manually defined policy-map. It can be used with Flowspec by applying the flowspec-advert (see above).
 
@@ -56,7 +56,7 @@ policy-map flowspec-v4
 !
 ```
 
-#### introspection and status interrogation
+#### Freertr CLI: introspection and status interrogation for Flowspec
 
 Example Freertr CLI commands:
 
@@ -107,7 +107,7 @@ Docker-compose set with FoD and Freertr and attacker/victim host containers:
 https://github.com/GEANT/FOD/blob/python3/docker-compose/README.txt
 
 
-### demo for using Freertr with Firewall-On-Demand (FoD)
+### Demo for using Freertr with FoD
 
 FoD has support for running inside a Docker container and, especially for testing and demonstration purposes,
 can be coupled with Freertr running in another container
@@ -136,7 +136,13 @@ git checkout feature/exabgp_support2
 
 ```
 
-#### example output of a blocking rule src=10.1.10.11 dst=10.2.10.12 proto=icmp
+#### Demo: Diagram of docker containers 
+
+host1 (attacker) - freertr - host2 (victim)
+                      |
+                     fod
+
+#### Demo: Example output of a blocking rule src=10.1.10.11 dst=10.2.10.12 proto=icmp
 
 Here an excerpt of the output of a run of the demo script,
 illustrating the blocking rule in action, is given.
