@@ -4,6 +4,13 @@
 
 #### enabling FlowSpec in bgp server config:
 
+FlowSpec support via BGP is enabled within the respective router bgp[46] config:
+First of all, the flowspec has to be added as an supported addres family for the router itself, as well as all respective peers.
+This enables the receiving of FlowSpec rules via such BGP peers and
+populating these rules into the FlowSpec database of that router.
+Local mitigation rules specified by a manually defined policy-map can be imported into the flowspec database for the router by flowspec-advert config parameter and this also will enable the sending of these rules via BGP by the router to all configured peers which support this.
+Processing of these FlowSpec rules in the FlowSpec database of the router, i.e. installation of these rules in the special FlowSpec-specific policy-map for the vrf of the router is enabled by bgp config option flowspec-install.
+
 ```
 router bgp4 1
  vrf CORE
@@ -31,6 +38,8 @@ router bgp4 1
 
 #### local example rules to install in Flowspec Database
 
+Here is an example of a manually defined policy-map. It can be used with Flowspec by applying the flowspec-advert (see above).
+
 ```
 access-list rule1
  sequence 10 deny 6 15.10.10.1 255.255.255.255 123-129 20.20.20.1 255.255.255.255 200-400
@@ -47,33 +56,94 @@ policy-map flowspec-v4
 !
 ```
 
-#### introspection and status
+#### introspection and status interrogation
 
+Example Freertr CLI commands:
+
+
+show locally defined rules (via manually defined policy-map), which can be imported in the router by flowspec-advert config,
 ```
 show policy-map flowspec-v4 # dump local rules defined in policy-map flowspec-v4
+```
 
+show the flowspec connection summary for a specific bgp router,
+```
 show ipv4 bgp 1 flowspec summary 
+```
 
+show the flowspec database of a specific bgp router (locally or received via BGP),
+```
 show ipv4 bgp 1 flowspec database # show FlowSpec rules defined locally or received 
+```
 
+show the special, flowspec-specific policy-map (including mitigation counters) for a specific vrf (for all flowspec rules in flowspec databases for each every router which is assigned to that vrf ???)
+```
 show policy-map flowspec CORE ipv4 # replace CORE by vrf name # dump FlowSpec statistics
 ```
 
 ## Freertr used with Firewall-On-Demand (FoD)
 
+### FoD in general
+
+Firewall-On-Demand (FoD) is a server application for multi-tenant DDoS mitigation in a core network.
+FoD allow the specification of FlowSpec rules
+and their apllication on connected routers of a core network,
+restricted according on the users access rights based traffic's target IP prefix.
+The applied rules are to be propagated via BGP.
+With FoD users are enabled to apply FlowSpec rules in the core network only 
+for the network traffic targeted to/from their organization, 
+i.e., network traffic traversing the core network towards/from their network
+access points.
+
+### FoD installation and FoD with Freertr in general
+
+FoD installation in general:
+https://github.com/GEANT/FOD/tree/python3/doc/installation
+
+FoD with Freertr in general:
+https://github.com/GEANT/FOD/blob/python3/doc/administration_and_usage/testing_and_using_fod_with_freertr.md
+
+Docker-compose set with FoD and Freertr and attacker/victim host containers:
+https://github.com/GEANT/FOD/blob/python3/docker-compose/README.txt
+
+
+### demo for using Freertr with Firewall-On-Demand (FoD)
+
+FoD has support for running inside a Docker container and, especially for testing and demonstration purposes,
+can be coupled with Freertr running in another container
+(https://github.com/GEANT/FOD/blob/python3/docker-compose/README.txt).
+Based on this, a script is provided to allow for an integrated, simple demonstration of mitigation via FoD:
+In this demo example traffic between an attacker host container towards and victim host container inter-connected via the Freertr container is mitigated by Freertr with the respective FlowSpec rule controlled by FoD.
+
+
+Script for setting up and running the demo:
+```
 https://github.com/GEANT/FOD/blob/feature/exabgp_support2/docker-compose/demo1.sh
+```
 
-prerequistes: docker, docker-compose
+Steps to run the demo:
+```
+# prerequistes: docker, docker-compose
 
-clone repo: git clone https://github.com/GEANT/FOD && cd ./FOD
+#clone repo: 
+git clone https://github.com/GEANT/FOD && cd ./FOD
 
-switch to correct branch: git checkout feature/exabgp_support2
+#switch to correct branch: 
+git checkout feature/exabgp_support2
 
-run demo script: ./docker-compose/demo1.sh # from main dir
+#run demo script: 
+./docker-compose/demo1.sh # from main dir
 
-### example output of a blocking rule src=10.1.10.11 dst=10.2.10.12 proto=icmp
+```
 
-... (after rule was installed by FoD on FreeRtr via FlowSpec)
+#### example output of a blocking rule src=10.1.10.11 dst=10.2.10.12 proto=icmp
+
+Here an excerpt of the output of a run of the demo script,
+illustrating the blocking rule in action, is given.
+It consists of the output of the various Freertr CLI command for status interrogation
+utilized by the demo script, run before and after the installation of the blocking rule:
+
+... (after the blocking rule rule was installed by FoD on FreeRtr via FlowSpec)
 
 ```
 ./docker-compose/demo1.sh: status and freertr policy-map and block counters before the ping to be blocked:
