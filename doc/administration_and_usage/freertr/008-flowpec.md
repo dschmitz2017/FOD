@@ -100,12 +100,21 @@ access points.
 FoD installation in general:
 https://github.com/GEANT/FOD/tree/python3/doc/installation
 
+
 FoD with Freertr in general:
 https://github.com/GEANT/FOD/blob/python3/doc/administration_and_usage/testing_and_using_fod_with_freertr.md
 
+FoD version with exabgp support (https://github.com/GEANT/FOD/tree/feature/exabgp_support2)
+can be used for peering with Freertr for distributing FlowSpec rules.
+On side of FoD, required is only the exabgp peering configuration (peer AS, peer node id, peer ipv4 address).
+Correspondingly, regarding the Freertr side, an example configuration
+is available at https://github.com/GEANT/FOD/blob/feature/exabgp_support2/docker-compose/freertr.cfg
+(especially the 'router bgp4 1' config part)
+assuming the FoD ip address used for BGP peering is 10.197.36.2.
+
+
 Docker-compose set with FoD and Freertr and attacker/victim host containers:
 https://github.com/GEANT/FOD/blob/python3/docker-compose/README.txt
-
 
 ### Demo for using Freertr with FoD
 
