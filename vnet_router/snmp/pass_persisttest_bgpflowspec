@@ -105,6 +105,10 @@ sub get_snmp_rulename
   $src =~ s/^0.0.0.0\/0$/0\/0/;
   $dst =~ s/^0.0.0.0\/0$/0\/0/;
 
+  # https://github.com/librenms/librenms/blob/master/mibs/junos/JUNIPER-FIREWALL-MIB
+ 
+  my $counter_type_value = 2; # default is normal counter
+
   my $rulename = $dst.",".$src;
 
   my $proto = $protocol_num;  
@@ -144,9 +148,17 @@ sub get_snmp_rulename
     $rulename .= ",frag".join(",", (map { $frag_types->{$_}; } split(/,/, $fragment_options)));
   }
 
+  if (defined($thenaction)) {
+    if ($thenaction eq 'discard') {
+    } elsif ($thenaction =~ /^rate-limit-([0-9]+([Mk]?))$/) {
+      $rulename = $1."_".$rulename;
+      $counter_type_value = 3; # policer
+    }
+  }
+
   print STDERR "rulename=$rulename$/" if ($debug);
 
-  return $rulename;
+  return ($rulename, $counter_type_value);
 }
 
 sub get_state($)
@@ -163,11 +175,11 @@ sub get_state($)
     my ($cookie, $typex, $byte_ctr, $pkt_ctr, $rulename, @rule_params) = split(/\s+/, $line);
     next if ($typex eq 'default');
 
-    my $snmp_rulename = get_snmp_rulename(@rule_params);
+    my ($snmp_rulename, $counter_type_value) = get_snmp_rulename(@rule_params);
     if ($snmp_rulename ne '') {
       my $prefix1 = string_to_oid_list($snmp_rulename);
-      my $snmp_oid_counter_pkts = $place_pkts.$rulesfilter_oidlist.$prefix1.".2";
-      my $snmp_oid_counter_bytes = $place_bytes.$rulesfilter_oidlist.$prefix1.".2";
+      my $snmp_oid_counter_pkts = $place_pkts.$rulesfilter_oidlist.$prefix1.".".$counter_type_value;
+      my $snmp_oid_counter_bytes = $place_bytes.$rulesfilter_oidlist.$prefix1.".".$counter_type_value;
       $state_hash->{$snmp_oid_counter_bytes} = $byte_ctr;
       $state_hash->{$snmp_oid_counter_pkts} = $pkt_ctr;
     }

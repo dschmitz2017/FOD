@@ -23,6 +23,7 @@ from datetime import datetime, timedelta
 import json
 import os
 import time
+import re
 
 from flowspec.models import Route
 from utils.route_spec_utils import create_junos_name
@@ -36,17 +37,19 @@ identoffset = len(settings.SNMP_CNTPACKETS) + 1
 # noinspection PyUnusedLocal,PyUnusedLocal
 def snmpCallback(snmpEngine, sendRequestHandle, errorIndication,
           errorStatus, errorIndex, varBindTable, cbCtx):
+  try:
     (authData, transportTarget, results) = cbCtx
+    logger.error('snmpCallback(): called')
 
     # debug - which router replies:
     #print('%s via %s' % (authData, transportTarget))
 
     # CNTPACKETS and CNTBYTES are of the same length
     if errorIndication:
-        logger.error('Bad errorIndication.')
+        logger.error('snmpCallback(): Bad errorIndication.')
         return 0
     elif errorStatus:
-        logger.error('Bad errorStatus.')
+        logger.error('snmpCallback(): Bad errorStatus.')
         return 0
     for varBindRow in varBindTable:
         for name, val in varBindRow:
@@ -56,7 +59,7 @@ def snmpCallback(snmpEngine, sendRequestHandle, errorIndication,
             elif name.startswith(settings.SNMP_CNTBYTES):
                 counter = "bytes"
             else:
-                logger.debug('Finished {}.'.format(transportTarget))
+                logger.debug('snmpCallback(): Finished {}.'.format(transportTarget))
                 return 0
 
             ident = name[identoffset:]
@@ -70,28 +73,38 @@ def snmpCallback(snmpEngine, sendRequestHandle, errorIndication,
                 len2 = ordvals[len1] + 1
                 routename = "".join([chr(i) for i in ordvals[len1 + 1:len1 + len2]])
 
+                logger.error("routename="+str(routename))
+                xtype='counter'
+                if re.match(r'^[0-9]+[Mk]_', routename):
+                    ary=re.split(r'_', routename, maxsplit=1)
+                    xtype=ary[0]
+                    routename=ary[1]
+                logger.error("=> routename="+str(routename)+" xtype="+str(xtype))
+
                 # add value into dict
                 if routename in results:
-                    if counter in results[routename]:
-                        results[routename][counter] = results[routename][counter] + int(val)
+                    if counter in results[routename][xtype]:
+                        results[routename][xtype][counter] = results[routename][counter][xtype] + int(val)
                     else:
-                        results[routename][counter] = int(val)
+                        results[routename][xtype][counter] = int(val)
                 else:
-                    results[routename] = {counter: int(val)}
+                    results[routename] = { xtype: {counter: int(val)} }
                 logger.debug("%s %s %s %s = %s" %(transportTarget, counter, tablename, routename, int(val)))
-
-    return 1  # continue table retrieval
+                
+  except Exception as e:
+    logger.error("snmpCallback(): got exception "+str(e), exc_info=True)
+  return 1  # continue table retrieval
 
 
 def get_snmp_stats():
-    """Return dict() of the sum of counters (bytes, packets) from all selected routes, where
-    route identifier is the key in dict.  The sum is counted over all routers.
+  """Return dict() of the sum of counters (bytes, packets) from all selected routes, where
+  route identifier is the key in dict.  The sum is counted over all routers.
 
-    Example output with one rule: {'77.72.72.1,0/0,proto=1': {'bytes': 13892216, 'packets': 165387}}
+  Example output with one rule: {'77.72.72.1,0/0,proto=1': {'bytes': 13892216, 'packets': 165387}}
 
-    This function uses SNMP_IP list, SNMP_COMMUNITY, SNMP_CNTPACKETS and
-    SNMP_RULESFILTER list, all defined in settings."""
-
+  This function uses SNMP_IP list, SNMP_COMMUNITY, SNMP_CNTPACKETS and
+  SNMP_RULESFILTER list, all defined in settings."""
+  try:
     if not isinstance(settings.SNMP_IP, list):
         settings.SNMP_IP = [settings.SNMP_IP]
 
@@ -132,6 +145,8 @@ def get_snmp_stats():
     snmpEngine.transportDispatcher.runDispatcher()
 
     return results
+  except Exception as e:
+      logger.error("get_snmp_stats(): got exception "+str(e), exc_info=True)
 
 def lock_history_file(wait=1, reason=""):
     first=1
@@ -272,12 +287,17 @@ def poll_snmp_statistics():
         # proper update history
         samplecount = settings.SNMP_MAX_SAMPLECOUNT
         for rule in newdata:
-            counter = {"ts": nowstr, "value": newdata[rule]}
-            if rule in history:
-                history[rule].insert(0, counter)
-                history[rule] = history[rule][:samplecount]
-            else:
-                history[rule] = [counter]
+          for xtype in newdata[rule]:
+              key = "value"
+              if xtype!="counter":
+                  key = "value-"+str(xtype)
+              #counter = {"ts": nowstr, "value": newdata[rule]['counter']}
+              counter = {"ts": nowstr, key: newdata[rule][xtype]}
+              if rule in history:
+                  history[rule].insert(0, counter)
+                  history[rule] = history[rule][:samplecount]
+              else:
+                  history[rule] = [counter]
 
         # check for old rules and remove them
         toremove = []
@@ -310,7 +330,15 @@ def poll_snmp_statistics():
           for ruleobj in queryset:
             rule_id = str(ruleobj.id)
             rule_status = str(ruleobj.status).upper()
-            logger.debug("snmpstats: STATISTICS_PER_RULE rule_id="+str(rule_id)+" rule_status="+str(rule_status))
+
+            xtype='counter'
+            limit_rate = None
+            for thenaction in ruleobj.then.all():
+                if thenaction.action and thenaction.action=='rate-limit':
+                    limit_rate=thenaction.action_value
+                    xtype=str(limit_rate)
+                        
+            logger.debug("snmpstats: STATISTICS_PER_RULE rule_id="+str(rule_id)+" rule_status="+str(rule_status)+" limit_rate="+str(limit_rate))
             #rule_last_updated = str(ruleobj.last_updated) # e.g. 2018-06-21 08:03:21+00:00
             #rule_last_updated = datetime.strptime(str(ruleobj.last_updated), '%Y-%m-%d %H:%M:%S+00:00') # TODO TZ offset assumed to be 00:00
             rule_last_updated = helper_rule_ts_parse(str(ruleobj.last_updated))
@@ -326,7 +354,7 @@ def poll_snmp_statistics():
 
             if rule_status=="ACTIVE":
               try:
-                counter = {"ts": nowstr, "value": newdata[flowspec_params_str]}
+                counter = {"ts": nowstr, "value": newdata[flowspec_params_str][xtype]}
                 counter_is_null = False
               except Exception as e:
                 logger.info("poll_snmp_statistics(): 1 STATISTICS_PER_RULE: exception: rule_id="+str(rule_id)+" newdata for flowspec_params_str='"+str(flowspec_params_str)+"' missing : "+str(e))

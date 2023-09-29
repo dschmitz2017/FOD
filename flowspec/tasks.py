@@ -100,6 +100,8 @@ def edit(routepk, route_original__data, callback=None):
     commit, response, response_lowlevel = applier.apply(operation="replace")
     if commit:
         route.status = "ACTIVE"
+        route.response = response
+        route.save() # save() has to be called before snmp_add_initial_zero_value, as last_updated DB filed is updated now on every call of save() and last db_measurement time must become >= this new last_updated value
         try:
           #snmp_add_initial_zero_value.delay(str(route.id), True)
           snmp_add_initial_zero_value(str(route.id), True)
@@ -110,10 +112,14 @@ def edit(routepk, route_original__data, callback=None):
             # repeat the action
             raise TimeoutError()
         route.status = "ERROR"
+        route.response = response
+        route.save()
     else:
         route.status = "ERROR"
-    route.response = response
-    route.save()
+        route.response = response
+        route.save()
+    #route.response = response
+    #route.save()
     announce("[%s] Rule edit: %s - Result: %s" % (route.applier_username_nice, route.name_visible, response), route.applier, route)
 
 @shared_task(ignore_result=True, autoretry_for=(TimeoutError, TimeLimitExceeded, SoftTimeLimitExceeded), retry_backoff=True, retry_kwargs={'max_retries': settings.NETCONF_MAX_RETRY_BEFORE_ERROR})

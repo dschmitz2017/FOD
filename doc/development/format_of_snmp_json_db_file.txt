@@ -1,0 +1,53 @@
+
+statistics table:
+
+a measurement value
+per rule,
+for each measurement time slot,
+
+e.g.,
+
+{
+ "_per_rule": {
+     "243": [
+              {"ts": "2023-09-28T13:00:02.107721", "value": {"packets": 0, "bytes": 0 },
+              {"ts": "2023-09-28T13:00:07.107721", "value": {"packets": 10, "bytes": 4545 } },
+              {"ts": "2023-09-28T13:00:12.107721", "value": 1,
+              {"ts": "2023-09-28T13:00:17.107721", "value": {"packets": 30, "bytes": 8539 } },
+              {"ts": "2023-09-28T13:00:22.107721", "value": {"packets": 80, "bytes": 18234 } },
+              {"ts": "2023-09-28T13:00:27.107721", "value": {"packets": 80, "bytes": 18234 } },
+              {"ts": "2023-09-28T13:00:32.107721", "value": {"packets": 80, "bytes": 18234 } },
+              {"ts": "2023-09-28T13:00:33.107721", "value": 0 },
+              {"ts": "2023-09-30T14:00:11.107721", "value": {"packets": 0, "bytes": 0 },
+              {"ts": "2023-09-30T14:00:12.107721", "value": {"packets": 15, "bytes": 3691 } },
+              {"ts": "2023-09-30T14:00:17.107721", "value": {"packets": 25, "bytes": 18539 } },
+              {"ts": "2023-09-30T14:00:22.107721", "value": {"packets": 120, "bytes": 28934 } },
+              {"ts": "2023-09-30T14:00:27.107721", "value": {"packets": 120, "bytes": 28934 } },
+              {"ts": "2023-09-30T14:00:32.107721", "value": {"packets": 120, "bytes": 28934 } },
+              {"ts": "2023-09-30T14:00:37.107721", "value": {"packets": 120, "bytes": 28934 } },
+              {"ts": "2023-09-30T14:00:42.107721", "value": {"packets": 120, "bytes": 28934 } },
+              {"ts": "2023-09-30T14:00:47.107721", "value": {"packets": 120, "bytes": 28934 } },
+              {"ts": "2023-09-28T14:00:49.107721", "value": 0 },
+            ],
+     ...
+  },
+}
+
+measurement value per time slot is either:
+
+zero measurement: = { bytes=>0, packets=>0, } : at start of measurement = activation of the rule on the router
+
+or
+
+real measurement (example): = { bytes=>1414, packets=>5, } : cumulative (=absolue values from start of measurement = from last activation of the rule) bytes/packet counters 
+
+or 
+
+missing_value: =1 : no measurements from none of the routers queried answered values for the specific rule in the specific scheduling time slot (while rule is activated)
+
+null_value: =0 : used when rule is deactivated = measurement should stop on the router
+
+when rule is re-activated again on the router after some duration of having been deactivated it is started again with a zero measurement in the table and absolute values for the future real measurement are starting from zero again
+
+
+
