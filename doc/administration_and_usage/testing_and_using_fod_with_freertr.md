@@ -4,6 +4,8 @@ Freertr ([http://www.freertr.org](http://www.freertr.org/), [http://docs.freertr
 
 ## Docker containers for use of FoD (exabgp version) with Freertr:
 
+Currently, there are 4 different options how to use test FoD (version with exabgp support) together with Freertr: 
+
 1. using 2 containers (FoD+exabgp container and freertr container) manually:
 ./inst/testing/fodexabgp/README.txt
 ./inst/testing/fodexabgp/install_fodexabgp__docker.sh
@@ -17,7 +19,8 @@ Freertr ([http://www.freertr.org](http://www.freertr.org/), [http://docs.freertr
 
 4. using docker-compose for coordinated run of FoD+exabgp container, freertr container, and attacker/victim host containers
 ./docker-compose/README.txt info
-./docker-compose.yml default docker compose specification using bind-mounted FoD dir (mainly for developers)
-./docker-compose-novol.yml docker compose specification without bind-mounted FoD dir (for testing or demo-ing)
+./docker-compose-singlefodctr-novol.yml docker compose specification without bind-mounted FoD dir (for testing or demo-ing)
+./docker-compose.yml upcoming docker compose specification (using bind-mounted FoD dir (mainly for developers)), with resilience
+./docker-compose-novol.yml new upcoming docker compose specification (without bind-mounted FoD dir) with resilience
 
 
