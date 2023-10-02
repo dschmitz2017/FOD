@@ -140,25 +140,56 @@ function myreloadPage() {
 function plotGraph(data)
 {
    var xdata = Array();
-   var ydata = Array();
-   var ydatarel = Array();
+
+   var ypkgdata = Array();
+   var ypkgdatarel = Array();
    var ybytesdata = Array();
    var ybytesdatarel = Array();
 
+   var yseenpkgdata = Array();
+   var yseenpkgdatarel = Array();
+   var yseenbytesdata = Array();
+   var yseenbytesdatarel = Array();
+
+   var yseen_available = false;
+
    for (i=0; i<data["data"].length; i++) {
        var d = data["data"][data["data"].length - 1 - i];
+
        xdata[i] = d.ts.replace(/\..*/, '').replace('T', ' ');
-       ydata[i] = d.value.packets;
+
+       ypkgdata[i] = d.value.packets;
        ybytesdata[i] = d.value.bytes;
+
        if (i == 0) {
-           ydatarel[i] = 0;
+           ypkgdatarel[i] = 0;
            ybytesdatarel[i] = 0;
        } else {
-           delta = (ydata[i]===undefined) ? undefined : (ydata[i-1]===undefined) ? ydata[i] : (ydata[i] - ydata[i-1]);
-           ydatarel[i] = (delta===undefined || delta>=0) ? delta : 0;
+           delta = (ypkgdata[i]===undefined) ? undefined : (ypkgdata[i-1]===undefined) ? ypkgdata[i] : (ypkgdata[i] - ypkgdata[i-1]);
+           ypkgdatarel[i] = (delta===undefined || delta>=0) ? delta : 0;
 
            bytesdelta = (ybytesdata[i]===undefined) ? undefined : (ybytesdata[i-1]===undefined) ? ybytesdata[i] : (ybytesdata[i] - ybytesdata[i-1]);
            ybytesdatarel[i] = (bytesdelta===undefined || bytesdelta>=0) ? bytesdelta : 0;
+       }
+
+       if (d.value_counter!=undefined) {
+         yseen_available=true
+
+         yseenpkgdata[i] = d.value_counter.packets;
+         yseenbytesdata[i] = d.value_counter.bytes;
+  
+         if (i == 0) {
+             yseenpkgdatarel[i] = 0;
+             yseenbytesdatarel[i] = 0;
+         } else {
+             delta = (yseenpkgdata[i]===undefined) ? undefined : (yseenpkgdata[i-1]===undefined) ? yseenpkgdata[i] : (yseenpkgdata[i] - yseenpkgdata[i-1]);
+             yseenpkgdatarel[i] = (delta===undefined || delta>=0) ? delta : 0;
+  
+             bytesdelta = (yseenbytesdata[i]===undefined) ? undefined : (yseenbytesdata[i-1]===undefined) ? yseenbytesdata[i] : (yseenbytesdata[i] - yseenbytesdata[i-1]);
+             yseenbytesdatarel[i] = (bytesdelta===undefined || bytesdelta>=0) ? bytesdelta : 0;
+         }
+  
+  
        }
    }
 
@@ -174,19 +205,81 @@ function plotGraph(data)
    graphbytesabs.height = 20;
    graphbytesrel.width = 80;
    graphbytesrel.height = 20;
+  
+   var ypkg_datasets = [{
+           label: '# packets',
+           data: ypkgdata,
+           borderWidth: 2,
+           borderColor: "#3c37c6",
+           pointBackgroundColor:  "#3c37c6",
+           backgroundColor: "#99bfff"
+       }];
+   var ypkgrel_datasets = [{
+           label: '# packets',
+           data: ypkgdatarel,
+           borderWidth: 2,
+           borderColor: "#c63737",
+           pointBackgroundColor:  "#c63737",
+           backgroundColor: "#ff877a"
+       }];
+   var ybytes_datasets = [{
+           label: '# bytes',
+           data: ybytesdata,
+           borderWidth: 2,
+           borderColor: "#3c37c6",
+           pointBackgroundColor:  "#3c37c6",
+           backgroundColor: "#99bfff"
+       }];
+    var ybytesrel_datasets = [{
+           label: '# bytes',
+           data: ybytesdatarel,
+           borderWidth: 2,
+           borderColor: "#c63737",
+           pointBackgroundColor:  "#c63737",
+           backgroundColor: "#ff877a"
+       }];
+
+
+   if (yseen_available) {
+     ypkg_datasets.push({
+           label: '# packets matched',
+           data: yseenpkgdata,
+           borderWidth: 2,
+           borderColor: "#cc37c6",
+           pointBackgroundColor:  "#3c37c6",
+           backgroundColor: "#59bf6f"
+       });
+     ypkgrel_datasets.push({
+           label: '# packets matched',
+           data: yseenpkgdatarel,
+           borderWidth: 2,
+           borderColor: "#c63737",
+           pointBackgroundColor:  "#c63737",
+           backgroundColor: "#6f223a"
+       });
+     ybytes_datasets.push({
+           label: '# bytes matched',
+           data: yseenbytesdata,
+           borderWidth: 2,
+           borderColor: "#cc37c6",
+           pointBackgroundColor:  "#3c37c6",
+           backgroundColor: "#59bf6f"
+       });
+     ybytesrel_datasets.push({
+           label: '# bytes matched',
+           data: yseenbytesdatarel,
+           borderWidth: 2,
+           borderColor: "#c63737",
+           pointBackgroundColor:  "#c63737",
+           backgroundColor: "#6f223a"
+       });
+   }
 
    var graphabssetting = {
        type: 'line',
        data: {
        labels: xdata,
-       datasets: [{
-           label: '# packets',
-           data: ydata,
-           borderWidth: 2,
-           borderColor: "#3c37c6",
-           pointBackgroundColor:  "#3c37c6",
-           backgroundColor: "#99bfff"
-       }]
+       datasets: ypkg_datasets
        },
        options: {
        elements: {
@@ -214,14 +307,7 @@ function plotGraph(data)
        type: 'bar',
        data: {
        labels: xdata,
-       datasets: [{
-           label: '# packets',
-           data: ydatarel,
-           borderWidth: 2,
-           borderColor: "#c63737",
-           pointBackgroundColor:  "#c63737",
-           backgroundColor: "#ff877a"
-       }]
+       datasets: ypkgrel_datasets
        },
        options: {
        elements: {
@@ -240,14 +326,7 @@ function plotGraph(data)
        type: 'line',
        data: {
        labels: xdata,
-       datasets: [{
-           label: '# bytes',
-           data: ybytesdata,
-           borderWidth: 2,
-           borderColor: "#3c37c6",
-           pointBackgroundColor:  "#3c37c6",
-           backgroundColor: "#99bfff"
-       }]
+       datasets: ybytes_datasets
        },
        options: {
        elements: {
@@ -266,14 +345,7 @@ function plotGraph(data)
        type: 'bar',
        data: {
        labels: xdata,
-       datasets: [{
-           label: '# bytes',
-           data: ybytesdatarel,
-           borderWidth: 2,
-           borderColor: "#c63737",
-           pointBackgroundColor:  "#c63737",
-           backgroundColor: "#ff877a"
-       }]
+       datasets: ybytesrel_datasets
        },
        options: {
        elements: {
@@ -292,6 +364,8 @@ function plotGraph(data)
    var pktsrelChart = new Chart(graphpktsrel, graphrelsetting);
    var bytesabsChart = new Chart(graphbytesabs, graphbytesabssetting);
    var bytesrelChart = new Chart(graphbytesrel, graphbytesrelsetting);
+
+
 }
 
 $(document).ready(function() {

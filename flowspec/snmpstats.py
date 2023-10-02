@@ -309,7 +309,7 @@ def poll_snmp_statistics():
           for xtype in newdata[rule]:
               key = "value"
               if xtype!="counter":
-                  key = "value-"+str(xtype)
+                  key = "value_"+str(xtype)
               if counter==None:
                 #counter = {"ts": nowstr, "value": newdata[rule]['counter']}
                 counter = {"ts": nowstr, key: newdata[rule][xtype]}
@@ -372,8 +372,8 @@ def poll_snmp_statistics():
               counter_null = {"ts": rule_last_updated.isoformat(), "value": null_measurement }
               counter_zero = {"ts": rule_last_updated.isoformat(), "value": zero_measurement }
             else:
-              counter_null = {"ts": rule_last_updated.isoformat(), "value": null_measurement, "value-counter": null_measurement }
-              counter_zero = {"ts": rule_last_updated.isoformat(), "value": zero_measurement, "value-counter": zero_measurement }
+              counter_null = {"ts": rule_last_updated.isoformat(), "value": null_measurement, "value_counter": null_measurement }
+              counter_zero = {"ts": rule_last_updated.isoformat(), "value": zero_measurement, "value_counter": zero_measurement }
 
             #logger.info("snmpstats: STATISTICS_PER_RULE ruleobj="+str(ruleobj))
             #logger.info("snmpstats: STATISTICS_PER_RULE ruleobj.type="+str(type(ruleobj)))
@@ -387,7 +387,7 @@ def poll_snmp_statistics():
                 if xtype==xtype_default:
                   counter = {"ts": nowstr, "value": newdata[flowspec_params_str][xtype]}
                 else:
-                  counter = {"ts": nowstr, "value": newdata[flowspec_params_str][xtype], "value-counter": newdata[flowspec_params_str][xtype_default]}
+                  counter = {"ts": nowstr, "value": newdata[flowspec_params_str][xtype], "value_counter": newdata[flowspec_params_str][xtype_default]}
 
                 counter_is_null = False
               except Exception as e:
@@ -499,7 +499,7 @@ def add_initial_zero_value(rule_id, route_obj, zero_or_null=True):
     if xtype==xtype_default:
       counter = {"ts": nowstr, "value": zero_measurement }
     else:
-      counter = {"ts": nowstr, "value": zero_measurement, "value-counter": zero_measurement }
+      counter = {"ts": nowstr, "value": zero_measurement, "value_counter": zero_measurement }
         
     samplecount = settings.SNMP_MAX_SAMPLECOUNT
 
