@@ -305,17 +305,22 @@ def poll_snmp_statistics():
         # proper update history
         samplecount = settings.SNMP_MAX_SAMPLECOUNT
         for rule in newdata:
+          counter=None
           for xtype in newdata[rule]:
               key = "value"
               if xtype!="counter":
                   key = "value-"+str(xtype)
-              #counter = {"ts": nowstr, "value": newdata[rule]['counter']}
-              counter = {"ts": nowstr, key: newdata[rule][xtype]}
-              if rule in history:
-                  history[rule].insert(0, counter)
-                  history[rule] = history[rule][:samplecount]
+              if counter==None:
+                #counter = {"ts": nowstr, "value": newdata[rule]['counter']}
+                counter = {"ts": nowstr, key: newdata[rule][xtype]}
+                if rule in history:
+                    history[rule].insert(0, counter)
+                    history[rule] = history[rule][:samplecount]
+                else:
+                    history[rule] = [counter]
               else:
-                  history[rule] = [counter]
+                counter[key] = newdata[rule][xtype]
+                #logger.info("poll_snmp_statistics(): reused existing rule x xtype entry:"+str(counter))
 
         # check for old rules and remove them
         toremove = []
@@ -362,8 +367,13 @@ def poll_snmp_statistics():
             #rule_last_updated = str(ruleobj.last_updated) # e.g. 2018-06-21 08:03:21+00:00
             #rule_last_updated = datetime.strptime(str(ruleobj.last_updated), '%Y-%m-%d %H:%M:%S+00:00') # TODO TZ offset assumed to be 00:00
             rule_last_updated = helper_rule_ts_parse(str(ruleobj.last_updated))
-            counter_null = {"ts": rule_last_updated.isoformat(), "value": null_measurement }
-            counter_zero = {"ts": rule_last_updated.isoformat(), "value": zero_measurement }
+
+            if xtype==xtype_default:
+              counter_null = {"ts": rule_last_updated.isoformat(), "value": null_measurement }
+              counter_zero = {"ts": rule_last_updated.isoformat(), "value": zero_measurement }
+            else:
+              counter_null = {"ts": rule_last_updated.isoformat(), "value": null_measurement, "value-counter": null_measurement }
+              counter_zero = {"ts": rule_last_updated.isoformat(), "value": zero_measurement, "value-counter": zero_measurement }
 
             #logger.info("snmpstats: STATISTICS_PER_RULE ruleobj="+str(ruleobj))
             #logger.info("snmpstats: STATISTICS_PER_RULE ruleobj.type="+str(type(ruleobj)))
