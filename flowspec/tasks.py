@@ -56,17 +56,21 @@ def add(routepk, callback=None):
     commit, response, response_lowlevel = applier.apply()
     if commit:
         route.status = "ACTIVE"
+        route.response = response
+        route.save()
         #snmp_add_initial_zero_value.delay(str(route.id), True)
-        snmp_add_initial_zero_value(str(route.id), True)
+        snmp_add_initial_zero_value(routepk, route.id, True) # route must exist, so that snmp_add_initial_zero_value can find it in DB
     elif response=="Task timeout":
         if deactivate_route.request.retries < settings.NETCONF_MAX_RETRY_BEFORE_ERROR:
             # repeat the action
             raise TimeoutError()
         route.status = "ERROR"
+        route.response = response
+        route.save()
     else:
         route.status = "ERROR"
-    route.response = response
-    route.save()
+        route.response = response
+        route.save()
     announce("[%s] Rule add: %s - Result: %s" % (route.applier_username_nice, route.name_visible, response), route.applier, route)
 
 
@@ -104,7 +108,7 @@ def edit(routepk, route_original__data, callback=None):
         route.save() # save() has to be called before snmp_add_initial_zero_value, as last_updated DB filed is updated now on every call of save() and last db_measurement time must become >= this new last_updated value
         try:
           #snmp_add_initial_zero_value.delay(str(route.id), True)
-          snmp_add_initial_zero_value(str(route.id), True)
+          snmp_add_initial_zero_value(routepk, route.id, True)
         except Exception as e:
           logger.error("tasks::edit(): route="+str(route)+", ACTIVE, add_initial_zero_value failed: "+str(e))
     elif response=="Task timeout":
@@ -151,7 +155,7 @@ def deactivate_route(routepk, **kwargs):
     if commit:
         route.status="INACTIVE"
         try:
-            snmp_add_initial_zero_value(str(route.id), False)
+            snmp_add_initial_zero_value(routepk, route.id, False)
         except Exception as e:
             logger.error("tasks::deactivate_route(): route="+str(route)+", INACTIVE, add_null_value failed: "+str(e))
 
@@ -466,18 +470,28 @@ def poll_snmp_statistics():
       logger.info("poll_snmp_statistics(): after os._exit() in child process (pid="+str(pid)+", ppid="+str(ppid)+")")
 
 @shared_task(ignore_result=True, max_retries=0)
-def snmp_add_initial_zero_value(rule_id, zero_or_null=True):
+def snmp_add_initial_zero_value(routepk, route_id, zero_or_null=True):
     from flowspec import snmpstats
+    logger.info("snmp_add_initial_zero_value(): routepk="+str(routepk)+" route_id="+str(route_id))
+   
+    route = None
+    if route==None:
+      try:
+        from flowspec.models import Route
+        route = Route.objects.get(pk=routepk)
+      except Exception as e:
+        logger.error("snmp_add_initial_zero_value(): route with routepk="+str(routepk)+" route_id="+str(route_id)+" not found")
+        return 
 
     use_fork = False
 
     if not use_fork:
-      snmpstats.add_initial_zero_value(rule_id, zero_or_null)
+      snmpstats.add_initial_zero_value(route_id, route, zero_or_null)
     else:
       signal.signal(signal.SIGCHLD, handleSIGCHLD)
 
       pid = os.getpid()
-      logger.info("snmp_add_initial_zero_value(): before fork (pid="+str(pid)+" rule_id="+str(rule_id)+","+str(zero_or_null)+")")
+      logger.info("snmp_add_initial_zero_value(): before fork (pid="+str(pid)+" routepk="+str(routepk)+","+str(zero_or_null)+")")
       npid = os.fork()
       if npid == -1:
         pass
@@ -489,10 +503,10 @@ def snmp_add_initial_zero_value(rule_id, zero_or_null=True):
         logger.info("snmp_add_initial_zero_value(): in child process (pid="+str(pid)+", ppid="+str(ppid)+")")
 
         try:
-          snmpstats.add_initial_zero_value(rule_id, zero_or_null)
-          logger.debug("snmp_add_initial_zero_value(): rule_id="+str(rule_id)+","+str(zero_or_null)+" sucesss")
+          snmpstats.add_initial_zero_value(route_id, route, zero_or_null)
+          logger.debug("snmp_add_initial_zero_value(): routepk="+str(routepk)+","+str(zero_or_null)+" sucesss")
         except Exception as e:
-          logger.error("snmp_add_initial_zero_value(): rule_id="+str(rule_id)+","+str(zero_or_null)+" failed: "+str(e))
+          logger.error("snmp_add_initial_zero_value(): routepk="+str(routepk)+","+str(zero_or_null)+" failed: "+str(e))
 
         #exit_process()
 

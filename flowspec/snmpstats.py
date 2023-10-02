@@ -83,12 +83,15 @@ def snmpCallback(snmpEngine, sendRequestHandle, errorIndication,
 
                 # add value into dict
                 if routename in results:
+                  if xtype in results[routename]:
                     if counter in results[routename][xtype]:
-                        results[routename][xtype][counter] = results[routename][counter][xtype] + int(val)
+                        results[routename][xtype][counter] = results[routename][xtype][counter] + int(val)
                     else:
                         results[routename][xtype][counter] = int(val)
+                  else:
+                    results[routename][xtype] = { counter: int(val) } 
                 else:
-                    results[routename] = { xtype: {counter: int(val)} }
+                    results[routename] = { xtype: { counter: int(val) } }
                 logger.debug("%s %s %s %s = %s" %(transportTarget, counter, tablename, routename, int(val)))
                 
   except Exception as e:
@@ -232,6 +235,21 @@ def helper_rule_ts_parse(ts_string):
   #logger.info("helper_rule_ts_parse(): => ts="+str(ts))
   return ts
 
+#
+
+xtype_default='counter'
+
+def helper_get_countertype_of_rule(ruleobj):
+   xtype = xtype_default
+   limit_rate = None
+   for thenaction in ruleobj.then.all():
+       if thenaction.action and thenaction.action=='rate-limit':
+           limit_rate=thenaction.action_value
+           xtype=str(limit_rate)
+   return xtype
+
+#
+
 def poll_snmp_statistics():
     logger.debug("poll_snmp_statistics(): polling SNMP statistics.")
 
@@ -331,14 +349,16 @@ def poll_snmp_statistics():
             rule_id = str(ruleobj.id)
             rule_status = str(ruleobj.status).upper()
 
-            xtype='counter'
-            limit_rate = None
-            for thenaction in ruleobj.then.all():
-                if thenaction.action and thenaction.action=='rate-limit':
-                    limit_rate=thenaction.action_value
-                    xtype=str(limit_rate)
+            #xtype_default='counter'
+            #xtype = xtype_default
+            #limit_rate = None
+            #for thenaction in ruleobj.then.all():
+            #    if thenaction.action and thenaction.action=='rate-limit':
+            #        limit_rate=thenaction.action_value
+            #        xtype=str(limit_rate)
+            xtype = helper_get_countertype_of_rule(ruleobj)
                         
-            logger.debug("snmpstats: STATISTICS_PER_RULE rule_id="+str(rule_id)+" rule_status="+str(rule_status)+" limit_rate="+str(limit_rate))
+            logger.debug("snmpstats: STATISTICS_PER_RULE rule_id="+str(rule_id)+" rule_status="+str(rule_status)+" xtype="+str(xtype))
             #rule_last_updated = str(ruleobj.last_updated) # e.g. 2018-06-21 08:03:21+00:00
             #rule_last_updated = datetime.strptime(str(ruleobj.last_updated), '%Y-%m-%d %H:%M:%S+00:00') # TODO TZ offset assumed to be 00:00
             rule_last_updated = helper_rule_ts_parse(str(ruleobj.last_updated))
@@ -354,7 +374,11 @@ def poll_snmp_statistics():
 
             if rule_status=="ACTIVE":
               try:
-                counter = {"ts": nowstr, "value": newdata[flowspec_params_str][xtype]}
+                if xtype==xtype_default:
+                  counter = {"ts": nowstr, "value": newdata[flowspec_params_str][xtype]}
+                else:
+                  counter = {"ts": nowstr, "value": newdata[flowspec_params_str][xtype], "value-counter": newdata[flowspec_params_str][xtype_default]}
+
                 counter_is_null = False
               except Exception as e:
                 logger.info("poll_snmp_statistics(): 1 STATISTICS_PER_RULE: exception: rule_id="+str(rule_id)+" newdata for flowspec_params_str='"+str(flowspec_params_str)+"' missing : "+str(e))
@@ -431,7 +455,7 @@ def poll_snmp_statistics():
     unlock_history_file()
     logger.info("poll_snmp_statistics(): polling end: old_nowstr="+str(nowstr)+" last_poll_no_time="+str(last_poll_no_time))
 
-def add_initial_zero_value(rule_id, zero_or_null=True):
+def add_initial_zero_value(rule_id, route_obj, zero_or_null=True):
     logger.debug("add_initial_zero_value(): rule_id="+str(rule_id))
 
     # get new data
@@ -458,7 +482,14 @@ def add_initial_zero_value(rule_id, zero_or_null=True):
     else:
       zero_measurement = 0
     
-    counter = {"ts": nowstr, "value": zero_measurement }
+    #
+
+    xtype = helper_get_countertype_of_rule(route_obj)
+   
+    if xtype==xtype_default:
+      counter = {"ts": nowstr, "value": zero_measurement }
+    else:
+      counter = {"ts": nowstr, "value": zero_measurement, "value-counter": zero_measurement }
         
     samplecount = settings.SNMP_MAX_SAMPLECOUNT
 
