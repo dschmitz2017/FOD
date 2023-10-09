@@ -779,11 +779,13 @@ elif [ "$1" = "--helper__process_ruleinfo__ovs_method2_step1" ]; then #arg
   #echo "priority=1,table=0,$proto,${address_pre}src=$sourcex,${address_pre}dst=$destination${add1} cookie=0x$cookie actions=drop" >> "$ovs_replace_flow_file" 
 
   if [ "$protocol_num" = "" -o "$protocol_num" = "-" ]; then
+    echo "debug add to ovs_replace_flow_file: priority=1,$proto,${address_pre}src=$sourcex,${address_pre}dst=$destination${add1} cookie=0x$cookie actions=drop" 1>&2
     echo "priority=1,$proto,${address_pre}src=$sourcex,${address_pre}dst=$destination${add1} cookie=0x$cookie actions=drop" >> "$ovs_replace_flow_file" 
   else
 
     printf "%s\\n" "$protocol_num" | tr "," "\\n" | while read protocol_num1 rest; do
       add10=",ip_proto=$protocol_num1$add1"
+      echo "debug add to ovs_replace_flow_file: priority=1,$proto,${address_pre}src=$sourcex,${address_pre}dst=$destination${add10} cookie=0x$cookie actions=drop" 1>&2
       echo "priority=1,$proto,${address_pre}src=$sourcex,${address_pre}dst=$destination${add10} cookie=0x$cookie actions=drop" >> "$ovs_replace_flow_file" 
     done
 
@@ -815,6 +817,11 @@ elif [ "$1" = "--helper__process_ruleinfo__ovs_method2_postproc" ]; then #arg
   
     ovs-ofctl set-frags "$bridge" nx-match # fragment handling
 
+    (set -x
+    grep -H . "$ovs_replace_flow_file" 1>&2
+    echo 1>&2
+    )
+
     ovs-ofctl replace-flows "$bridge" "$ovs_replace_flow_file"
     ovs-ofctl diff-flows "$bridge" /dev/null
 
@@ -827,6 +834,13 @@ elif [ "$1" = "--process_ruleinfo" ]; then #arg
   if [ -f "/noovs" ]; then 
     use_ovs=0
   fi
+
+  use_random_values=0
+  if [ -f "/randomvalues" ]; then 
+    use_random_values=1
+  fi
+
+  #
 
   use_ovs_method2=1
 
@@ -863,7 +877,8 @@ elif [ "$1" = "--process_ruleinfo" ]; then #arg
   "$0" --filter-ruleinfo-unique | tr '\r' '\n' | grep -v "^ *$" | \
   while read -r name ipversion source destination protocol source_ports destination_ports fragment_options then rest; do
     #echo "name=$name ipversion=$ipversion source=$source ..." 1>&2
-  
+ 
+    echo 1>&2 
     echo "$0: process_ruleinfo: loop: step name=$name" 1>&2
  
     bgp_params1="$name $ipversion $source $destination $protocol $source_ports $destination_ports $fragment_options $then" 
@@ -885,12 +900,32 @@ elif [ "$1" = "--process_ruleinfo" ]; then #arg
       [ -n "$protocol_num" ] || protocol_num="-"
       #echo "protocol=$protocol => protocol_num=$protocol_num" 1>&2
   
-      counter_values="$("$0" --get_counters_for_rule "$cookie")";
-      echo "$0: process_ruleinfo: loop: step: name=$name counter_values=$counter_values" 1>&2
+      counter_values_drop="$("$0" --get_counters_for_rule "$cookie")";
+      echo "$0: process_ruleinfo: loop: step: name=$name counter_values_drop=$counter_values_drop" 1>&2
   
     fi #endof !exabgp
+   
+    ##
+
+    if [ \( -z "$counter_values_drop" -o "$counter_values_drop" = "0 0" \) -a "$use_random_values" = 1 ]; then
+      old_random_value1="$(cat "/dev/shm/rule_random_counter-$cookie.val1")"
+      old_random_value2="$(cat "/dev/shm/rule_random_counter-$cookie.val2")"
+      [ -n "$old_random_value1" ] || old_random_value1=0
+      [ -n "$old_random_value2" ] || old_random_value2=0
+
+      random_value1=$(( $old_random_value1 + $RANDOM * $RANDOM )) 
+      random_value2=$(( $old_random_value2 + $RANDOM * $RANDOM / 100 / 100 )) 
+
+      echo "$random_value1" > "/dev/shm/rule_random_counter-$cookie.val1"
+      echo "$random_value2" > "/dev/shm/rule_random_counter-$cookie.val2"
+      
+      counter_values_drop="$random_value1 $random_value2"
+    fi
+
+    ##
     
-    [ -n "$counter_values" ] || counter_values="- -"
+    [ -n "$counter_values_drop" ] || counter_values_drop="- -"
+    [ -n "$counter_values_read" ] || counter_values_read="$counter_values_drop"
  
     #echo "cookie=$cookie name=$name" 1>&2 
     #echo "cookie=$cookie source=$source" 1>&2 
@@ -899,7 +934,8 @@ elif [ "$1" = "--process_ruleinfo" ]; then #arg
     #echo "cookie=$cookie fragment_options=$fragment_options" 1>&2 
     #echo "cookie=$cookie then=$then" 1>&2 
     #echo "0x$cookie bgpflowspec $counter_values $name $source $destination $protocol $protocol_num $source_ports $destination_ports $fragment_options $then" 
-    echo "0x$cookie bgpflowspec $counter_values $name $source $destination $protocol $protocol_num $source_ports $destination_ports $fragment_options $then" >> "$state_file"
+    #echo "0x$cookie bgpflowspec $counter_values $name $source $destination $protocol $protocol_num $source_ports $destination_ports $fragment_options $then" >> "$state_file"
+    echo "0x$cookie bgpflowspec $counter_values_read $counter_values_drop $name $source $destination $protocol $protocol_num $source_ports $destination_ports $fragment_options $then" >> "$state_file"
 
     echo 1>&2
 
@@ -911,12 +947,15 @@ elif [ "$1" = "--process_ruleinfo" ]; then #arg
   echo "$0: process_ruleinfo: post process" 1>&2
 
   if [ "$also_use_exabgp" = 1 ]; then #exabgp
+    echo "$0: process_ruleinfo: post process exabgp" 1>&2
     "$0" --helper__process_ruleinfo__exabgp_postproc "$dir1"
   fi #! exabgp
 
   if [ "$use_ovs" = 1 -a "$use_ovs_method2" = 0 ]; then
+    echo "$0: process_ruleinfo: post process ovs method1" 1>&2
     "$0" --helper__process_ruleinfo__ovs_method1_postproc "$state_file"
   elif [ "$use_ovs" = 1 -a "$use_ovs_method2" = 1 ]; then
+    echo "$0: process_ruleinfo: post process ovs method2" 1>&2
     "$0" --helper__process_ruleinfo__ovs_method2_postproc "$state_file" "$ovs_replace_flow_file"
   fi #endof !exabgp
 

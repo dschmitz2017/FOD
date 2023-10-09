@@ -173,7 +173,8 @@ sub get_state($)
   for my $line (@lines) 
   {
     # 0x4c8c66ccd9b34fc0 mn1_O8VMZ6 10.0.0.1/32 10.0.0.2/32 icmp - - 
-    my ($cookie, $typex, $byte_ctr, $pkt_ctr, $rulename, @rule_params) = split(/\s+/, $line);
+    #my ($cookie, $typex, $byte_ctr, $pkt_ctr, $rulename, @rule_params) = split(/\s+/, $line);
+    my ($cookie, $typex, $byte_ctr__read, $pkt_ctr__read, $byte_ctr__drop, $pkt_ctr__drop, $rulename, @rule_params) = split(/\s+/, $line);
     next if ($typex eq 'default');
 
     my ($snmp_rulename, $snmp_rulename0, $counter_type_value) = get_snmp_rulename(@rule_params);
@@ -183,14 +184,14 @@ sub get_state($)
         my $prefix0 = string_to_oid_list($snmp_rulename0);
         my $snmp_oid_counter_pkts = $place_pkts.$rulesfilter_oidlist.$prefix0.".2";
         my $snmp_oid_counter_bytes = $place_bytes.$rulesfilter_oidlist.$prefix0.".2";
-        $state_hash->{$snmp_oid_counter_bytes} = $byte_ctr;
-        $state_hash->{$snmp_oid_counter_pkts} = $pkt_ctr;
+        $state_hash->{$snmp_oid_counter_bytes} = $byte_ctr__read;
+        $state_hash->{$snmp_oid_counter_pkts} = $pkt_ctr__read;
       }
       my $prefix1 = string_to_oid_list($snmp_rulename);
       my $snmp_oid_counter_pkts = $place_pkts.$rulesfilter_oidlist.$prefix1.".".$counter_type_value;
       my $snmp_oid_counter_bytes = $place_bytes.$rulesfilter_oidlist.$prefix1.".".$counter_type_value;
-      $state_hash->{$snmp_oid_counter_bytes} = $byte_ctr;
-      $state_hash->{$snmp_oid_counter_pkts} = $pkt_ctr;
+      $state_hash->{$snmp_oid_counter_bytes} = $byte_ctr__drop;
+      $state_hash->{$snmp_oid_counter_pkts} = $pkt_ctr__drop;
     }
   }
 
