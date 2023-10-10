@@ -1,5 +1,5 @@
 
-# doc: to build+run: docker build -f Dockerfile.fod.debian-exabgp -t fod.debian-exabgp . && docker run -ti -p 8000:8000 fod.debian-exabgp
+# doc: to build+run: docker build -f Dockerfile.fod.debian-exabgp-and-tools -t fod.debian-exabgp+tools . && docker run -ti -p 8000:8000 fod.debian-exabgp+tools 
 
 #############################################################################
 #############################################################################
@@ -31,7 +31,7 @@ RUN apt-get update -y && apt-get -o Dpkg::Options::='--force-confdef' -o Dpkg::O
 #############################################################################
 
 # typically useful tools for investigation
-#RUN apt-get update -y -y && DEBIAN_FRONTEND="noninteractive" apt-get install -y -y git less man make gcc strace ltrace lsof file vim tshark tcpdump curl wget net-tools sudo psutils procps iptables iputils-ping iputils-tracepath hping3 iproute2 
+RUN apt-get update -y -y && DEBIAN_FRONTEND="noninteractive" apt-get install -y -y git less man make gcc strace ltrace lsof file vim tshark tcpdump curl wget net-tools sudo psutils procps iptables iputils-ping iputils-tracepath hping3 iproute2 
 
 #############################################################################
 #############################################################################
