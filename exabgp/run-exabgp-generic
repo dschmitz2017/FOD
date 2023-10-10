@@ -285,6 +285,10 @@ EOF
       enable1=1
       shift 1
       shift_count=$(( $shift_count + 1 ))
+    elif [ "$1" = "--restart" ]; then
+      enable1=2
+      shift 1
+      shift_count=$(( $shift_count + 1 ))
     fi
  
     user_line=
@@ -309,6 +313,11 @@ EOF
       supervisorctl reread
       supervisorctl update exabgp
       supervisorctl start exabgp
+    elif [ "$enable1" = 2 ]; then
+      #supervisorctl reload
+      supervisorctl reread
+      supervisorctl update exabgp
+      supervisorctl restart exabgp
     fi
 
   fi
