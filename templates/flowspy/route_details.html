@@ -137,8 +137,14 @@ function myreloadPage() {
 <script src="{% static 'js/chartjs/chartjs-plugin-zoom.min.js' %}"></script>
 
 <script type="text/javascript">
-function plotGraph(data)
+function plotGraph(route_then_action, data)
 {
+   var is_rate_limiting_rule = route_then_action.includes("rate-limit"); 
+   var is_drop_rule = route_then_action.includes("discard") || route_then_action.includes("drop");
+   var is_accept_rule = route_then_action.includes("accept");
+
+   //	
+
    var xdata = Array();
 
    var ypkgdata = Array();
@@ -146,12 +152,12 @@ function plotGraph(data)
    var ybytesdata = Array();
    var ybytesdatarel = Array();
 
-   var yseenpkgdata = Array();
-   var yseenpkgdatarel = Array();
-   var yseenbytesdata = Array();
-   var yseenbytesdatarel = Array();
+   var ydroppedpkgdata = Array();
+   var ydroppedpkgdatarel = Array();
+   var ydroppedbytesdata = Array();
+   var ydroppedbytesdatarel = Array();
 
-   var yseen_available = false;
+   var ydropped_available = false;
 
    for (i=0; i<data["data"].length; i++) {
        var d = data["data"][data["data"].length - 1 - i];
@@ -172,21 +178,21 @@ function plotGraph(data)
            ybytesdatarel[i] = (bytesdelta===undefined || bytesdelta>=0) ? bytesdelta : 0;
        }
 
-       if (d.value_counter!=undefined) {
-         yseen_available=true
+       if (d.value_dropped!=undefined) {
+         ydropped_available=true
 
-         yseenpkgdata[i] = d.value_counter.packets;
-         yseenbytesdata[i] = d.value_counter.bytes;
+         ydroppedpkgdata[i] = d.value_dropped.packets;
+         ydroppedbytesdata[i] = d.value_dropped.bytes;
   
          if (i == 0) {
-             yseenpkgdatarel[i] = 0;
-             yseenbytesdatarel[i] = 0;
+             ydroppedpkgdatarel[i] = 0;
+             ydroppedbytesdatarel[i] = 0;
          } else {
-             delta = (yseenpkgdata[i]===undefined) ? undefined : (yseenpkgdata[i-1]===undefined) ? yseenpkgdata[i] : (yseenpkgdata[i] - yseenpkgdata[i-1]);
-             yseenpkgdatarel[i] = (delta===undefined || delta>=0) ? delta : 0;
+             delta = (ydroppedpkgdata[i]===undefined) ? undefined : (ydroppedpkgdata[i-1]===undefined) ? ydroppedpkgdata[i] : (ydroppedpkgdata[i] - ydroppedpkgdata[i-1]);
+             ydroppedpkgdatarel[i] = (delta===undefined || delta>=0) ? delta : 0;
   
-             bytesdelta = (yseenbytesdata[i]===undefined) ? undefined : (yseenbytesdata[i-1]===undefined) ? yseenbytesdata[i] : (yseenbytesdata[i] - yseenbytesdata[i-1]);
-             yseenbytesdatarel[i] = (bytesdelta===undefined || bytesdelta>=0) ? bytesdelta : 0;
+             bytesdelta = (ydroppedbytesdata[i]===undefined) ? undefined : (ydroppedbytesdata[i-1]===undefined) ? ydroppedbytesdata[i] : (ydroppedbytesdata[i] - ydroppedbytesdata[i-1]);
+             ydroppedbytesdatarel[i] = (bytesdelta===undefined || bytesdelta>=0) ? bytesdelta : 0;
          }
   
   
@@ -205,73 +211,117 @@ function plotGraph(data)
    graphbytesabs.height = 20;
    graphbytesrel.width = 80;
    graphbytesrel.height = 20;
+
+   //
+
+   accept__borderColor = "#20ff20"; // green
+   accept__pointbackgroundColor = "#ccffcc"; // light green
+   accept__backgroundColor = "#ccffcc"; // light green
+
+   drop__borderColor = "#ff2020"; // red
+   drop__pointbackgroundColor = "#ffcccc"; // light red
+   drop__backgroundColor = "#ffcccc"; // light red
+
+   matched__borderColor = "#ffa500"; // orange
+   matched__pointbackgroundColor = "#ffff00"; // yellow
+   matched__backgroundColor = "#ffff00"; // yellow
+
+
+   if (is_drop_rule) {
+     matched_text = "matched and dropped";
+     value1__borderColor = drop__borderColor;
+     value1__pointbackgroundColor = drop__pointbackgroundColor;
+     value1__backgroundColor = drop__backgroundColor;
+   } else if (is_accept_rule) {
+     matched_text = "matched and accepted";
+     value1__borderColor = accept__borderColor;
+     value1__pointbackgroundColor = accept__pointbackgroundColor;
+     value1__backgroundColor = accept__backgroundColor;
+   } else { 
+     matched_text = "matched";
+     value1__borderColor = matched__borderColor;
+     value1__pointbackgroundColor = matched__pointbackgroundColor;
+     value1__backgroundColor = matched__backgroundColor;
+   }
   
    var ypkg_datasets = [{
-           label: '# packets',
+           label: '# packets '+matched_text,
            data: ypkgdata,
            borderWidth: 2,
-           borderColor: "#3c37c6",
-           pointBackgroundColor:  "#3c37c6",
-           backgroundColor: "#99bfff"
+           borderColor: value1__borderColor,
+           pointBackgroundColor: value1__pointbackgroundColor,
+           backgroundColor: value1__backgroundColor
+           //borderColor: "#3c37c6",
+           //pointBackgroundColor:  "#3c37c6",
+           //backgroundColor: "#99bfff"
        }];
    var ypkgrel_datasets = [{
-           label: '# packets',
+           label: '# packets '+matched_text,
            data: ypkgdatarel,
            borderWidth: 2,
-           borderColor: "#c63737",
-           pointBackgroundColor:  "#c63737",
-           backgroundColor: "#ff877a"
+           borderColor: value1__borderColor,
+           pointBackgroundColor: value1__pointbackgroundColor,
+           backgroundColor: value1__backgroundColor
+           //borderColor: "#c63737",
+           //pointBackgroundColor:  "#c63737",
+           //backgroundColor: "#ff877a"
        }];
    var ybytes_datasets = [{
-           label: '# bytes',
+           label: '# bytes '+matched_text,
            data: ybytesdata,
            borderWidth: 2,
-           borderColor: "#3c37c6",
-           pointBackgroundColor:  "#3c37c6",
-           backgroundColor: "#99bfff"
+           borderColor: value1__borderColor,
+           pointBackgroundColor: value1__pointbackgroundColor,
+           backgroundColor: value1__backgroundColor
+           //borderColor: "#3c37c6",
+           //pointBackgroundColor:  "#3c37c6",
+           //backgroundColor: "#99bfff"
        }];
     var ybytesrel_datasets = [{
-           label: '# bytes',
+           label: '# bytes '+matched_text,
            data: ybytesdatarel,
            borderWidth: 2,
-           borderColor: "#c63737",
-           pointBackgroundColor:  "#c63737",
-           backgroundColor: "#ff877a"
+           borderColor: value1__borderColor,
+           pointBackgroundColor: value1__pointbackgroundColor,
+           backgroundColor: value1__backgroundColor
+           //borderColor: "#c63737",
+           //pointBackgroundColor:  "#c63737",
+           //backgroundColor: "#ff877a"
        }];
 
 
-   if (yseen_available) {
+   if (ydropped_available) {
      ypkg_datasets.push({
-           label: '# packets matched',
-           data: yseenpkgdata,
+           label: '# packets dropped',
+           data: ydroppedpkgdata,
            borderWidth: 2,
-           borderColor: "#cc37c6",
-           pointBackgroundColor:  "#3c37c6",
-           backgroundColor: "#59bf6f"
+           borderColor: drop__borderColor,
+           pointBackgroundColor: drop__pointbackgroundColor,
+           backgroundColor: drop__backgroundColor
        });
      ypkgrel_datasets.push({
-           label: '# packets matched',
-           data: yseenpkgdatarel,
+           label: '# packets dropped',
+           data: ydroppedpkgdatarel,
            borderWidth: 2,
-           borderColor: "#c63737",
-           pointBackgroundColor:  "#c63737",
-           backgroundColor: "#6f223a"
+           borderColor: drop__borderColor,
+           pointBackgroundColor: drop__pointbackgroundColor,
+           backgroundColor: drop__backgroundColor
        });
      ybytes_datasets.push({
-           label: '# bytes matched',
-           data: yseenbytesdata,
+           label: '# bytes dropped',
+           data: ydroppedbytesdata,
            borderWidth: 2,
-           borderColor: "#cc37c6",
-           pointBackgroundColor:  "#3c37c6",
-           backgroundColor: "#59bf6f"
+           borderColor: drop__borderColor,
+           pointBackgroundColor: drop__pointbackgroundColor,
+           backgroundColor: drop__backgroundColor
        });
      ybytesrel_datasets.push({
-           label: '# bytes matched',
-           data: yseenbytesdatarel,
+           label: '# bytes dropped',
+           data: ydroppedbytesdatarel,
            borderWidth: 2,
-           borderColor: "#c63737",
-           pointBackgroundColor:  "#c63737",
-           backgroundColor: "#6f223a"
+           borderColor: drop__borderColor,
+           pointBackgroundColor: drop__pointbackgroundColor,
+           backgroundColor: drop__backgroundColor
        });
    }
 
@@ -375,7 +425,7 @@ $(document).ready(function() {
           $("#traffic-plot-loading").text("No data, try later");
       } else {
           $("#traffic-plot-loading").hide();
-          plotGraph(data);
+          plotGraph("{{ route.get_then }}", data);
       }
    });
 });

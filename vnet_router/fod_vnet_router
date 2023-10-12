@@ -908,18 +908,48 @@ elif [ "$1" = "--process_ruleinfo" ]; then #arg
     ##
 
     if [ \( -z "$counter_values_drop" -o "$counter_values_drop" = "0 0" \) -a "$use_random_values" = 1 ]; then
-      old_random_value1="$(cat "/dev/shm/rule_random_counter-$cookie.val1")"
-      old_random_value2="$(cat "/dev/shm/rule_random_counter-$cookie.val2")"
-      [ -n "$old_random_value1" ] || old_random_value1=0
-      [ -n "$old_random_value2" ] || old_random_value2=0
 
-      random_value1=$(( $old_random_value1 + $RANDOM * $RANDOM )) 
-      random_value2=$(( $old_random_value2 + $RANDOM * $RANDOM / 100 / 100 )) 
+      store_file_prefix="/dev/shm/rule_random_counter-$cookie"    
 
-      echo "$random_value1" > "/dev/shm/rule_random_counter-$cookie.val1"
-      echo "$random_value2" > "/dev/shm/rule_random_counter-$cookie.val2"
+      old_random_value_read_bytes="$(cat "$store_file_prefix-read-bytes.val")"
+      old_random_value_read_pkgs="$(cat "$store_file_prefix-read-pkgs.val")"
+      [ -n "$old_random_value_read_bytes" ] || old_random_value_read_bytes=0
+      [ -n "$old_random_value_read_pkgs" ] || old_random_value_read_pkgs=0
+
+      random_value_add_read_bytes=$(( $RANDOM * $RANDOM )) 
+      random_value_add_read_pkgs=$(( $RANDOM * $RANDOM / 100 / 100 )) 
+
+      random_value_read_bytes=$(( $old_random_value_read_bytes + $random_value_add_read_bytes )) 
+      random_value_read_pkgs=$(( $old_random_value_read_pkgs + $random_value_add_read_pkgs )) 
+
+      echo "$random_value_read_bytes" > "$store_file_prefix-read-bytes.val"
+      echo "$random_value_read_pkgs" > "$store_file_prefix-read-pkgs.val"
+
+      ##
+
+      if [ "$then" = "${then#rate-limit}" ]; then # not a rate-limiting rule?
+        random_value_drop_bytes="$random_value_read_bytes"
+        random_value_drop_pkgs="$random_value_read_pkgs"
+      else
+
+        old_random_value_drop_bytes="$(cat "$store_file_prefix-drop-bytes.val")"
+        old_random_value_drop_pkgs="$(cat "$store_file_prefix-drop-pkgs.val")"
+        [ -n "$old_random_value_drop_bytes" ] || old_random_value_drop_bytes=0
+        [ -n "$old_random_value_drop_pkgs" ] || old_random_value_drop_pkgs=0
+
+        random_value_add_drop_bytes=$(( $RANDOM * $random_value_add_read_bytes / 32678 )) 
+        random_value_add_drop_pkgs=$(( $RANDOM * $random_value_add_read_pkgs / 32678 )) 
+
+        random_value_drop_bytes=$(( $old_random_value_drop_bytes + $random_value_add_drop_bytes )) 
+        random_value_drop_pkgs=$(( $old_random_value_drop_pkgs + $random_value_add_drop_pkgs )) 
+
+        echo "$random_value_drop_bytes" > "$store_file_prefix-drop-bytes.val"
+        echo "$random_value_drop_pkgs" > "$store_file_prefix-drop-pkgs.val"
+
+      fi
       
-      counter_values_drop="$random_value1 $random_value2"
+      counter_values_read="$random_value_read_bytes $random_value_read_pkgs"
+      counter_values_drop="$random_value_drop_bytes $random_value_drop_pkgs"
     fi
 
     ##
