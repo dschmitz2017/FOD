@@ -210,5 +210,18 @@ seq  chld  queue  intrvl  byt/int  rxb  rxp  trnsmt                       ace
 
 15802c338fa3#exit                                                             
 see you later
-```
+
+## Freertr used with Firewall-On-Demand (FoD) - based on Containerlab
+
+containerlab in general: https://containerlab.dev/
+
+FoD+Freertr example containerlab specification: https://github.com/rare-freertr/freeRtr-containerlab/blob/main/lab/005-rare-hello-fod/rtr005.clab.yml
+
+recipe how to use this example containerlab: https://github.com/rare-freertr/freeRtr-containerlab/blob/main/lab/005-rare-hello-fod/containerlab-fod-freertr.txt
+
+recipe/demo script based on this example containerlab: https://github.com/rare-freertr/freeRtr-containerlab/blob/main/lab/005-rare-hello-fod/containerlab-fod-freertr.sh
+
+
+
+
 
