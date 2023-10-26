@@ -1,5 +1,12 @@
 
-statistics table:
+== format of statistics table 
+
+stored as JSON
+
+configured with key 'SNMP_TEMP_FILE' in ./flowspy/settings.py, e.g., with file name './snmp_temp_data'
+
+
+=== 1. measurement entries per time (per rule id) in general:
 
 a measurement value
 per rule,
@@ -39,7 +46,7 @@ zero measurement: = { bytes=>0, packets=>0, } : at start of measurement = activa
 
 or
 
-real measurement (example): = { bytes=>1414, packets=>5, } : cumulative (=absolue values from start of measurement = from last activation of the rule) bytes/packet counters 
+real measurement (example): = { bytes=>1414, packets=>5, } : cumulative (=absolute values from start of measurement = from last activation of the rule) bytes/packet counters 
 
 or 
 
@@ -48,6 +55,22 @@ missing_value: =1 : no measurements from none of the routers queried answered va
 null_value: =0 : used when rule is deactivated = measurement should stop on the router
 
 when rule is re-activated again on the router after some duration of having been deactivated it is started again with a zero measurement in the table and absolute values for the future real measurement are starting from zero again
+
+
+=== 2. support of distinct values for matched and dropped bytes/packets per time (in case of rules with rate-limiting):
+
+for rules with rate-limiting now there are 2 distinct kinds of statistics, 
+one for matched bytes/packets and one for dropped bytes/packets
+(for rules with drop action there is essentially only one statistic,
+as matched and dropped values are always the same).
+
+for rate-limiting rule in the statistic entry per time value (see 1.)
+with the array key "value" the matched statistic values (bytes and packets) are available,
+while with the array key "value_dropped" the dropped statistic values (bytes and packets) are available.
+
+For statistic entries created in the past before this distinction of statistic kinds
+was introduced only the "value" part (representing the matched values) will be available,
+only for new, future entries "value_dropped" is available.
 
 
 
