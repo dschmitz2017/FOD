@@ -1,4 +1,20 @@
 =======
+1.8.1 RELEASE (2023/11)
+Improvements and enhancements
+        - Enhancement of the Dockerfiles for testing and reference-installation
+          - Docker Compose introduced ./docker-compose*.yml 
+
+        - Fixed broken Menubar
+
+	- Updated arrangement of the buttons in the rules table view; fix sorting of entries in table default by name again; dont reset paging on reload
+
+        - Reenable possibility to set expire date when creating a rule via REST API
+
+	- Apply check sync also for out-of-sync-rules
+
+	- Bugfixes required for newer Django version
+
+=======
 1.8.0 RELEASE (2023/05)
 Improvements and enhancements
         - Upgraded to newer Django
