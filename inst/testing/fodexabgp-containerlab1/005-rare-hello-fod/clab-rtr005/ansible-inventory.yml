@@ -3,12 +3,12 @@ all:
     linux:
       hosts:
         clab-rtr005-fod1:
-          ansible_host: 172.20.20.3
-        clab-rtr005-host1:
           ansible_host: 172.20.20.2
+        clab-rtr005-host1:
+          ansible_host: 172.20.20.5
         clab-rtr005-host2:
-          ansible_host: 172.20.20.4
+          ansible_host: 172.20.20.3
     rare:
       hosts:
         clab-rtr005-rtr1:
-          ansible_host: 172.20.20.5
+          ansible_host: 172.20.20.4
