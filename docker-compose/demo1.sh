@@ -118,7 +118,7 @@ if [ "$count_up" != 4 ]; then
 
   echo1 "$0: 0.a. docker-compose set not fully setup, trying to do so" 1>&2
 
-  echo1 "$0: 0.a.1. tearing down docker-compse set completly" 1>&2
+  echo1 "$0: 0.a.1. tearing down docker-compse set completely" 1>&2
   docker-compose -f "$docker_compose_spec__file" down
   echo 1>&2
 
@@ -178,7 +178,7 @@ echo1 "$0: 1.a. disabling any left-over rules in FoD:" 1>&2
 docker exec -ti "$fod_container_name" ./inst/helpers/enable_rule.sh 10.1.10.11/32 10.2.10.12/32 1 -1 "" 0 
 
 echo1 "$0:      list demo rules in FoD:" 1>&2
-(docker exec -ti "$fod_container_name" ./inst/helpers/list_rules_db.sh | grep "10.1.10.11/32.*10.2.10.12/32" || true) | output_with_specific_colormarks '\\|FoD_testrtr1_'
+(docker exec -ti "$fod_container_name" ./inst/helpers/list_rules_db.sh | grep "10.1.10.11/32.*10.2.10.12/32" || true) | output_with_specific_colormarks 'testrtr1_'
 
 waitdelay1 
 
@@ -237,7 +237,7 @@ docker exec -ti "$fod_container_name" ./inst/helpers/enable_rule.sh 10.1.10.11/3
 echo 1>&2
 
 echo1 "$0:        list demo rules in FoD:" 1>&2
-(docker exec -ti "$fod_container_name" ./inst/helpers/list_rules_db.sh | grep "10.1.10.11/32.*10.2.10.12/32" || true) | output_with_specific_colormarks '\\|FoD_testrtr1_'
+(docker exec -ti "$fod_container_name" ./inst/helpers/list_rules_db.sh | grep "10.1.10.11/32.*10.2.10.12/32" || true) | output_with_specific_colormarks 'testrtr1_'
 echo 1>&2
 
 echo1 "$0:        show exabgp current exported rules/routes (after adding the blocking rule):" 1>&2
