@@ -28,6 +28,12 @@ shift 1
 
 #
 
+show_rules="$1"
+shift 1
+[ -n "$show_rules" ] || show_rules="1"
+
+#
+
 name_prefix="testrtr1"
 
 #
@@ -83,7 +89,16 @@ status="$?"
 
 #
 
-echo "SELECT * from route;" | ./pythonenv ./manage.py dbshell | grep "$name_prefix.*$source_prefix.*$destination_prefix.*$IPprotocolId"
+if [ "$show_rules" = 1 ]; then
+  echo
+  echo "current rules ($name_prefix.*$source_prefix.*$destination_prefix.*$IPprotocolId) in FoD DB:" 
+  echo
 
+  sleep 1
+
+  echo "SELECT * from route;" | ./pythonenv ./manage.py dbshell | grep "$name_prefix.*$source_prefix.*$destination_prefix.*$IPprotocolId"
+fi
+
+#echo "status=$status" 1>&2
 exit "$status"
 
