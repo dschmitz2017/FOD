@@ -78,8 +78,8 @@ function output_with_specific_colormarks() {
 
 #################################
 
-wait1=10
-waite=0
+wait1=30
+waite=2
 
 if [ "$1" = "--waittime" ]; then
   shift 1
@@ -90,6 +90,9 @@ fi
 if [ "$1" = "--waitecho" ]; then
   shift 1
   waite=2
+elif [ "$1" = "--nowaitecho" ]; then
+  shift 1
+  waite=0
 fi  
 
 if [ "$1" = "--keypress" ]; then
