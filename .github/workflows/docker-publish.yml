@@ -7,7 +7,7 @@ name: Docker
 
 on:
   schedule:
-    - cron: '40 13 * * *'
+    - cron: '55 12 * * *'
   push:
     branches: [ "feature/exabgp_support2" ]
     # Publish semver tags as releases.
